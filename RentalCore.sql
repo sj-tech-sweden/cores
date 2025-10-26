@@ -1636,7 +1636,8 @@ CREATE TABLE `users` (
   `login_attempts` int DEFAULT '0',
   `locked_until` timestamp NULL DEFAULT NULL,
   `two_factor_enabled` tinyint(1) DEFAULT '0',
-  `two_factor_secret` varchar(100) DEFAULT NULL
+  `two_factor_secret` varchar(100) DEFAULT NULL,
+  `force_password_change` tinyint(1) DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -3441,9 +3442,17 @@ ALTER TABLE `user_sessions`
 --
 -- Insert default admin user (username: admin, password: admin)
 -- This user is created automatically on fresh database setup
+-- User MUST change password on first login (force_password_change=1)
 --
-INSERT INTO `users` (`userID`, `username`, `email`, `password_hash`, `first_name`, `last_name`, `is_active`, `created_at`, `updated_at`, `last_login`, `timezone`, `language`, `avatar_path`, `notification_preferences`, `last_active`)
-VALUES (1, 'admin', 'admin@localhost', '$2a$14$/ubu0Bnral/RW8ipdAZijugcByjwP4040HbXUaDdSkE.vyhwKdOHO', 'System', 'Administrator', 1, NOW(), NOW(), NULL, 'Europe/Berlin', 'en', NULL, NULL, NULL);
+INSERT INTO `users` (`userID`, `username`, `email`, `password_hash`, `first_name`, `last_name`, `is_active`, `created_at`, `updated_at`, `last_login`, `timezone`, `language`, `avatar_path`, `notification_preferences`, `last_active`, `force_password_change`)
+VALUES (1, 'admin', 'admin@localhost', '$2a$14$/ubu0Bnral/RW8ipdAZijugcByjwP4040HbXUaDdSkE.vyhwKdOHO', 'System', 'Administrator', 1, NOW(), NOW(), NULL, 'Europe/Berlin', 'en', NULL, NULL, NULL, 1);
+
+--
+-- Assign full admin roles to default admin user
+-- User gets both RentalCore Admin (roleID=1) and WarehouseCore Admin (roleID=5)
+--
+INSERT INTO `user_roles` (`userID`, `roleID`, `assigned_at`, `is_active`) VALUES
+(1, 1, NOW(), 1);
 
 COMMIT;
 
