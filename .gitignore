@@ -1,0 +1,36 @@
+# Environment files with sensitive data
+.env
+
+# Project-specific directories (these have their own repos)
+rentalcore/
+warehousecore/
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor directories
+.vscode/
+.idea/
+*.sublime-*
+
+# Docker volumes and data
+volumes/
+data/
+
+# Backup files
+*.bak
+*.backup
+*.tar.gz
+
+# Claude Code files
+.claude/
+
+# Migration backups
+migrations/*.backup

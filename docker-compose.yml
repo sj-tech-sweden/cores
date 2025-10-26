@@ -1,0 +1,139 @@
+name: lager_weidelbach
+services:
+  rentalcore:
+    image: nobentie/rentalcore:latest
+    container_name: rentalcore
+    restart: unless-stopped
+    environment:
+      # Domain configuration for cross-navigation (without protocol or port)
+      # Example: rent.server-nt.de or rental.example.com
+      # Leave empty for auto-detection based on current hostname
+      RENTALCORE_DOMAIN: "${RENTALCORE_DOMAIN:-}"
+      WAREHOUSECORE_DOMAIN: "${WAREHOUSECORE_DOMAIN:-}"
+      STORAGECORE_DOMAIN: "${WAREHOUSECORE_DOMAIN:-}"
+      # Cookie domain for SSO (e.g., .server-nt.de for subdomains, leave empty for localhost)
+      COOKIE_DOMAIN: "${COOKIE_DOMAIN:-}"
+      # Database (shared schema) - RentalCore uses these env var names
+      DB_HOST: "tsunami-events.de"
+      DB_PORT: "3306"
+      DB_USERNAME: "tsweb"
+      DB_PASSWORD: "j4z4mZv7DpG7cdCLkSQVjXCfXMOmt9dEGRp2Pmdn2Xzl5y8AAkwLmKX"
+      DB_NAME: "RentalCore"
+      # App port
+      SERVER_HOST: "0.0.0.0"
+      SERVER_PORT: "8081"
+    ports:
+      - "8081:8081"
+    networks:
+      - weidelbach
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  warehousecore:
+    image: nobentie/warehousecore:latest
+    container_name: warehousecore
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    environment:
+      # Domain configuration for cross-navigation (without protocol or port)
+      # Example: rent.server-nt.de or rental.example.com
+      # Leave empty for auto-detection based on current hostname
+      RENTALCORE_DOMAIN: "${RENTALCORE_DOMAIN:-}"
+      WAREHOUSECORE_DOMAIN: "${WAREHOUSECORE_DOMAIN:-}"
+      STORAGECORE_DOMAIN: "${WAREHOUSECORE_DOMAIN:-}"
+      # Cookie domain for SSO (e.g., .server-nt.de for subdomains, leave empty for localhost)
+      COOKIE_DOMAIN: "${COOKIE_DOMAIN:-}"
+      # Database (shared schema)
+      DB_HOST: "tsunami-events.de"
+      DB_USER: "tsweb"
+      DB_PASS: "j4z4mZv7DpG7cdCLkSQVjXCfXMOmt9dEGRp2Pmdn2Xzl5y8AAkwLmKX"
+      DB_NAME: "RentalCore"
+      # App port (adjust if the app expects a different env var)
+      PORT: "8082"
+      # LED MQTT Configuration
+      LED_MQTT_HOST: "${LED_MQTT_HOST:-mosquitto}"
+      LED_MQTT_PORT: "${LED_MQTT_PORT:-1883}"
+      LED_MQTT_TLS: "${LED_MQTT_TLS:-false}"
+      LED_MQTT_USER: "${LED_MQTT_USER:-leduser}"
+      LED_MQTT_PASS: "${LED_MQTT_PASS:-ledpassword123}"
+      LED_MQTT_TOPIC_PREFIX: "${LED_MQTT_TOPIC_PREFIX:-weidelbach}"
+      LED_WAREHOUSE_ID: "${LED_WAREHOUSE_ID:-weidelbach}"
+      LED_MAPPING_FILE: "${LED_MAPPING_FILE:-/var/lib/warehousecore/led/led_mapping.json}"
+      LED_MQTT_CONNECT_RETRIES: "${LED_MQTT_CONNECT_RETRIES:-10}"
+      LED_MQTT_CONNECT_RETRY_DELAY_MS: "${LED_MQTT_CONNECT_RETRY_DELAY_MS:-2000}"
+      ADMIN_NAME_MATCH: "${ADMIN_NAME_MATCH:-Noah Tielmann}"
+    ports:
+      - "8082:8082"
+    volumes:
+      - led-mapping:/var/lib/warehousecore/led
+    networks:
+      - weidelbach
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"   # MQTT (plain)
+      - "8883:8883"   # MQTT over TLS
+      - "9001:9001"   # WebSocket (optional)
+    volumes:
+      - mosquitto-config:/mosquitto/config
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    environment:
+      LED_MQTT_USER: "${LED_MQTT_USER:-leduser}"
+      LED_MQTT_PASS: "${LED_MQTT_PASS:-ledpassword123}"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        mkdir -p /mosquitto/config
+        if [ ! -f /mosquitto/config/mosquitto.conf ] || ! grep -q '^listener 1883' /mosquitto/config/mosquitto.conf 2>/dev/null; then
+          cat <<'EOF' > /mosquitto/config/mosquitto.conf
+        listener 1883 0.0.0.0
+        allow_anonymous false
+        password_file /mosquitto/config/passwd
+        persistence true
+        persistence_location /mosquitto/data/
+        log_dest stdout
+        listener 9001 0.0.0.0
+        protocol websockets
+        EOF
+        fi
+        if [ -n "$LED_MQTT_USER" ]; then
+          if [ ! -f /mosquitto/config/passwd ]; then
+            mosquitto_passwd -c -b /mosquitto/config/passwd "$LED_MQTT_USER" "$LED_MQTT_PASS"
+          elif ! grep -q "^$LED_MQTT_USER:" /mosquitto/config/passwd 2>/dev/null; then
+            mosquitto_passwd -b /mosquitto/config/passwd "$LED_MQTT_USER" "$LED_MQTT_PASS"
+          fi
+        fi
+        exec /docker-entrypoint.sh /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf
+    networks:
+      - weidelbach
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/#' -C 1 -i healthcheck -u \"$LED_MQTT_USER\" -P \"$LED_MQTT_PASS\" -W 3"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+networks:
+  weidelbach:
+    driver: bridge
+
+volumes:
+  led-mapping:
+  mosquitto-config:
+  mosquitto-data:
+  mosquitto-log:
