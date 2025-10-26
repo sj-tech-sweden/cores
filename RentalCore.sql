@@ -3437,6 +3437,15 @@ ALTER TABLE `user_roles_wh`
 --
 ALTER TABLE `user_sessions`
   ADD CONSTRAINT `user_sessions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE;
+--
+-- Default admin user
+-- Username: admin
+-- Password: admin
+-- IMPORTANT: Change this password immediately after first login!
+--
+INSERT INTO `users` (`username`, `email`, `password_hash`, `first_name`, `last_name`, `is_active`, `created_at`, `updated_at`) VALUES
+('admin', 'admin@example.com', '$2a$14$E/Ndq65uCZKxW9UxB8MIlezDmuTIm836uYmqb9Yp8aeMvUAtCY2NG', 'Admin', 'User', 1, NOW(), NOW());
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

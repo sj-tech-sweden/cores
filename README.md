@@ -151,6 +151,12 @@ The first start will:
    - **RentalCore**: http://localhost:8081
    - **WarehouseCore**: http://localhost:8082
 
+   **Default Admin Credentials:**
+   - **Username**: `admin`
+   - **Password**: `admin`
+
+   ⚠️ **IMPORTANT**: Change the default password immediately after first login!
+
 5. **Check service status:**
 ```bash
 docker compose ps
@@ -560,6 +566,7 @@ docker compose restart warehousecore
 
 ## 🔐 Security Notes
 
+- **Default Admin User**: A default admin account (username: `admin`, password: `admin`) is created automatically on first startup. **Change this password immediately!**
 - The `.env` file contains **no database credentials** (safe to commit)
 - Database credentials are in `docker-compose.yml` (for demo/testing only)
 - **For production**: Use Docker Secrets or external secret management
