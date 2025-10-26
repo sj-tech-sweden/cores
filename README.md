@@ -154,8 +154,20 @@ The first start will:
    **Default Admin Credentials:**
    - **Username**: `admin`
    - **Password**: `admin`
+   - **Roles**: Administrator (RentalCore), Warehouse Administrator (WarehouseCore)
 
    ⚠️ **IMPORTANT**: Change the default password immediately after first login!
+
+   **Default Roles Created:**
+   - **RentalCore**:
+     - `admin` - Full system access
+     - `manager` - Equipment and job management
+     - `employee` - Basic operations access
+     - `viewer` - Read-only access
+   - **WarehouseCore**:
+     - `warehouse_admin` - Full warehouse management access
+     - `warehouse_manager` - Warehouse operations management
+     - `warehouse_employee` - Basic warehouse operations
 
 5. **Check service status:**
 ```bash

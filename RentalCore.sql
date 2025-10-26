@@ -3446,6 +3446,57 @@ ALTER TABLE `user_sessions`
 INSERT INTO `users` (`username`, `email`, `password_hash`, `first_name`, `last_name`, `is_active`, `created_at`, `updated_at`) VALUES
 ('admin', 'admin@example.com', '$2a$14$E/Ndq65uCZKxW9UxB8MIlezDmuTIm836uYmqb9Yp8aeMvUAtCY2NG', 'Admin', 'User', 1, NOW(), NOW());
 
+--
+-- Default system roles
+-- These roles are created automatically on system initialization
+--
+
+-- Admin role (RentalCore) - Full system access
+INSERT INTO `roles` (`roleID`, `name`, `display_name`, `description`, `permissions`, `is_system_role`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'admin', 'Administrator', 'Full system access', '["*"]', 1, 1, NOW(), NOW());
+
+-- Manager role (RentalCore) - Equipment and job management
+INSERT INTO `roles` (`roleID`, `name`, `display_name`, `description`, `permissions`, `is_system_role`, `is_active`, `created_at`, `updated_at`) VALUES
+(2, 'manager', 'Manager', 'Equipment and job management',
+'["job.read","job.create","job.update","job.delete","job.assign_device","job.manage_templates","device.read","device.create","device.update","device.maintenance","device.location","customer.read","customer.create","customer.update","financial.read","financial.create","financial.update","financial.reports","financial.invoices","document.read","document.create","document.update","document.sign","analytics.read","analytics.export","user.read"]',
+1, 1, NOW(), NOW());
+
+-- Employee role (RentalCore) - Basic operations access
+INSERT INTO `roles` (`roleID`, `name`, `display_name`, `description`, `permissions`, `is_system_role`, `is_active`, `created_at`, `updated_at`) VALUES
+(3, 'employee', 'Employee', 'Basic operations access',
+'["job.read","job.update","job.assign_device","device.read","device.update","device.location","customer.read","document.read","document.create","analytics.read"]',
+1, 1, NOW(), NOW());
+
+-- Viewer role (RentalCore) - Read-only access
+INSERT INTO `roles` (`roleID`, `name`, `display_name`, `description`, `permissions`, `is_system_role`, `is_active`, `created_at`, `updated_at`) VALUES
+(4, 'viewer', 'Viewer', 'Read-only access',
+'["job.read","device.read","customer.read","document.read","analytics.read"]',
+1, 1, NOW(), NOW());
+
+-- Warehouse Admin role (WarehouseCore) - Full warehouse management access
+INSERT INTO `roles` (`roleID`, `name`, `display_name`, `description`, `permissions`, `is_system_role`, `is_active`, `created_at`, `updated_at`) VALUES
+(5, 'warehouse_admin', 'Warehouse Administrator', 'Full warehouse management access', '["*"]', 1, 1, NOW(), NOW());
+
+-- Warehouse Manager role (WarehouseCore) - Warehouse operations management
+INSERT INTO `roles` (`roleID`, `name`, `display_name`, `description`, `permissions`, `is_system_role`, `is_active`, `created_at`, `updated_at`) VALUES
+(6, 'warehouse_manager', 'Warehouse Manager', 'Warehouse operations management',
+'["warehouse.read","warehouse.create","warehouse.update","warehouse.zones","warehouse.movements","warehouse.devices","warehouse.led","warehouse.reports"]',
+1, 1, NOW(), NOW());
+
+-- Warehouse Employee role (WarehouseCore) - Basic warehouse operations
+INSERT INTO `roles` (`roleID`, `name`, `display_name`, `description`, `permissions`, `is_system_role`, `is_active`, `created_at`, `updated_at`) VALUES
+(7, 'warehouse_employee', 'Warehouse Employee', 'Basic warehouse operations',
+'["warehouse.read","warehouse.movements","warehouse.devices","warehouse.led"]',
+1, 1, NOW(), NOW());
+
+--
+-- Assign admin roles to default admin user
+-- The default admin user (userID=1) gets both RentalCore admin and WarehouseCore admin roles
+--
+INSERT INTO `user_roles` (`userID`, `roleID`, `assigned_at`, `is_active`) VALUES
+(1, 1, NOW(), 1),  -- RentalCore admin role
+(1, 5, NOW(), 1);  -- WarehouseCore admin role
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
