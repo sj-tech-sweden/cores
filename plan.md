@@ -97,17 +97,35 @@ Wichtige Artefakte:
   - [x] Backend: `internal/handlers/handlers.go` stellt Read APIs (`GET /devices`, `/devices/tree`, `/devices/{id}`, Bewegungen, Status), Zonen- und Case-Integrationen bereit; Geräteserstellung nur via `POST /admin/products/{id}/devices` (Bulk) – keine generische Create/Update/Delete Endpunkte.
   - [x] Frontend: `web/src/pages/DevicesPage.tsx` + Modals (`DeviceDetailModal`, `DeviceTreeModal`, `ProductDevicesModal`) zeigen Gerätebaum, LED-Locate, Zonenjump; kein Formular für Stammdatenbearbeitung oder manuelle Erstellung.
   - [x] API Client (`web/src/lib/api.ts`) liefert Lese-/Baum-/Bewegungs-Endpunkte, es fehlen Mutations (Create/Edit/Delete, QR/Barcode Export, Massenimport).
-- [ ] **WarehouseCore Implementierung**
-  - [ ] Geräte-Stammdatenpflege (Create/Update/Delete) inkl. QR/Barcode-Generierung und Produkt-Zuweisung.
-  - [ ] API-Erweiterungen (Statusänderungen, Bulk-Operationen, Device-ID/Serial Erstellung, Export/Label Workflows).
-  - [ ] UI-Parität: Formularseiten, Listen-/Tree-Ansicht mit Such-/Filterfunktionen, Modals für QR/Barcode, CSV-Export etc.
-- [ ] **RentalCore deaktivieren**
-  - [ ] Entferne Web-UI & Templates (`devices_standalone`, Formulare, Detailseiten) + Navigationseinträge.
-  - [ ] Entferne Schreib-APIs/Handler; erhalte Read-Endpunkte für Jobs/Invoices/Cases (ggf. Proxy auf WarehouseCore?).
-  - [ ] Dokumentiere Wechsel (README/USER_GUIDE) und sorge für Weiterleitungen.
-- [ ] **Verifikation**
-  - [ ] WarehouseCore Tests (Go + Frontend) für neue Gerätefunktionen.
-  - [ ] Docker-Builds/Smoke Tests für beide Services.
+- [x] **WarehouseCore Implementierung**
+  - [x] Geräte-Stammdatenpflege (Create/Update/Delete) inkl. QR/Barcode-Generierung und Produkt-Zuweisung.
+    - Neue Datei: `internal/handlers/device_admin_handlers.go` (293 Zeilen)
+    - Endpoints: POST/PUT/DELETE /admin/devices, GET /admin/devices/{id}/qr, GET /admin/devices/{id}/barcode
+  - [x] API-Erweiterungen (Statusänderungen, Bulk-Operationen, Device-ID/Serial Erstellung, Export/Label Workflows).
+    - Bulk-Erstellung: bis zu 100 Geräte gleichzeitig mit Auto-Increment
+    - Integration mit DeviceAdminService und LabelService
+  - [x] UI-Parität: Formularseiten, Listen-/Tree-Ansicht mit Such-/Filterfunktionen, Modals für QR/Barcode, CSV-Export etc.
+    - Neue Komponente: `web/src/components/admin/DevicesTab.tsx` (980 Zeilen)
+    - Dual View (Tabelle/Karten), erweiterte Filter, Create/Edit/Delete/View Modals
+    - QR/Barcode Download-Buttons integriert
+- [x] **RentalCore deaktivieren**
+  - [x] Entferne Web-UI & Templates (`devices_standalone`, Formulare, Detailseiten) + Navigationseinträge.
+    - Gelöscht: devices_standalone.html, device_form.html, device_detail.html (1.734 Zeilen)
+    - Navigation aktualisiert: "Devices (WH)" Link zu WarehouseCore
+  - [x] Entferne Schreib-APIs/Handler; erhalte Read-Endpunkte für Jobs/Invoices/Cases.
+    - POST/PUT/DELETE Routen entfernt, GET-Endpunkte erhalten (/devices/:id, /devices/available, /devices/:id/stats)
+    - Redirect-Funktion `buildWarehouseDevicesURL()` implementiert
+  - [x] Dokumentiere Wechsel (README/USER_GUIDE) und sorge für Weiterleitungen.
+    - README aktualisiert (Version 2.39 Changelog)
+    - Redirect-Tests hinzugefügt (TestBuildWarehouseDevicesURL*)
+- [x] **Verifikation**
+  - [x] WarehouseCore Tests (Go + Frontend) für neue Gerätefunktionen.
+    - Go Build: ✅ erfolgreich
+    - Frontend Build: ✅ erfolgreich (npm run build)
+  - [x] Docker-Builds/Smoke Tests für beide Services.
+    - WarehouseCore: `nobentie/warehousecore:1.8` + `:latest`
+    - RentalCore: `nobentie/rentalcore:2.42` + `:latest`
+    - Beide zu Docker Hub gepusht
 
 ### Phase 3 – Scanner/Barcode Workflows
 - [ ] Identifiziere `scanner_handler.go`, `web/templates/scan_*`, WASM-Decoder etc.
@@ -158,8 +176,29 @@ Wichtige Artefakte:
     - `nobentie/warehousecore:1.7` + `:latest`
   - Compilation-Fehler behoben (repository.ErrNotFound, json import)
 
+### ✅ Phase 2 – Geräteverwaltung (ABGESCHLOSSEN)
+- [x] (Analyse) Device-Management Features komplett analysiert (Handler, Routen, Templates, APIs)
+- [x] (WarehouseCore) Vollständige Implementierung:
+  - Neue Datei: `internal/handlers/device_admin_handlers.go` (7 Endpoints)
+  - Neue Komponente: `web/src/components/admin/DevicesTab.tsx` (980 Zeilen)
+  - Features: CRUD, Bulk-Erstellung (bis 100 Geräte), QR/Barcode-Download, erweiterte Filter
+  - Admin-Tab "Geräte" im AdminPage integriert
+- [x] (RentalCore) Deaktiviert:
+  - `/devices` Routen leiten auf WarehouseCore um (buildWarehouseDevicesURL)
+  - Templates gelöscht: devices_standalone.html, device_form.html, device_detail.html (1.734 Zeilen)
+  - Read-APIs erhalten: /devices/:id, /devices/available, /devices/:id/stats
+  - Navigation aktualisiert: "Devices (WH)" Link
+  - Redirect-Tests hinzugefügt (TestBuildWarehouseDevicesURL*)
+- [x] (Tests/Docker) Erfolgreich abgeschlossen:
+  - Go-Tests bestanden (beide Services, 4/4 Tests passing)
+  - Frontend-Build erfolgreich (React + TypeScript + Vite)
+  - Docker Images gebaut und gepusht:
+    - `nobentie/warehousecore:1.8` + `:latest` (Commit c92f33d)
+    - `nobentie/rentalcore:2.42` + `:latest` (Commit d32a847)
+  - README/Dokumentation aktualisiert (Version 2.39 Changelog)
+
 ### ⏳ Weitere Phasen
-- [ ] Geräteverwaltung
+- [x] Geräteverwaltung - ABGESCHLOSSEN ✅
 - [ ] Scanner/Barcode
 - [ ] Kabelmanagement
 - [ ] Case-Management
@@ -172,12 +211,22 @@ Wichtige Artefakte:
 - ✅ Versionen: `nobentie/rentalcore:1.7` und `nobentie/warehousecore:1.7`
 - ✅ Alle Checkboxen in Phase 1 erledigt
 
-### Phase 2 - Geräteverwaltung (Nächster Schritt)
-1. **Analyse RentalCore Geräte-Features:** Handler, Routen, Templates für `/devices` identifizieren
-2. **WarehouseCore Erweiterung:** Geräte-CRUD-UI erstellen (analog zu ProductsTab)
-3. **API-Erweiterungen:** QR/Barcode-Generierung, Bulk-Operationen, Device-ID-Erstellung
-4. **RentalCore deaktivieren:** Device-Management auf WarehouseCore umleiten
-5. **Tests + Docker:** Wie Phase 1, neue Images bauen und pushen
-6. **Plan.md aktualisieren:** Phase 2 Status dokumentieren
+### Phase 2 - Geräteverwaltung - ABGESCHLOSSEN ✅ (2025-11-03)
+- ✅ Analyse abgeschlossen: Device-Handler, Routen, Templates identifiziert
+- ✅ WarehouseCore erweitert: DevicesTab mit vollständigem CRUD (Create/Edit/Delete/View)
+- ✅ API erweitert: 7 neue Admin-Endpoints inkl. QR/Barcode-Generierung
+- ✅ RentalCore deaktiviert: Redirect-Funktion, 3 Templates gelöscht (1.734 Zeilen)
+- ✅ Tests erfolgreich: Go-Tests + Frontend-Build für beide Services
+- ✅ Docker-Images gepusht:
+  - WarehouseCore: `nobentie/warehousecore:1.8` + `:latest`
+  - RentalCore: `nobentie/rentalcore:2.42` + `:latest`
+- ✅ Dokumentation: README, Changelogs, Redirect-Tests aktualisiert
+
+### Phase 3 - Scanner/Barcode Workflows (Nächster Schritt)
+1. **Analyse RentalCore Scanner:** `scanner_handler.go`, `web/templates/scan_*`, WASM-Decoder
+2. **WarehouseCore prüfen:** Vorhandenes React UI für Scanner-Funktion (JobsPage bereits vorhanden?)
+3. **Migration entscheiden:** Entweder migrieren oder als shared service belassen
+4. **Tests + Docker:** Neue Images bauen falls Änderungen nötig
+5. **Plan.md aktualisieren:** Phase 3 Status dokumentieren
 
 > Bei jedem Schritt Plan aktualisieren, damit andere Agenten sofort sehen, wo wir stehen (Commits, Images, offene Punkte).
