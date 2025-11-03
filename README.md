@@ -33,7 +33,7 @@ This repository contains the **deployment configuration** for the Tsunami Events
 - Revenue analytics
 
 **Repository:** [git.server-nt.de/ntielmann/rentalcore](https://git.server-nt.de/ntielmann/rentalcore)
-**Docker Image:** `nobentie/rentalcore:latest`
+**Docker Image:** `nobentie/rentalcore:1.55` (`latest`)
 **Port:** 8081
 
 ### **WarehouseCore** - Warehouse Management
@@ -45,7 +45,7 @@ This repository contains the **deployment configuration** for the Tsunami Events
 - Real-time inventory status
 
 **Repository:** [git.server-nt.de/ntielmann/warehousecore](https://git.server-nt.de/ntielmann/warehousecore)
-**Docker Image:** `nobentie/warehousecore:latest`
+**Docker Image:** `nobentie/warehousecore:2.51` (`latest`)
 **Port:** 8082
 
 ### **MySQL Database** - Shared Data Layer
@@ -387,6 +387,14 @@ curl http://localhost:8082/health
 ---
 
 ## 🔄 Updates & Maintenance
+
+### Latest Release (2025-11-01)
+
+- **RentalCore 1.55**  
+  - Product-first job builder now shared between create/edit flows with availability awareness.  
+  - Device write APIs respond with `410 Gone`, guiding users to WarehouseCore for inventory changes.
+- **WarehouseCore 2.51**  
+  - Includes the latest device catalog endpoints consumed by RentalCore’s product assignment workflow.
 
 ### Update Docker Images
 

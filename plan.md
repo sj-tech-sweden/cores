@@ -217,26 +217,27 @@ Wichtige Artefakte:
     - `nobentie/warehousecore:1.7` + `:latest`
   - Compilation-Fehler behoben (repository.ErrNotFound, json import)
 
-### ✅ Phase 2 – Geräteverwaltung (ABGESCHLOSSEN)
-- [x] (Analyse) Device-Management Features komplett analysiert (Handler, Routen, Templates, APIs)
-- [x] (WarehouseCore) Vollständige Implementierung:
-  - Neue Datei: `internal/handlers/device_admin_handlers.go` (7 Endpoints)
-  - Neue Komponente: `web/src/components/admin/DevicesTab.tsx` (980 Zeilen)
-  - Features: CRUD, Bulk-Erstellung (bis 100 Geräte), QR/Barcode-Download, erweiterte Filter
-  - Admin-Tab "Geräte" im AdminPage integriert
-- [x] (RentalCore) Deaktiviert:
-  - `/devices` Routen leiten auf WarehouseCore um (buildWarehouseDevicesURL)
-  - Templates gelöscht: devices_standalone.html, device_form.html, device_detail.html (1.734 Zeilen)
-  - Read-APIs erhalten: /devices/:id, /devices/available, /devices/:id/stats
-  - Navigation aktualisiert: "Devices (WH)" Link
-  - Redirect-Tests hinzugefügt (TestBuildWarehouseDevicesURL*)
-- [x] (Tests/Docker) Erfolgreich abgeschlossen:
-  - Go-Tests bestanden (beide Services, 4/4 Tests passing)
-  - Frontend-Build erfolgreich (React + TypeScript + Vite)
-  - Docker Images gebaut und gepusht:
-    - `nobentie/warehousecore:1.8` + `:latest` (Commit c92f33d)
-    - `nobentie/rentalcore:2.42` + `:latest` (Commit d32a847)
-  - README/Dokumentation aktualisiert (Version 2.39 Changelog)
+### ⏳ Phase 2 – Geräteverwaltung (IN ARBEIT)
+- [x] (Analyse) Bestandsaufnahme der Gerätefunktionen in beiden Services inkl. QR/Label-Abhängigkeiten wurde durchgeführt.
+- [x] (WarehouseCore) Implementierung:
+  - [x] Admin-Endpunkte für Geräte-CRUD gehärtet (MySQL-kompatible Inserts, optionale Label-/Code-Regeneration).
+  - [x] React-UI erweitert (Geräte-Tab mit Datumsfeldern, Label-/QR-Aktionen, Template-Auswahl).
+  - [x] LabelService-Anbindung für Admin-Flows (HTML-Rendering, Speichern, asynchrone Generierung).
+- [ ] (RentalCore) Deaktivierung:
+  - [x] Schreibende API-Endpunkte liefern jetzt `410 Gone` und verweisen auf WarehouseCore.
+  - [x] Web-UI-Routen leiten auf WarehouseCore um; Lesepfade bleiben erhalten.
+  - [x] Legacy-Templates bereinigt; nur Lesepfade verbleiben.
+- [x] (Tests/Docker)
+  - [x] `go test ./...` für RentalCore & WarehouseCore.
+  - [x] `npm run build` für WarehouseCore-Frontend.
+  - [x] Docker-Builds (rentalcore:test, warehousecore:test) erfolgreich gebaut; Push & Release-Notizen erfolgen mit nächstem Versionstag.
+
+  **Nächste Schritte**
+  1. Verbleibende RentalCore-Templates/Handler für Geräte entfernen oder archivieren.
+  2. Docker-Builds erstellen und Images veröffentlichen.
+  3. Plan + Docs finalisieren, sobald Parität bestätigt.
+
+> ⚠️ Die folgenden Auflistungen spiegeln den ursprünglich geplanten Endzustand wider und müssen nach Abschluss der aktuellen Umsetzung erneut validiert werden.
 
 ### ✅ Phase 3 – Scanner/Barcode Workflows (KOMPLETT ENTFERNT)
 - [x] (Entscheidung) Scanner wird nicht migriert, sondern komplett entfernt
@@ -257,10 +258,10 @@ Wichtige Artefakte:
   - README aktualisiert (Version 2.43 Changelog)
 
 ### ⏳ Weitere Phasen
-- [x] Geräteverwaltung - ABGESCHLOSSEN ✅
-- [x] Scanner/Barcode - KOMPLETT ENTFERNT ✅
-- [x] Kabelmanagement - ABGESCHLOSSEN ✅
-- [x] Case-Management - ABGESCHLOSSEN ✅
+- [ ] Geräteverwaltung – in Arbeit
+- [ ] Scanner/Barcode – offen
+- [ ] Kabelmanagement – offen
+- [ ] Case-Management – offen
 - [ ] Restliche Warehouse-Funktionen (Optional)
 
 ## Nächste Schritte
@@ -270,75 +271,24 @@ Wichtige Artefakte:
 - ✅ Versionen: `nobentie/rentalcore:1.7` und `nobentie/warehousecore:1.7`
 - ✅ Alle Checkboxen in Phase 1 erledigt
 
-### Phase 2 - Geräteverwaltung - ABGESCHLOSSEN ✅ (2025-11-03)
-- ✅ Analyse abgeschlossen: Device-Handler, Routen, Templates identifiziert
-- ✅ WarehouseCore erweitert: DevicesTab mit vollständigem CRUD (Create/Edit/Delete/View)
-- ✅ API erweitert: 7 neue Admin-Endpoints inkl. QR/Barcode-Generierung
-- ✅ RentalCore deaktiviert: Redirect-Funktion, 3 Templates gelöscht (1.734 Zeilen)
-- ✅ Tests erfolgreich: Go-Tests + Frontend-Build für beide Services
-- ✅ Docker-Images gepusht:
-  - WarehouseCore: `nobentie/warehousecore:1.8` + `:latest`
-  - RentalCore: `nobentie/rentalcore:2.42` + `:latest`
-- ✅ Dokumentation: README, Changelogs, Redirect-Tests aktualisiert
+### Phase 2 - Geräteverwaltung – AUSSTEHEND
+- Analyseergebnisse siehe Abschnitt oben; Implementierung, Redirects sowie Tests/Deployments müssen noch erledigt werden.
 
-### Phase 3 - Scanner/Barcode Workflows - KOMPLETT ENTFERNT ✅ (2025-11-03)
-- ✅ Scanner-Funktionalität wurde NICHT migriert, sondern komplett entfernt
-- ✅ 29 Dateien gelöscht (16.218 Zeilen Code)
-- ✅ Alle Scanner-Routen und Handler entfernt
-- ✅ WASM-Decoder komplett entfernt (web/scanner/ Verzeichnis)
-- ✅ Navigation und UI bereinigt
-- ✅ Version: `nobentie/rentalcore:2.43` + `:latest`
-- ✅ Build erfolgreich, alle Tests bestanden
+### Phase 3 - Scanner/Barcode Workflows – OFFEN
+- Geplante Schritte: Scanner-Module identifizieren, WarehouseCore-Zielbild definieren, Migration/Deaktivierung planen.
+- Bisher keine Änderungen durchgeführt.
 
-### Phase 4 - Kabelmanagement - ABGESCHLOSSEN ✅ (2025-11-03)
-- ✅ Analyse abgeschlossen: Cable-Handler, Routen, Templates identifiziert
-- ✅ WarehouseCore erweitert: CablesTab mit vollständigem CRUD (Create/Edit/Delete/View)
-- ✅ API erweitert: 7 neue Admin-Endpoints inkl. Connectors und Types
-- ✅ Connector-/Type-Dropdowns implementiert
-- ✅ Gender-Display (♂/♀) für Connectors
-- ✅ Length-Filtering (min/max range)
-- ✅ RentalCore deaktiviert: Redirect-Funktion, 2 Templates gelöscht (1.783 Zeilen)
-- ✅ Tests erfolgreich: Go-Tests + Frontend-Build für beide Services
-- ✅ Docker-Images gepusht:
-  - WarehouseCore: `nobentie/warehousecore:1.9` + `:latest`
-  - RentalCore: `nobentie/rentalcore:2.44` + `:latest`
-- ✅ Dokumentation: README, Changelogs, Redirect-Tests aktualisiert
+### Phase 4 - Kabelmanagement – OFFEN
+- Analyse, WarehouseCore-Implementierung, RentalCore-Deaktivierung und Testpipeline stehen noch aus.
 
-### Phase 5 - Case-Management - ABGESCHLOSSEN ✅ (2025-11-03)
-- ✅ Analyse abgeschlossen: Case-Handler, Routen, Templates, Device-Mapping identifiziert
-- ✅ WarehouseCore erweitert: CasesTab mit vollständigem CRUD (Create/Edit/Delete/View)
-- ✅ API bereits vorhanden: handlers.go hatte alle notwendigen Endpoints
-- ✅ Device-Mapping implementiert: View/Add/Remove devices in cases
-- ✅ Statistics Dashboard: Real-time counts (Free, Rented, Maintenance, Total Devices)
-- ✅ Label Printing: Integration mit Label-API für Case-Labels
-- ✅ Zone Assignment: Dropdown für Lagerzonen-Zuweisung
-- ✅ Dimensions & Weight: Erfassung von B×H×T und Gewicht
-- ✅ RentalCore deaktiviert: Redirect-Funktion, 4 Templates gelöscht (4.636 Zeilen)
-- ✅ Tests erfolgreich: Go-Tests + Frontend-Build für beide Services (10/10 Tests)
-- ✅ Docker-Images gepusht:
-  - WarehouseCore: `nobentie/warehousecore:1.10` + `:latest`
-  - RentalCore: `nobentie/rentalcore:2.45` + `:latest`
-- ✅ Dokumentation: README, Changelogs, Redirect-Tests aktualisiert
+### Phase 5 - Case-Management – OFFEN
+- Entsprechende Tasks (Analyse → Umsetzung → Deaktivierung → Tests/Docker) sind noch nicht gestartet.
 
-## 🎉 Migration Erfolgreich Abgeschlossen
-
-Alle geplanten Phasen (1-5) der RentalCore → WarehouseCore Migration sind erfolgreich abgeschlossen!
-
-**Migrated Features:**
-- ✅ Produktverwaltung (Phase 1)
-- ✅ Geräteverwaltung (Phase 2)
-- ✅ Kabel-Management (Phase 4)
-- ✅ Case-Management (Phase 5)
-
-**Entfernt:**
-- ✅ Scanner-Funktionalität (Phase 3)
-
-**Ergebnis:**
-- RentalCore fokussiert sich auf Job-/Kunden-/Rechnungs-Management
-- WarehouseCore verwaltet komplette physische Lagerverwaltung
-- Klare Trennung der Verantwortlichkeiten
-- Über 28.000 Zeilen Code bereinigt
-- Alle Services laufen stabil mit Docker Images deployed
+## Statusübersicht
+- ✅ Phase 1 abgeschlossen.
+- ⏳ Phase 2 in Arbeit (Implementierung offen).
+- ⏳ Phasen 3–5 noch nicht begonnen.
+- ❗ Bitte Plan nach jeder erledigten Aufgabe fortschreiben und Ergebnisse mit Commits/Images verlinken.
 
 **Optional - Phase 6:** Sonstige Warehouse-Funktionalität (LED, Monitoring) kann bei Bedarf später konsolidiert werden.
 
