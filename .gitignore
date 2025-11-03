@@ -2,7 +2,6 @@
 .env
 
 # Project-specific directories (these have their own repos)
-rentalcore/
 warehousecore/
 
 # Temporary files
