@@ -137,10 +137,27 @@ Wichtige Artefakte:
 - [x] Docker Image: nobentie/rentalcore:2.43 + :latest gepusht
 - [x] Ergebnis: 16.218 Zeilen Code entfernt, Build erfolgreich, Tests bestanden
 
-### Phase 4 – Kabel-Management
-- [ ] Handler/Routes (z.B. `/cables`), Templates, Services.
-- [ ] WarehouseCore Module erstellen (Admin UI + API).
-- [ ] Entferne aus RentalCore.
+### Phase 4 – Kabel-Management (ABGESCHLOSSEN)
+- [x] (Analyse) Cable-Management Features analysiert (Handler, Routen, Templates, APIs)
+- [x] (WarehouseCore) Vollständige Implementierung:
+  - Neue Datei: `internal/handlers/cable_admin_handlers.go` (7 Endpoints)
+  - Neue Komponente: `web/src/components/admin/CablesTab.tsx` (672 Zeilen)
+  - Features: CRUD, Connector/Type Dropdowns, Length Filtering, Gender Display (♂/♀)
+  - Admin-Tab "Kabel" im AdminPage integriert
+  - API Client erweitert (cablesAdminApi mit 7 Funktionen)
+- [x] (RentalCore) Deaktiviert:
+  - `/cables` Routen leiten auf WarehouseCore um (buildWarehouseCablesURL)
+  - Templates gelöscht: cables_standalone.html, cable_form.html (1.783 Zeilen)
+  - Alle API-Routen entfernt (POST/PUT/DELETE)
+  - Navigation aktualisiert: "Cables (WH)" Link
+  - Redirect-Tests hinzugefügt (TestBuildWarehouseCablesURL*)
+- [x] (Tests/Docker) Erfolgreich abgeschlossen:
+  - Go-Tests bestanden (beide Services, 7/7 Tests passing)
+  - Frontend-Build erfolgreich (React + TypeScript + Vite)
+  - Docker Images gebaut und gepusht:
+    - `nobentie/warehousecore:1.9` + `:latest` (Commit: cable mgmt)
+    - `nobentie/rentalcore:2.44` + `:latest` (Commit 3186d76)
+  - README/Dokumentation aktualisiert (Version 2.44 Changelog)
 
 ### Phase 5 – Case-Management
 - [ ] Handler/Routes (z.B. `/cases`), Templates.
@@ -223,7 +240,7 @@ Wichtige Artefakte:
 ### ⏳ Weitere Phasen
 - [x] Geräteverwaltung - ABGESCHLOSSEN ✅
 - [x] Scanner/Barcode - KOMPLETT ENTFERNT ✅
-- [ ] Kabelmanagement
+- [x] Kabelmanagement - ABGESCHLOSSEN ✅
 - [ ] Case-Management
 - [ ] Restliche Warehouse-Funktionen
 
@@ -254,11 +271,26 @@ Wichtige Artefakte:
 - ✅ Version: `nobentie/rentalcore:2.43` + `:latest`
 - ✅ Build erfolgreich, alle Tests bestanden
 
-### Phase 4 - Kabelmanagement (Nächster Schritt)
-1. **Analyse RentalCore Kabel:** `cable_handler.go`, Templates, Routen
-2. **WarehouseCore erweitern:** Cable-CRUD-UI erstellen (analog zu ProductsTab/DevicesTab)
-3. **RentalCore deaktivieren:** Kabel-Management auf WarehouseCore umleiten
-4. **Tests + Docker:** Neue Images bauen und pushen
-5. **Plan.md aktualisieren:** Phase 4 Status dokumentieren
+### Phase 4 - Kabelmanagement - ABGESCHLOSSEN ✅ (2025-11-03)
+- ✅ Analyse abgeschlossen: Cable-Handler, Routen, Templates identifiziert
+- ✅ WarehouseCore erweitert: CablesTab mit vollständigem CRUD (Create/Edit/Delete/View)
+- ✅ API erweitert: 7 neue Admin-Endpoints inkl. Connectors und Types
+- ✅ Connector-/Type-Dropdowns implementiert
+- ✅ Gender-Display (♂/♀) für Connectors
+- ✅ Length-Filtering (min/max range)
+- ✅ RentalCore deaktiviert: Redirect-Funktion, 2 Templates gelöscht (1.783 Zeilen)
+- ✅ Tests erfolgreich: Go-Tests + Frontend-Build für beide Services
+- ✅ Docker-Images gepusht:
+  - WarehouseCore: `nobentie/warehousecore:1.9` + `:latest`
+  - RentalCore: `nobentie/rentalcore:2.44` + `:latest`
+- ✅ Dokumentation: README, Changelogs, Redirect-Tests aktualisiert
+
+### Phase 5 - Case-Management (Nächster Schritt)
+1. **Analyse RentalCore Cases:** `case_handler.go`, Templates, Routen
+2. **WarehouseCore erweitern:** Case-CRUD-UI erstellen (analog zu anderen Tabs)
+3. **Case-Device-Mapping:** Verwaltung der Geräte-Zuordnung zu Cases
+4. **RentalCore deaktivieren:** Case-Management auf WarehouseCore umleiten
+5. **Tests + Docker:** Neue Images bauen und pushen
+6. **Plan.md aktualisieren:** Phase 5 Status dokumentieren
 
 > Bei jedem Schritt Plan aktualisieren, damit andere Agenten sofort sehen, wo wir stehen (Commits, Images, offene Punkte).
