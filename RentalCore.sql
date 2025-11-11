@@ -1109,6 +1109,30 @@ CREATE TABLE `job_attachments` (
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `job_edit_sessions`
+--
+
+CREATE TABLE `job_edit_sessions` (
+  `session_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `job_id` int NOT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `username` varchar(255) NOT NULL,
+  `display_name` varchar(255) NOT NULL,
+  `started_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_seen` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`session_id`),
+  UNIQUE KEY `uk_job_edit_sessions_job_user` (`job_id`,`user_id`),
+  KEY `idx_job_edit_sessions_job` (`job_id`),
+  KEY `idx_job_edit_sessions_user` (`user_id`),
+  KEY `idx_job_edit_sessions_last_seen` (`last_seen`),
+  CONSTRAINT `fk_job_edit_sessions_job` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
+  CONSTRAINT `fk_job_edit_sessions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `job_device_events`
 --
 
