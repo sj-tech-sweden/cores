@@ -2048,6 +2048,7 @@ CREATE TABLE `pdf_extraction_items` (
   `unit_price` decimal(12,2) DEFAULT NULL COMMENT 'Extracted unit price',
   `line_total` decimal(12,2) DEFAULT NULL COMMENT 'Extracted line total',
   `mapped_product_id` int DEFAULT NULL COMMENT 'Linked product after mapping',
+  `mapped_package_id` int DEFAULT NULL COMMENT 'Linked product package after mapping',
   `mapping_confidence` decimal(5,2) DEFAULT NULL COMMENT 'Mapping confidence 0-100',
   `mapping_status` enum('pending','auto_mapped','user_confirmed','user_rejected','needs_creation') COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
   `user_notes` text COLLATE utf8mb4_unicode_ci,
@@ -2056,6 +2057,7 @@ CREATE TABLE `pdf_extraction_items` (
   PRIMARY KEY (`item_id`),
   KEY `idx_pdf_items_extraction` (`extraction_id`),
   KEY `idx_pdf_items_product` (`mapped_product_id`),
+  KEY `idx_pdf_items_package` (`mapped_package_id`),
   KEY `idx_pdf_items_status` (`mapping_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Individual line items extracted from PDFs';
 
@@ -3676,7 +3678,8 @@ ALTER TABLE `pdf_extractions`
 --
 ALTER TABLE `pdf_extraction_items`
   ADD CONSTRAINT `fk_pdf_items_extraction` FOREIGN KEY (`extraction_id`) REFERENCES `pdf_extractions` (`extraction_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_pdf_items_product` FOREIGN KEY (`mapped_product_id`) REFERENCES `products` (`productID`) ON DELETE SET NULL;
+  ADD CONSTRAINT `fk_pdf_items_product` FOREIGN KEY (`mapped_product_id`) REFERENCES `products` (`productID`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_pdf_items_package` FOREIGN KEY (`mapped_package_id`) REFERENCES `product_packages` (`package_id`) ON DELETE SET NULL;
 
 --
 -- Constraints der Tabelle `pdf_product_mappings`
@@ -3705,3 +3708,56 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+--
+-- Table structure for table `product_packages`
+--
+
+DROP TABLE IF EXISTS `product_packages`;
+CREATE TABLE `product_packages` (
+  `package_id` int NOT NULL AUTO_INCREMENT,
+  `package_code` varchar(32) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text,
+  `price` decimal(10,2) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`package_id`),
+  UNIQUE KEY `uq_product_package_code` (`package_code`),
+  KEY `idx_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `product_package_items`
+--
+
+DROP TABLE IF EXISTS `product_package_items`;
+CREATE TABLE `product_package_items` (
+  `package_item_id` int NOT NULL AUTO_INCREMENT,
+  `package_id` int NOT NULL,
+  `product_id` int NOT NULL,
+  `quantity` int NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`package_item_id`),
+  UNIQUE KEY `unique_package_product` (`package_id`,`product_id`),
+  KEY `idx_package_id` (`package_id`),
+  KEY `idx_product_id` (`product_id`),
+  CONSTRAINT `product_package_items_ibfk_1` FOREIGN KEY (`package_id`) REFERENCES `product_packages` (`package_id`) ON DELETE CASCADE,
+  CONSTRAINT `product_package_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`productID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Table structure for table `product_package_aliases`
+--
+
+DROP TABLE IF EXISTS `product_package_aliases`;
+CREATE TABLE `product_package_aliases` (
+  `alias_id` int NOT NULL AUTO_INCREMENT,
+  `package_id` int NOT NULL,
+  `alias` varchar(191) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`alias_id`),
+  UNIQUE KEY `uq_package_alias` (`package_id`,`alias`),
+  KEY `idx_alias` (`alias`),
+  CONSTRAINT `product_package_aliases_ibfk_1` FOREIGN KEY (`package_id`) REFERENCES `product_packages` (`package_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
