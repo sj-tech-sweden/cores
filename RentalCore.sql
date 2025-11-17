@@ -1021,6 +1021,48 @@ CREATE TABLE `jobdevices` (
 -- --------------------------------------------------------
 
 --
+-- Tabellenstruktur für Tabelle `job_packages`
+--
+
+CREATE TABLE `job_packages` (
+  `job_package_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `job_id` int NOT NULL,
+  `package_id` int NOT NULL COMMENT 'References equipment_packages.packageID',
+  `quantity` int UNSIGNED NOT NULL DEFAULT '1',
+  `custom_price` decimal(12,2) DEFAULT NULL COMMENT 'Override package price for this job',
+  `added_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `added_by` bigint UNSIGNED DEFAULT NULL,
+  `notes` text COMMENT 'Special notes for this package assignment',
+  PRIMARY KEY (`job_package_id`),
+  KEY `idx_job_packages_job` (`job_id`),
+  KEY `idx_job_packages_package` (`package_id`),
+  KEY `idx_job_packages_added_by` (`added_by`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Packages assigned to jobs as single line items';
+
+-- --------------------------------------------------------
+
+--
+-- Tabellenstruktur für Tabelle `job_package_reservations`
+--
+
+CREATE TABLE `job_package_reservations` (
+  `reservation_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `job_package_id` bigint UNSIGNED NOT NULL COMMENT 'References job_packages',
+  `device_id` varchar(50) NOT NULL COMMENT 'Reserved device',
+  `quantity` int UNSIGNED NOT NULL DEFAULT '1' COMMENT 'Number of this device reserved',
+  `reservation_status` enum('reserved','assigned','released') NOT NULL DEFAULT 'reserved',
+  `reserved_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `assigned_at` timestamp NULL DEFAULT NULL,
+  `released_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`reservation_id`),
+  KEY `idx_job_pkg_res_job_package` (`job_package_id`),
+  KEY `idx_job_pkg_res_device` (`device_id`),
+  KEY `idx_job_pkg_res_status` (`reservation_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Track device reservations for package assignments';
+
+-- --------------------------------------------------------
+
+--
 -- Tabellenstruktur für Tabelle `jobs`
 --
 
@@ -2048,7 +2090,7 @@ CREATE TABLE `pdf_extraction_items` (
   `unit_price` decimal(12,2) DEFAULT NULL COMMENT 'Extracted unit price',
   `line_total` decimal(12,2) DEFAULT NULL COMMENT 'Extracted line total',
   `mapped_product_id` int DEFAULT NULL COMMENT 'Linked product after mapping',
-  `mapped_package_id` int DEFAULT NULL COMMENT 'Linked product package after mapping',
+  `mapped_package_id` int DEFAULT NULL COMMENT 'Linked package after mapping',
   `mapping_confidence` decimal(5,2) DEFAULT NULL COMMENT 'Mapping confidence 0-100',
   `mapping_status` enum('pending','auto_mapped','user_confirmed','user_rejected','needs_creation') COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
   `user_notes` text COLLATE utf8mb4_unicode_ci,
@@ -2094,6 +2136,32 @@ CREATE TABLE `pdf_product_mappings` (
 -- Table structure for table `pdf_customer_mappings`
 --
 
+CREATE TABLE `pdf_package_mappings` (
+  `mapping_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `pdf_package_text` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Text from PDF',
+  `normalized_text` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Cleaned/normalized version',
+  `package_id` int NOT NULL COMMENT 'Mapped package ID',
+  `mapping_type` enum('exact','fuzzy','manual') COLLATE utf8mb4_unicode_ci DEFAULT 'manual',
+  `confidence_score` decimal(5,2) DEFAULT NULL COMMENT 'Mapping confidence 0-100',
+  `usage_count` int DEFAULT '0' COMMENT 'How many times this mapping was used',
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  `created_by` bigint UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_active` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`mapping_id`),
+  KEY `idx_pdf_package_mappings_package` (`package_id`),
+  KEY `idx_pdf_package_mappings_text` (`pdf_package_text`),
+  KEY `idx_pdf_package_mappings_normalized` (`normalized_text`),
+  KEY `idx_pdf_package_mappings_type` (`mapping_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Saved mappings between PDF text and packages';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pdf_customer_mappings`
+--
+
 CREATE TABLE `pdf_customer_mappings` (
   `mapping_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
   `pdf_customer_text` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Customer text from PDF',
@@ -2112,6 +2180,30 @@ CREATE TABLE `pdf_customer_mappings` (
   KEY `idx_pdf_customer_mappings_customer` (`customer_id`),
   KEY `idx_pdf_customer_mappings_normalized` (`normalized_text`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Saved mappings between PDF text and customers';
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pdf_mapping_events`
+--
+
+CREATE TABLE `pdf_mapping_events` (
+  `event_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `extraction_id` bigint UNSIGNED DEFAULT NULL,
+  `item_id` bigint UNSIGNED DEFAULT NULL,
+  `pdf_product_text` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `normalized_text` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `product_id` int DEFAULT NULL,
+  `package_id` int DEFAULT NULL,
+  `created_by` bigint UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`event_id`),
+  KEY `idx_mapping_events_extraction` (`extraction_id`),
+  KEY `idx_mapping_events_product` (`product_id`),
+  KEY `idx_mapping_events_package` (`package_id`),
+  KEY `idx_mapping_events_text` (`pdf_product_text`),
+  KEY `idx_mapping_events_normalized` (`normalized_text`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Audit trail for manual or auto PDF mappings';
 
 -- --------------------------------------------------------
 
@@ -3512,6 +3604,21 @@ ALTER TABLE `jobdevices`
   ADD CONSTRAINT `jobdevices_ibfk_3` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 --
+-- Constraints der Tabelle `job_packages`
+--
+ALTER TABLE `job_packages`
+  ADD CONSTRAINT `job_packages_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
+  ADD CONSTRAINT `job_packages_ibfk_2` FOREIGN KEY (`package_id`) REFERENCES `equipment_packages` (`packageID`) ON DELETE RESTRICT,
+  ADD CONSTRAINT `job_packages_ibfk_3` FOREIGN KEY (`added_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL;
+
+--
+-- Constraints der Tabelle `job_package_reservations`
+--
+ALTER TABLE `job_package_reservations`
+  ADD CONSTRAINT `job_package_reservations_ibfk_1` FOREIGN KEY (`job_package_id`) REFERENCES `job_packages` (`job_package_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `job_package_reservations_ibfk_2` FOREIGN KEY (`device_id`) REFERENCES `devices` (`deviceID`) ON DELETE CASCADE;
+
+--
 -- Constraints der Tabelle `jobs`
 --
 ALTER TABLE `jobs`
@@ -3708,56 +3815,3 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
---
--- Table structure for table `product_packages`
---
-
-DROP TABLE IF EXISTS `product_packages`;
-CREATE TABLE `product_packages` (
-  `package_id` int NOT NULL AUTO_INCREMENT,
-  `package_code` varchar(32) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `description` text,
-  `price` decimal(10,2) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`package_id`),
-  UNIQUE KEY `uq_product_package_code` (`package_code`),
-  KEY `idx_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `product_package_items`
---
-
-DROP TABLE IF EXISTS `product_package_items`;
-CREATE TABLE `product_package_items` (
-  `package_item_id` int NOT NULL AUTO_INCREMENT,
-  `package_id` int NOT NULL,
-  `product_id` int NOT NULL,
-  `quantity` int NOT NULL DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`package_item_id`),
-  UNIQUE KEY `unique_package_product` (`package_id`,`product_id`),
-  KEY `idx_package_id` (`package_id`),
-  KEY `idx_product_id` (`product_id`),
-  CONSTRAINT `product_package_items_ibfk_1` FOREIGN KEY (`package_id`) REFERENCES `product_packages` (`package_id`) ON DELETE CASCADE,
-  CONSTRAINT `product_package_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`productID`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Table structure for table `product_package_aliases`
---
-
-DROP TABLE IF EXISTS `product_package_aliases`;
-CREATE TABLE `product_package_aliases` (
-  `alias_id` int NOT NULL AUTO_INCREMENT,
-  `package_id` int NOT NULL,
-  `alias` varchar(191) NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`alias_id`),
-  UNIQUE KEY `uq_package_alias` (`package_id`,`alias`),
-  KEY `idx_alias` (`alias`),
-  CONSTRAINT `product_package_aliases_ibfk_1` FOREIGN KEY (`package_id`) REFERENCES `product_packages` (`package_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
