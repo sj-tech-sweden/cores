@@ -241,6 +241,19 @@ LED_MQTT_USER=your_cloud_username
 LED_MQTT_PASS=your_cloud_password
 ```
 
+#### **Nextcloud File Pool (RentalCore)**
+
+Enable the file pool to sync uploads with Nextcloud via WebDAV. Leave these empty to disable Nextcloud integration.
+
+```env
+NEXTCLOUD_WEBDAV_URL=https://cloud.example.com/remote.php/dav/files/username
+NEXTCLOUD_WEBDAV_USER=your-nextcloud-user
+NEXTCLOUD_WEBDAV_PASSWORD=nextcloud-app-password
+NEXTCLOUD_WEBDAV_BASE_PATH=rentalcore-filepool
+# Optional: skip initial backfill of existing WebDAV files on startup
+# NEXTCLOUD_BACKFILL_ON_START=false
+```
+
 **Important:** The same MQTT credentials must be used in ESP32 firmware (`secrets.h`) for LED control.
 
 ---
