@@ -90,7 +90,12 @@ services:
       DB_NAME: "${DB_NAME}"
       # App port (adjust if the app expects a different env var)
       PORT: "8082"
-      # LED MQTT Configuration
+      # Nextcloud File Pool (shared with RentalCore) for product pictures
+      NEXTCLOUD_WEBDAV_URL: "${NEXTCLOUD_WEBDAV_URL:-}"
+      NEXTCLOUD_WEBDAV_USER: "${NEXTCLOUD_WEBDAV_USER:-}"
+      NEXTCLOUD_WEBDAV_PASSWORD: "${NEXTCLOUD_WEBDAV_PASSWORD:-}"
+      NEXTCLOUD_WEBDAV_BASE_PATH: "${NEXTCLOUD_WEBDAV_BASE_PATH:-rentalcore-filepool}"
+    # LED MQTT Configuration
       LED_MQTT_HOST: "${LED_MQTT_HOST:-mosquitto}"
       LED_MQTT_PORT: "${LED_MQTT_PORT:-1883}"
       LED_MQTT_TLS: "${LED_MQTT_TLS:-false}"
