@@ -1,67 +1,72 @@
--- phpMyAdmin SQL Dump
--- version 5.2.2
--- https://www.phpmyadmin.net/
+-- MySQL dump 10.13  Distrib 9.5.0, for Linux (x86_64)
 --
--- Host: mysql
--- Erstellungszeit: 25. Okt 2025 um 21:57
--- Server-Version: 9.2.0
--- PHP-Version: 8.2.27
-
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+00:00";
-
+-- Host: localhost    Database: RentalCore
+-- ------------------------------------------------------
+-- Server version	9.5.0
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Datenbank: `RentalCore`
+-- Table structure for table `analytics_cache`
 --
 
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `analytics_cache`
---
-
+DROP TABLE IF EXISTS `analytics_cache`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `analytics_cache` (
-  `cacheID` int NOT NULL,
+  `cacheID` int NOT NULL AUTO_INCREMENT,
   `metric_name` varchar(100) NOT NULL,
   `period_type` enum('daily','weekly','monthly','yearly') NOT NULL,
   `period_date` date NOT NULL,
   `value` decimal(15,4) DEFAULT NULL,
   `metadata` json DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`cacheID`),
+  UNIQUE KEY `unique_metric` (`metric_name`,`period_type`,`period_date`),
+  KEY `idx_metric_period` (`metric_name`,`period_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `app_settings`
+-- Table structure for table `app_settings`
 --
 
+DROP TABLE IF EXISTS `app_settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `app_settings` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `scope` enum('global','warehousecore') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'warehousecore' COMMENT 'Setting scope',
   `k` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Setting key',
   `v` json NOT NULL COMMENT 'Setting value (JSON)',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Application configuration settings';
-
--- --------------------------------------------------------
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_scope_key` (`scope`,`k`),
+  KEY `idx_setting_key` (`k`)
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Application configuration settings';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `archived_documents`
+-- Table structure for table `archived_documents`
 --
 
+DROP TABLE IF EXISTS `archived_documents`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `archived_documents` (
-  `id` bigint UNSIGNED NOT NULL,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `document_type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `document_id` bigint UNSIGNED NOT NULL,
+  `document_id` bigint unsigned NOT NULL,
   `original_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
   `archived_data` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
   `archived_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -71,21 +76,29 @@ CREATE TABLE `archived_documents` (
   `compression_used` tinyint(1) DEFAULT '0',
   `encryption_used` tinyint(1) DEFAULT '0',
   `archive_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_document` (`document_type`,`document_id`),
+  KEY `idx_archived_docs_type` (`document_type`),
+  KEY `idx_archived_docs_retention` (`retention_until`),
+  KEY `idx_archived_docs_hash` (`original_hash`),
+  KEY `idx_archived_documents_legal` (`legal_basis`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `audit_events`
+-- Table structure for table `audit_events`
 --
 
+DROP TABLE IF EXISTS `audit_events`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `audit_events` (
-  `id` bigint UNSIGNED NOT NULL,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `event_type` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
   `entity_type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `entity_id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
+  `entity_id` bigint unsigned NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
   `action` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
   `changes` json DEFAULT NULL,
   `metadata` json DEFAULT NULL,
@@ -103,18 +116,32 @@ CREATE TABLE `audit_events` (
   `event_hash` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
   `previous_hash` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_compliant` tinyint(1) DEFAULT '1',
-  `retention_date` datetime(3) NOT NULL
+  `retention_date` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `event_hash` (`event_hash`),
+  KEY `idx_audit_events_timestamp` (`timestamp`),
+  KEY `idx_audit_events_entity` (`entity_type`,`entity_id`),
+  KEY `idx_audit_events_user` (`user_id`),
+  KEY `idx_audit_events_object_type` (`object_type`),
+  KEY `idx_audit_events_object_id` (`object_id`),
+  KEY `idx_audit_events_user_id` (`user_id`),
+  KEY `idx_audit_events_session_id` (`session_id`),
+  KEY `idx_audit_events_previous_hash` (`previous_hash`),
+  KEY `idx_audit_events_retention_date` (`retention_date`),
+  KEY `idx_audit_events_event_type` (`event_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `audit_log`
+-- Table structure for table `audit_log`
 --
 
+DROP TABLE IF EXISTS `audit_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `audit_log` (
-  `auditID` bigint NOT NULL,
-  `userID` bigint UNSIGNED DEFAULT NULL,
+  `auditID` bigint NOT NULL AUTO_INCREMENT,
+  `userID` bigint unsigned DEFAULT NULL,
   `action` varchar(100) NOT NULL,
   `entity_type` varchar(50) NOT NULL,
   `entity_id` varchar(50) NOT NULL,
@@ -123,21 +150,29 @@ CREATE TABLE `audit_log` (
   `ip_address` varchar(45) DEFAULT NULL,
   `user_agent` text,
   `session_id` varchar(191) DEFAULT NULL,
-  `timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`auditID`),
+  KEY `idx_entity` (`entity_type`,`entity_id`),
+  KEY `idx_user_time` (`userID`,`timestamp`),
+  KEY `idx_action_time` (`action`,`timestamp`),
+  KEY `idx_timestamp` (`timestamp`),
+  CONSTRAINT `audit_log_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `audit_logs`
+-- Table structure for table `audit_logs`
 --
 
+DROP TABLE IF EXISTS `audit_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `audit_logs` (
-  `id` bigint UNSIGNED NOT NULL,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `entity_type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `entity_id` bigint UNSIGNED NOT NULL,
+  `entity_id` bigint unsigned NOT NULL,
   `action` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `user_id` bigint UNSIGNED DEFAULT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
   `changes` json DEFAULT NULL,
   `metadata` json DEFAULT NULL,
   `hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -145,17 +180,25 @@ CREATE TABLE `audit_logs` (
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `user_agent` text COLLATE utf8mb4_unicode_ci,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_audit_logs_entity` (`entity_type`,`entity_id`),
+  KEY `idx_audit_logs_user` (`user_id`),
+  KEY `idx_audit_logs_timestamp` (`timestamp`),
+  KEY `idx_audit_logs_hash` (`hash`),
+  KEY `idx_audit_logs_chain` (`previous_hash`,`hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `authentication_attempts`
+-- Table structure for table `authentication_attempts`
 --
 
+DROP TABLE IF EXISTS `authentication_attempts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `authentication_attempts` (
-  `attempt_id` int NOT NULL,
+  `attempt_id` int NOT NULL AUTO_INCREMENT,
   `user_id` int DEFAULT NULL,
   `method` varchar(50) NOT NULL,
   `ip_address` varchar(45) NOT NULL,
@@ -163,42 +206,92 @@ CREATE TABLE `authentication_attempts` (
   `success` tinyint(1) NOT NULL,
   `failure_reason` varchar(255) DEFAULT NULL,
   `passkey_id` int DEFAULT NULL,
-  `attempted_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `attempted_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`attempt_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=116 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `brands`
+-- Table structure for table `brands`
 --
 
+DROP TABLE IF EXISTS `brands`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `brands` (
-  `brandID` int NOT NULL,
+  `brandID` int NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
-  `manufacturerID` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `manufacturerID` int DEFAULT NULL,
+  PRIMARY KEY (`brandID`),
+  KEY `idx_brands_manufacturerID` (`manufacturerID`),
+  CONSTRAINT `brands_ibfk_1` FOREIGN KEY (`manufacturerID`) REFERENCES `manufacturer` (`manufacturerID`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `cables`
+-- Table structure for table `cable_connectors`
 --
 
+DROP TABLE IF EXISTS `cable_connectors`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cable_connectors` (
+  `cable_connectorsID` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(30) NOT NULL,
+  `abbreviation` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `gender` enum('male','female') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  PRIMARY KEY (`cable_connectorsID`)
+) ENGINE=InnoDB AUTO_INCREMENT=1030 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `cable_types`
+--
+
+DROP TABLE IF EXISTS `cable_types`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cable_types` (
+  `cable_typesID` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(30) NOT NULL,
+  PRIMARY KEY (`cable_typesID`)
+) ENGINE=InnoDB AUTO_INCREMENT=1012 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `cables`
+--
+
+DROP TABLE IF EXISTS `cables`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `cables` (
-  `cableID` int NOT NULL,
+  `cableID` int NOT NULL AUTO_INCREMENT,
   `connector1` int NOT NULL,
   `connector2` int NOT NULL,
   `typ` int NOT NULL,
   `length` decimal(10,2) NOT NULL COMMENT 'in metern',
   `mm2` decimal(10,2) DEFAULT NULL COMMENT 'Kabelquerschnitt in mm^2',
-  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Trigger `cables`
---
-DELIMITER $$
-CREATE TRIGGER `cables_before_insert` BEFORE INSERT ON `cables` FOR EACH ROW BEGIN
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  PRIMARY KEY (`cableID`),
+  KEY `connector1` (`connector1`),
+  KEY `connector2` (`connector2`),
+  KEY `typ` (`typ`),
+  CONSTRAINT `cables_ibfk_1` FOREIGN KEY (`connector1`) REFERENCES `cable_connectors` (`cable_connectorsID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `cables_ibfk_2` FOREIGN KEY (`connector2`) REFERENCES `cable_connectors` (`cable_connectorsID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `cables_ibfk_3` FOREIGN KEY (`typ`) REFERENCES `cable_types` (`cable_typesID`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=1124 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_AUTO_VALUE_ON_ZERO' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `cables_before_insert` BEFORE INSERT ON `cables` FOR EACH ROW BEGIN
   DECLARE typ_name VARCHAR(50);
   DECLARE conn1_name VARCHAR(50);
   DECLARE conn2_name VARCHAR(50);
@@ -220,11 +313,22 @@ CREATE TRIGGER `cables_before_insert` BEFORE INSERT ON `cables` FOR EACH ROW BEG
 
   -- Setze den zusammengesetzten Namen
   SET NEW.name = CONCAT(typ_name,' (', conn1_name, '-', conn2_name, ')', ' - ', ROUND(NEW.length, 2), ' m');
-END
-$$
+END */;;
 DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `cables_before_update` BEFORE UPDATE ON `cables` FOR EACH ROW BEGIN
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_AUTO_VALUE_ON_ZERO' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `cables_before_update` BEFORE UPDATE ON `cables` FOR EACH ROW BEGIN
   DECLARE typ_name VARCHAR(50);
   DECLARE conn1_name VARCHAR(50);
   DECLARE conn2_name VARCHAR(50);
@@ -246,42 +350,22 @@ CREATE TRIGGER `cables_before_update` BEFORE UPDATE ON `cables` FOR EACH ROW BEG
 
   -- Setze den zusammengesetzten Namen
   SET NEW.name = CONCAT(typ_name,' (', conn1_name, '-', conn2_name, ')', ' - ', ROUND(NEW.length, 2), ' m');
-END
-$$
+END */;;
 DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `cable_connectors`
---
-
-CREATE TABLE `cable_connectors` (
-  `cable_connectorsID` int NOT NULL,
-  `name` varchar(30) NOT NULL,
-  `abbreviation` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  `gender` enum('male','female') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
--- Tabellenstruktur für Tabelle `cable_types`
+-- Table structure for table `cases`
 --
 
-CREATE TABLE `cable_types` (
-  `cable_typesID` int NOT NULL,
-  `name` varchar(30) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `cases`
---
-
+DROP TABLE IF EXISTS `cases`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `cases` (
-  `caseID` int NOT NULL,
+  `caseID` int NOT NULL AUTO_INCREMENT,
   `name` varchar(30) NOT NULL,
   `description` text,
   `width` decimal(10,2) DEFAULT NULL,
@@ -292,29 +376,36 @@ CREATE TABLE `cases` (
   `zone_id` int DEFAULT NULL,
   `barcode` varchar(255) DEFAULT NULL,
   `rfid_tag` varchar(255) DEFAULT NULL,
-  `label_path` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `label_path` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`caseID`),
+  KEY `idx_case_zone` (`zone_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1007 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `categories`
+-- Table structure for table `categories`
 --
 
+DROP TABLE IF EXISTS `categories`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `categories` (
-  `categoryID` int NOT NULL,
+  `categoryID` int NOT NULL AUTO_INCREMENT,
   `name` varchar(20) NOT NULL,
-  `abbreviation` varchar(3) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `abbreviation` varchar(3) NOT NULL,
+  PRIMARY KEY (`categoryID`)
+) ENGINE=InnoDB AUTO_INCREMENT=1007 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `company_settings`
+-- Table structure for table `company_settings`
 --
 
+DROP TABLE IF EXISTS `company_settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `company_settings` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `company_name` longtext NOT NULL,
   `address_line1` longtext,
   `address_line2` longtext,
@@ -349,18 +440,24 @@ CREATE TABLE `company_settings` (
   `brand_primary_color` varchar(7) DEFAULT NULL,
   `brand_accent_color` varchar(7) DEFAULT NULL,
   `brand_dark_mode` tinyint(1) NOT NULL DEFAULT '1',
-  `brand_logo_url` varchar(500) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `brand_logo_url` varchar(500) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_company_settings_updated` (`updated_at`),
+  KEY `idx_company_settings_iban` (`iban`(34)),
+  KEY `idx_company_settings_register_number` (`register_number`(50))
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `consent_records`
+-- Table structure for table `consent_records`
 --
 
+DROP TABLE IF EXISTS `consent_records`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `consent_records` (
-  `id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
   `data_type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `purpose` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
   `consent_given` tinyint(1) NOT NULL,
@@ -372,17 +469,44 @@ CREATE TABLE `consent_records` (
   `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `user_agent` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_consent_user` (`user_id`),
+  KEY `idx_consent_type_purpose` (`data_type`,`purpose`),
+  KEY `idx_consent_date` (`consent_date`),
+  KEY `idx_consent_expiry` (`expiry_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `customers`
+-- Table structure for table `count_types`
 --
 
+DROP TABLE IF EXISTS `count_types`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `count_types` (
+  `count_type_id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL COMMENT 'e.g., kg, piece, liter, meter',
+  `abbreviation` varchar(10) NOT NULL COMMENT 'e.g., kg, pcs, L, m',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`count_type_id`),
+  UNIQUE KEY `unique_count_type_name` (`name`),
+  UNIQUE KEY `unique_count_type_abbr` (`abbreviation`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Measurement units for accessories and consumables';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `customers`
+--
+
+DROP TABLE IF EXISTS `customers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `customers` (
-  `customerID` int NOT NULL,
+  `customerID` int NOT NULL AUTO_INCREMENT,
   `companyname` varchar(100) DEFAULT NULL,
   `lastname` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `firstname` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
@@ -405,18 +529,25 @@ CREATE TABLE `customers` (
   `last_job_date` date DEFAULT NULL,
   `rating` decimal(3,1) DEFAULT '5.0',
   `billing_address` text,
-  `shipping_address` text
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `shipping_address` text,
+  PRIMARY KEY (`customerID`),
+  KEY `idx_customers_search_company` (`companyname`),
+  KEY `idx_customers_search_name` (`firstname`,`lastname`),
+  KEY `idx_customers_email` (`email`),
+  FULLTEXT KEY `idx_customers_search` (`companyname`,`firstname`,`lastname`,`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=68 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `data_processing_records`
+-- Table structure for table `data_processing_records`
 --
 
+DROP TABLE IF EXISTS `data_processing_records`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `data_processing_records` (
-  `id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
   `data_type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `processing_type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `purpose` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -428,40 +559,54 @@ CREATE TABLE `data_processing_records` (
   `retention_period` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `processed_at` timestamp NOT NULL,
   `expires_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_data_processing_user` (`user_id`),
+  KEY `idx_data_processing_type` (`data_type`),
+  KEY `idx_data_processing_purpose` (`purpose`),
+  KEY `idx_data_processing_expiry` (`expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `data_subject_requests`
+-- Table structure for table `data_subject_requests`
 --
 
+DROP TABLE IF EXISTS `data_subject_requests`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `data_subject_requests` (
-  `id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
   `request_type` enum('access','rectification','erasure','portability','restriction','objection') COLLATE utf8mb4_unicode_ci NOT NULL,
   `status` enum('pending','processing','completed','rejected') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
   `description` text COLLATE utf8mb4_unicode_ci,
   `requested_at` timestamp NOT NULL,
   `processed_at` timestamp NULL DEFAULT NULL,
   `completed_at` timestamp NULL DEFAULT NULL,
-  `processor_id` bigint UNSIGNED DEFAULT NULL,
+  `processor_id` bigint unsigned DEFAULT NULL,
   `response` text COLLATE utf8mb4_unicode_ci,
   `response_data` longtext COLLATE utf8mb4_unicode_ci,
   `verification` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_data_subject_user` (`user_id`),
+  KEY `idx_data_subject_type` (`request_type`),
+  KEY `idx_data_subject_status` (`status`),
+  KEY `idx_data_subject_requested` (`requested_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `defect_reports`
+-- Table structure for table `defect_reports`
 --
 
+DROP TABLE IF EXISTS `defect_reports`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `defect_reports` (
-  `defect_id` bigint NOT NULL,
+  `defect_id` bigint NOT NULL AUTO_INCREMENT,
   `device_id` varchar(50) NOT NULL,
   `severity` enum('low','medium','high','critical') NOT NULL DEFAULT 'medium',
   `status` enum('open','in_progress','repaired','closed') NOT NULL DEFAULT 'open',
@@ -476,15 +621,67 @@ CREATE TABLE `defect_reports` (
   `repair_notes` text,
   `closed_at` timestamp NULL DEFAULT NULL,
   `images` json DEFAULT NULL COMMENT 'Array of image URLs',
-  `metadata` json DEFAULT NULL
+  `metadata` json DEFAULT NULL,
+  PRIMARY KEY (`defect_id`),
+  KEY `idx_defect_device` (`device_id`),
+  KEY `idx_defect_status` (`status`),
+  KEY `idx_defect_severity` (`severity`),
+  KEY `idx_defect_reported` (`reported_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `devices`
+-- Temporary view structure for view `device_earnings_summary`
 --
 
+DROP TABLE IF EXISTS `device_earnings_summary`;
+/*!50001 DROP VIEW IF EXISTS `device_earnings_summary`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `device_earnings_summary` AS SELECT 
+ 1 AS `deviceID`,
+ 1 AS `deviceName`,
+ 1 AS `numJobs`,
+ 1 AS `totalEarnings`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `device_movements`
+--
+
+DROP TABLE IF EXISTS `device_movements`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `device_movements` (
+  `movement_id` bigint NOT NULL AUTO_INCREMENT,
+  `device_id` varchar(50) NOT NULL,
+  `action` enum('intake','outtake','transfer','return','move') NOT NULL,
+  `from_zone_id` int DEFAULT NULL COMMENT 'Origin zone',
+  `to_zone_id` int DEFAULT NULL COMMENT 'Destination zone',
+  `from_job_id` bigint DEFAULT NULL COMMENT 'Job device came from',
+  `to_job_id` bigint DEFAULT NULL COMMENT 'Job device went to',
+  `barcode` varchar(255) DEFAULT NULL COMMENT 'Scanned barcode/QR code',
+  `user_id` bigint DEFAULT NULL COMMENT 'User who performed the movement',
+  `notes` text,
+  `metadata` json DEFAULT NULL COMMENT 'Additional context',
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`movement_id`),
+  KEY `idx_movement_device` (`device_id`),
+  KEY `idx_movement_action` (`action`),
+  KEY `idx_movement_timestamp` (`timestamp`),
+  KEY `idx_movement_from_zone` (`from_zone_id`),
+  KEY `idx_movement_to_zone` (`to_zone_id`),
+  KEY `idx_movement_job` (`to_job_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `devices`
+--
+
+DROP TABLE IF EXISTS `devices`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `devices` (
   `deviceID` varchar(50) NOT NULL,
   `productID` int DEFAULT NULL,
@@ -506,120 +703,119 @@ CREATE TABLE `devices` (
   `last_maintenance_cost` decimal(10,2) DEFAULT NULL,
   `notes` text,
   `barcode` varchar(255) DEFAULT NULL,
-  `label_path` varchar(512) DEFAULT NULL
+  `label_path` varchar(512) DEFAULT NULL,
+  PRIMARY KEY (`deviceID`),
+  UNIQUE KEY `qr_code` (`qr_code`),
+  KEY `idx_devices_insuranceID` (`insuranceID`),
+  KEY `idx_devices_productID` (`productID`),
+  KEY `idx_devices_location` (`current_location`),
+  KEY `idx_devices_qr` (`qr_code`),
+  KEY `idx_devices_status` (`status`),
+  KEY `idx_devices_search` (`deviceID`,`serialnumber`),
+  KEY `idx_devices_product_status` (`productID`,`status`),
+  KEY `idx_device_zone` (`zone_id`),
+  KEY `idx_devices_label_path` (`label_path`),
+  CONSTRAINT `devices_ibfk_1` FOREIGN KEY (`productID`) REFERENCES `products` (`productID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `devices_ibfk_2` FOREIGN KEY (`insuranceID`) REFERENCES `insurances` (`insuranceID`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `devices` BEFORE INSERT ON `devices` FOR EACH ROW device_trigger: BEGIN
+    DECLARE abkuerzung   VARCHAR(50);
+    DECLARE pos_cat       INT;
+    DECLARE next_counter  INT;
 
---
--- Trigger `devices`
---
-DELIMITER $$
-CREATE TRIGGER `devices` BEFORE INSERT ON `devices` FOR EACH ROW device_trigger: BEGIN
-  DECLARE abkuerzung   VARCHAR(50);
-  DECLARE pos_cat       INT;
-  DECLARE next_counter  INT;
+    -- Skip auto-generation for virtual package devices (start with PKG_)
+    IF NEW.deviceID IS NOT NULL AND NEW.deviceID LIKE 'PKG_%' THEN
+      LEAVE device_trigger;
+    END IF;
 
-  -- Skip auto-generation for virtual package devices (start with PKG_)
-  IF NEW.deviceID IS NOT NULL AND NEW.deviceID LIKE 'PKG_%' THEN
-    LEAVE device_trigger;
-  END IF;
+    -- 1) Abkürzung holen
+    SELECT s.abbreviation
+      INTO abkuerzung
+      FROM subcategories s
+      JOIN products      p ON s.subcategoryID = p.subcategoryID
+     WHERE p.productID   = NEW.productID
+     LIMIT 1;
 
-  -- 1) Abkürzung holen
-  SELECT s.abbreviation
-    INTO abkuerzung
-    FROM subcategories s
-    JOIN products      p ON s.subcategoryID = p.subcategoryID
-   WHERE p.productID   = NEW.productID
-   LIMIT 1;
+    -- 2) pos_in_category holen
+    SELECT p.pos_in_category
+      INTO pos_cat
+      FROM products p
+     WHERE p.productID = NEW.productID;
 
-  -- 2) pos_in_category holen
-  SELECT p.pos_in_category
-    INTO pos_cat
-    FROM products p
-   WHERE p.productID = NEW.productID;
+    -- 3) Laufindex ermitteln (max. der letzten 3 Ziffern + 1)
+    SELECT COALESCE(MAX(CAST(RIGHT(d.deviceID, 3) AS UNSIGNED)), 0) + 1
+      INTO next_counter
+      FROM devices d
+     WHERE d.deviceID LIKE CONCAT(abkuerzung, pos_cat, '%');
 
-  -- 3) Laufindex ermitteln (max. der letzten 3 Ziffern + 1)
-  SELECT COALESCE(MAX(CAST(RIGHT(d.deviceID, 3) AS UNSIGNED)), 0) + 1
-    INTO next_counter
-    FROM devices d
-   WHERE d.deviceID LIKE CONCAT(abkuerzung, pos_cat, '%');
-
-  -- 4) deviceID zusammenbauen (ohne Bindestrich!)
-  SET NEW.deviceID = CONCAT(
-                        abkuerzung,
-                        pos_cat,
-                        LPAD(next_counter, 3, '0')
-                      );
-END
-$$
+    -- 4) deviceID zusammenbauen (ohne Bindestrich!)
+    SET NEW.deviceID = CONCAT(
+                          abkuerzung,
+                          pos_cat,
+                          LPAD(next_counter, 3, '0')
+                        );
+  END */;;
 DELIMITER ;
-
--- --------------------------------------------------------
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
--- Tabellenstruktur für Tabelle `devicescases`
+-- Table structure for table `devicescases`
 --
 
+DROP TABLE IF EXISTS `devicescases`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `devicescases` (
   `caseID` int NOT NULL,
-  `deviceID` varchar(50) NOT NULL
+  `deviceID` varchar(50) NOT NULL,
+  PRIMARY KEY (`caseID`,`deviceID`),
+  KEY `deviceID` (`deviceID`),
+  CONSTRAINT `devicescases_ibfk_1` FOREIGN KEY (`caseID`) REFERENCES `cases` (`caseID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `devicescases_ibfk_2` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `devicestatushistory`
+-- Table structure for table `devicestatushistory`
 --
 
+DROP TABLE IF EXISTS `devicestatushistory`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `devicestatushistory` (
-  `statushistoryID` int NOT NULL,
+  `statushistoryID` int NOT NULL AUTO_INCREMENT,
   `deviceID` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `date` datetime DEFAULT NULL,
   `status` varchar(50) DEFAULT NULL,
-  `notes` text
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Stellvertreter-Struktur des Views `device_earnings_summary`
--- (Siehe unten für die tatsächliche Ansicht)
---
-CREATE TABLE `device_earnings_summary` (
-`deviceID` varchar(50)
-,`deviceName` varchar(50)
-,`numJobs` bigint
-,`totalEarnings` decimal(51,2)
-);
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `device_movements`
---
-
-CREATE TABLE `device_movements` (
-  `movement_id` bigint NOT NULL,
-  `device_id` varchar(50) NOT NULL,
-  `action` enum('intake','outtake','transfer','return','move') NOT NULL,
-  `from_zone_id` int DEFAULT NULL COMMENT 'Origin zone',
-  `to_zone_id` int DEFAULT NULL COMMENT 'Destination zone',
-  `from_job_id` bigint DEFAULT NULL COMMENT 'Job device came from',
-  `to_job_id` bigint DEFAULT NULL COMMENT 'Job device went to',
-  `barcode` varchar(255) DEFAULT NULL COMMENT 'Scanned barcode/QR code',
-  `user_id` bigint DEFAULT NULL COMMENT 'User who performed the movement',
   `notes` text,
-  `metadata` json DEFAULT NULL COMMENT 'Additional context',
-  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  PRIMARY KEY (`statushistoryID`),
+  KEY `idx_devicestatushistory_deviceID` (`deviceID`),
+  CONSTRAINT `devicestatushistory_ibfk_1` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `digital_signatures`
+-- Table structure for table `digital_signatures`
 --
 
+DROP TABLE IF EXISTS `digital_signatures`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `digital_signatures` (
-  `signatureID` int NOT NULL,
+  `signatureID` int NOT NULL AUTO_INCREMENT,
   `documentID` int NOT NULL,
   `signer_name` varchar(100) NOT NULL,
   `signer_email` varchar(100) DEFAULT NULL,
@@ -628,17 +824,52 @@ CREATE TABLE `digital_signatures` (
   `signed_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `ip_address` varchar(45) DEFAULT NULL,
   `verification_code` varchar(100) DEFAULT NULL,
-  `is_verified` tinyint(1) DEFAULT '0'
+  `is_verified` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`signatureID`),
+  KEY `idx_document_signer` (`documentID`,`signer_email`),
+  KEY `idx_signed_date` (`signed_at`),
+  CONSTRAINT `digital_signatures_ibfk_1` FOREIGN KEY (`documentID`) REFERENCES `documents` (`documentID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `documents`
+-- Table structure for table `document_signatures`
 --
 
+DROP TABLE IF EXISTS `document_signatures`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `document_signatures` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `document_type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `document_id` bigint unsigned NOT NULL,
+  `content_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `signature_data` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `algorithm` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'RSA-SHA256',
+  `public_key` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `signed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `signer_id` bigint unsigned DEFAULT NULL,
+  `verification_status` enum('valid','invalid','pending') COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
+  `last_verified_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_document_signature` (`document_type`,`document_id`),
+  KEY `idx_doc_signatures_type` (`document_type`),
+  KEY `idx_doc_signatures_signer` (`signer_id`),
+  KEY `idx_doc_signatures_status` (`verification_status`),
+  KEY `idx_document_signatures_hash` (`content_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `documents`
+--
+
+DROP TABLE IF EXISTS `documents`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `documents` (
-  `documentID` int NOT NULL,
+  `documentID` int NOT NULL AUTO_INCREMENT,
   `entity_type` enum('job','device','customer','user','system') NOT NULL,
   `entity_id` varchar(50) NOT NULL,
   `filename` varchar(255) NOT NULL,
@@ -648,43 +879,34 @@ CREATE TABLE `documents` (
   `mime_type` varchar(100) NOT NULL,
   `document_type` enum('contract','manual','photo','invoice','receipt','signature','other') NOT NULL,
   `description` text,
-  `uploaded_by` bigint UNSIGNED DEFAULT NULL,
+  `uploaded_by` bigint unsigned DEFAULT NULL,
   `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `is_public` tinyint(1) DEFAULT '0',
   `version` int DEFAULT '1',
   `parent_documentID` int DEFAULT NULL,
-  `checksum` varchar(64) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `document_signatures`
---
-
-CREATE TABLE `document_signatures` (
-  `id` bigint UNSIGNED NOT NULL,
-  `document_type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `document_id` bigint UNSIGNED NOT NULL,
-  `content_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `signature_data` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `algorithm` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'RSA-SHA256',
-  `public_key` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `signed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `signer_id` bigint UNSIGNED DEFAULT NULL,
-  `verification_status` enum('valid','invalid','pending') COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
-  `last_verified_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+  `checksum` varchar(64) DEFAULT NULL,
+  PRIMARY KEY (`documentID`),
+  KEY `uploaded_by` (`uploaded_by`),
+  KEY `parent_documentID` (`parent_documentID`),
+  KEY `idx_entity_type` (`entity_type`,`entity_id`,`document_type`),
+  KEY `idx_uploaded_date` (`uploaded_at`,`document_type`),
+  KEY `idx_filename` (`filename`),
+  KEY `idx_documents_entity` (`entity_type`,`entity_id`,`document_type`),
+  KEY `idx_documents_date` (`uploaded_at`,`document_type`),
+  CONSTRAINT `documents_ibfk_1` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL,
+  CONSTRAINT `documents_ibfk_2` FOREIGN KEY (`parent_documentID`) REFERENCES `documents` (`documentID`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `email_templates`
+-- Table structure for table `email_templates`
 --
 
+DROP TABLE IF EXISTS `email_templates`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `email_templates` (
-  `template_id` int UNSIGNED NOT NULL,
+  `template_id` int unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text COLLATE utf8mb4_unicode_ci,
   `template_type` enum('invoice','reminder','payment_confirmation','general') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'general',
@@ -693,19 +915,26 @@ CREATE TABLE `email_templates` (
   `text_content` longtext COLLATE utf8mb4_unicode_ci,
   `is_default` tinyint(1) NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `created_by` int UNSIGNED DEFAULT NULL,
+  `created_by` int unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`template_id`),
+  KEY `idx_email_templates_type` (`template_type`),
+  KEY `idx_email_templates_default` (`is_default`),
+  KEY `idx_email_templates_active` (`is_active`),
+  KEY `idx_email_templates_created_by` (`created_by`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `employee`
+-- Table structure for table `employee`
 --
 
+DROP TABLE IF EXISTS `employee`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `employee` (
-  `employeeID` int NOT NULL,
+  `employeeID` int NOT NULL AUTO_INCREMENT,
   `firstname` varchar(50) NOT NULL,
   `lastname` varchar(50) NOT NULL,
   `street` varchar(100) DEFAULT NULL,
@@ -715,45 +944,61 @@ CREATE TABLE `employee` (
   `federalstate` varchar(50) DEFAULT NULL,
   `country` varchar(50) DEFAULT NULL,
   `phonenumber` varchar(20) DEFAULT NULL,
-  `email` varchar(100) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `email` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`employeeID`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `employeejob`
+-- Table structure for table `employeejob`
 --
 
+DROP TABLE IF EXISTS `employeejob`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `employeejob` (
   `employeeID` int NOT NULL,
-  `jobID` int NOT NULL
+  `jobID` int NOT NULL,
+  PRIMARY KEY (`employeeID`,`jobID`),
+  KEY `idx_employeejob_jobID` (`jobID`),
+  CONSTRAINT `employeejob_ibfk_1` FOREIGN KEY (`employeeID`) REFERENCES `employee` (`employeeID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `employeejob_ibfk_2` FOREIGN KEY (`jobID`) REFERENCES `jobs` (`jobID`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `encrypted_personal_data`
+-- Table structure for table `encrypted_personal_data`
 --
 
+DROP TABLE IF EXISTS `encrypted_personal_data`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `encrypted_personal_data` (
-  `id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
   `data_type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `encrypted_data` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
   `key_version` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
   `algorithm` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_data_type` (`user_id`,`data_type`),
+  KEY `idx_encrypted_data_user` (`user_id`),
+  KEY `idx_encrypted_data_type` (`data_type`),
+  KEY `idx_encrypted_data_key_version` (`key_version`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `equipment_packages`
+-- Table structure for table `equipment_packages`
 --
 
+DROP TABLE IF EXISTS `equipment_packages`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `equipment_packages` (
-  `packageID` int NOT NULL,
+  `packageID` int NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
   `description` text,
   `categoryID` int DEFAULT NULL,
@@ -762,7 +1007,7 @@ CREATE TABLE `equipment_packages` (
   `discount_percent` decimal(5,2) DEFAULT '0.00',
   `min_rental_days` int DEFAULT '1',
   `is_active` tinyint(1) DEFAULT '1',
-  `created_by` bigint UNSIGNED DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `usage_count` int DEFAULT '0',
@@ -770,17 +1015,25 @@ CREATE TABLE `equipment_packages` (
   `category` varchar(50) DEFAULT NULL,
   `tags` text,
   `last_used_at` timestamp NULL DEFAULT NULL,
-  `total_revenue` decimal(12,2) DEFAULT '0.00'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `total_revenue` decimal(12,2) DEFAULT '0.00',
+  PRIMARY KEY (`packageID`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_active_usage` (`is_active`,`usage_count` DESC),
+  KEY `idx_equipment_packages_category` (`categoryID`),
+  CONSTRAINT `equipment_packages_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL,
+  CONSTRAINT `fk_equipment_packages_category` FOREIGN KEY (`categoryID`) REFERENCES `package_categories` (`categoryID`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `equipment_usage_logs`
+-- Table structure for table `equipment_usage_logs`
 --
 
+DROP TABLE IF EXISTS `equipment_usage_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `equipment_usage_logs` (
-  `logID` int NOT NULL,
+  `logID` int NOT NULL AUTO_INCREMENT,
   `deviceID` varchar(50) NOT NULL,
   `jobID` int DEFAULT NULL,
   `action` enum('assigned','returned','maintenance','available') NOT NULL,
@@ -788,17 +1041,26 @@ CREATE TABLE `equipment_usage_logs` (
   `duration_hours` decimal(10,2) DEFAULT NULL,
   `revenue_generated` decimal(12,2) DEFAULT NULL,
   `notes` text,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`logID`),
+  KEY `idx_device_timestamp` (`deviceID`,`timestamp`),
+  KEY `idx_job_action` (`jobID`,`action`),
+  KEY `idx_timestamp_action` (`timestamp`,`action`),
+  KEY `idx_usage_logs_device_date` (`deviceID`,`timestamp`),
+  CONSTRAINT `equipment_usage_logs_ibfk_1` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE CASCADE,
+  CONSTRAINT `equipment_usage_logs_ibfk_2` FOREIGN KEY (`jobID`) REFERENCES `jobs` (`jobID`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `financial_transactions`
+-- Table structure for table `financial_transactions`
 --
 
+DROP TABLE IF EXISTS `financial_transactions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `financial_transactions` (
-  `transactionID` int NOT NULL,
+  `transactionID` int NOT NULL AUTO_INCREMENT,
   `jobID` int DEFAULT NULL,
   `customerID` int DEFAULT NULL,
   `type` enum('rental','deposit','payment','refund','fee','discount') NOT NULL,
@@ -810,19 +1072,32 @@ CREATE TABLE `financial_transactions` (
   `due_date` date DEFAULT NULL,
   `reference_number` varchar(100) DEFAULT NULL,
   `notes` text,
-  `created_by` bigint UNSIGNED DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`transactionID`),
+  KEY `jobID` (`jobID`),
+  KEY `created_by` (`created_by`),
+  KEY `idx_customer_date` (`customerID`,`transaction_date`),
+  KEY `idx_status_due` (`status`,`due_date`),
+  KEY `idx_type_date` (`type`,`transaction_date`),
+  KEY `idx_transactions_customer_date` (`customerID`,`transaction_date`),
+  KEY `idx_transactions_status` (`status`,`due_date`),
+  CONSTRAINT `financial_transactions_ibfk_1` FOREIGN KEY (`jobID`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
+  CONSTRAINT `financial_transactions_ibfk_2` FOREIGN KEY (`customerID`) REFERENCES `customers` (`customerID`) ON DELETE CASCADE,
+  CONSTRAINT `financial_transactions_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `gobd_records`
+-- Table structure for table `gobd_records`
 --
 
+DROP TABLE IF EXISTS `gobd_records`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `gobd_records` (
-  `id` bigint UNSIGNED NOT NULL,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `document_type` varchar(191) NOT NULL,
   `document_id` varchar(191) NOT NULL,
   `original_data` longtext,
@@ -830,22 +1105,32 @@ CREATE TABLE `gobd_records` (
   `archive_date` datetime(3) NOT NULL,
   `retention_date` datetime(3) NOT NULL,
   `digital_sign` text,
-  `user_id` bigint UNSIGNED DEFAULT NULL,
-  `company_id` bigint UNSIGNED DEFAULT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `company_id` bigint unsigned DEFAULT NULL,
   `is_immutable` tinyint(1) DEFAULT '1',
   `archive_file_name` longtext,
   `created_at` datetime(3) DEFAULT NULL,
-  `updated_at` datetime(3) DEFAULT NULL
+  `updated_at` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_gobd_records_data_hash` (`data_hash`),
+  KEY `idx_gobd_records_archive_date` (`archive_date`),
+  KEY `idx_gobd_records_retention_date` (`retention_date`),
+  KEY `idx_gobd_records_user_id` (`user_id`),
+  KEY `idx_gobd_records_company_id` (`company_id`),
+  KEY `idx_gobd_records_document_type` (`document_type`),
+  KEY `idx_gobd_records_document_id` (`document_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `inspection_schedules`
+-- Table structure for table `inspection_schedules`
 --
 
+DROP TABLE IF EXISTS `inspection_schedules`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `inspection_schedules` (
-  `schedule_id` bigint NOT NULL,
+  `schedule_id` bigint NOT NULL AUTO_INCREMENT,
   `device_id` varchar(50) DEFAULT NULL COMMENT 'Specific device',
   `product_id` int DEFAULT NULL COMMENT 'Product type',
   `inspection_type` varchar(100) NOT NULL COMMENT 'Safety, electrical, visual, etc.',
@@ -855,46 +1140,198 @@ CREATE TABLE `inspection_schedules` (
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `notes` text,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`schedule_id`),
+  KEY `idx_inspection_device` (`device_id`),
+  KEY `idx_inspection_product` (`product_id`),
+  KEY `idx_inspection_next` (`next_inspection`),
+  KEY `idx_inspection_active` (`is_active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `insuranceprovider`
+-- Table structure for table `insuranceprovider`
 --
 
+DROP TABLE IF EXISTS `insuranceprovider`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `insuranceprovider` (
-  `insuranceproviderID` int NOT NULL,
+  `insuranceproviderID` int NOT NULL AUTO_INCREMENT,
   `name` varchar(20) NOT NULL,
   `website` varchar(20) NOT NULL,
-  `phonenumber` varchar(20) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `phonenumber` varchar(20) NOT NULL,
+  PRIMARY KEY (`insuranceproviderID`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `insurances`
+-- Table structure for table `insurances`
 --
 
+DROP TABLE IF EXISTS `insurances`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `insurances` (
-  `insuranceID` int NOT NULL,
+  `insuranceID` int NOT NULL AUTO_INCREMENT,
   `name` varchar(20) NOT NULL,
   `insuranceproviderID` int NOT NULL,
   `policynumber` varchar(50) DEFAULT NULL,
   `coveragedetails` text,
   `validuntil` date DEFAULT NULL,
-  `price` decimal(10,2) NOT NULL
+  `price` decimal(10,2) NOT NULL,
+  PRIMARY KEY (`insuranceID`),
+  KEY `insuranceproviderID` (`insuranceproviderID`),
+  CONSTRAINT `insurances_ibfk_1` FOREIGN KEY (`insuranceproviderID`) REFERENCES `insuranceprovider` (`insuranceproviderID`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `inventory_transactions`
+--
+
+DROP TABLE IF EXISTS `inventory_transactions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inventory_transactions` (
+  `transaction_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` int NOT NULL COMMENT 'FK to products (accessories/consumables)',
+  `transaction_type` enum('in','out','adjustment','initial') NOT NULL COMMENT 'Type of transaction',
+  `quantity` decimal(10,3) NOT NULL COMMENT 'Quantity (positive or negative)',
+  `reference_type` varchar(50) DEFAULT NULL COMMENT 'e.g., job, purchase, manual',
+  `reference_id` int DEFAULT NULL COMMENT 'ID of related entity (job_id, etc.)',
+  `notes` text COMMENT 'Transaction notes',
+  `user_id` bigint unsigned DEFAULT NULL COMMENT 'User who performed transaction',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`transaction_id`),
+  KEY `idx_inventory_trans_product` (`product_id`),
+  KEY `idx_inventory_trans_type` (`transaction_type`),
+  KEY `idx_inventory_trans_reference` (`reference_type`,`reference_id`),
+  KEY `idx_inventory_trans_created` (`created_at`),
+  KEY `fk_inventory_trans_user` (`user_id`),
+  CONSTRAINT `fk_inventory_trans_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`productID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_inventory_trans_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Tracks all inventory movements for accessories and consumables';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `invoice_line_items`
+--
+
+DROP TABLE IF EXISTS `invoice_line_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `invoice_line_items` (
+  `line_item_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `invoice_id` bigint unsigned NOT NULL,
+  `item_type` enum('device','service','package','custom') NOT NULL DEFAULT 'custom',
+  `device_id` varchar(50) DEFAULT NULL,
+  `package_id` int DEFAULT NULL,
+  `description` text NOT NULL,
+  `quantity` decimal(10,2) NOT NULL DEFAULT '1.00',
+  `unit_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `rental_start_date` date DEFAULT NULL,
+  `rental_end_date` date DEFAULT NULL,
+  `rental_days` int DEFAULT NULL,
+  `sort_order` int unsigned DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`line_item_id`),
+  KEY `idx_invoice_line_items_invoice` (`invoice_id`),
+  KEY `idx_invoice_line_items_device` (`device_id`),
+  KEY `idx_invoice_line_items_package` (`package_id`),
+  KEY `idx_invoice_line_items_type` (`item_type`),
+  CONSTRAINT `invoice_line_items_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`invoice_id`) ON DELETE CASCADE,
+  CONSTRAINT `invoice_line_items_ibfk_2` FOREIGN KEY (`device_id`) REFERENCES `devices` (`deviceID`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `invoice_line_items_ibfk_3` FOREIGN KEY (`package_id`) REFERENCES `equipment_packages` (`packageID`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `invoice_payments`
+--
+
+DROP TABLE IF EXISTS `invoice_payments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `invoice_payments` (
+  `payment_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `invoice_id` bigint unsigned NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `payment_method` varchar(100) DEFAULT NULL,
+  `payment_date` date NOT NULL,
+  `reference_number` varchar(100) DEFAULT NULL,
+  `notes` text,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`payment_id`),
+  KEY `idx_invoice_payments_invoice` (`invoice_id`),
+  KEY `idx_invoice_payments_date` (`payment_date`),
+  KEY `invoice_payments_ibfk_2` (`created_by`),
+  CONSTRAINT `invoice_payments_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`invoice_id`) ON DELETE CASCADE,
+  CONSTRAINT `invoice_payments_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `invoices`
+-- Table structure for table `invoice_settings`
 --
 
+DROP TABLE IF EXISTS `invoice_settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `invoice_settings` (
+  `setting_id` int NOT NULL AUTO_INCREMENT,
+  `setting_key` varchar(100) NOT NULL,
+  `setting_value` text,
+  `setting_type` enum('text','number','boolean','json') NOT NULL DEFAULT 'text',
+  `description` text,
+  `updated_by` bigint unsigned DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`setting_id`),
+  UNIQUE KEY `setting_key` (`setting_key`),
+  KEY `idx_invoice_settings_key` (`setting_key`),
+  KEY `invoice_settings_ibfk_1` (`updated_by`),
+  CONSTRAINT `invoice_settings_ibfk_1` FOREIGN KEY (`updated_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `invoice_templates`
+--
+
+DROP TABLE IF EXISTS `invoice_templates`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `invoice_templates` (
+  `template_id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `html_template` longtext NOT NULL,
+  `css_styles` longtext,
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`template_id`),
+  KEY `idx_invoice_templates_default` (`is_default`),
+  KEY `idx_invoice_templates_active` (`is_active`),
+  KEY `fk_invoice_templates_created_by` (`created_by`),
+  CONSTRAINT `fk_invoice_templates_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `invoices`
+--
+
+DROP TABLE IF EXISTS `invoices`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `invoices` (
-  `invoice_id` bigint UNSIGNED NOT NULL,
+  `invoice_id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `invoice_number` varchar(50) NOT NULL,
   `customer_id` int NOT NULL,
   `job_id` int DEFAULT NULL,
@@ -915,106 +1352,286 @@ CREATE TABLE `invoices` (
   `internal_notes` text,
   `sent_at` timestamp NULL DEFAULT NULL,
   `paid_at` timestamp NULL DEFAULT NULL,
-  `created_by` bigint UNSIGNED DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `invoice_line_items`
---
-
-CREATE TABLE `invoice_line_items` (
-  `line_item_id` bigint UNSIGNED NOT NULL,
-  `invoice_id` bigint UNSIGNED NOT NULL,
-  `item_type` enum('device','service','package','custom') NOT NULL DEFAULT 'custom',
-  `device_id` varchar(50) DEFAULT NULL,
-  `package_id` int DEFAULT NULL,
-  `description` text NOT NULL,
-  `quantity` decimal(10,2) NOT NULL DEFAULT '1.00',
-  `unit_price` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `total_price` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `rental_start_date` date DEFAULT NULL,
-  `rental_end_date` date DEFAULT NULL,
-  `rental_days` int DEFAULT NULL,
-  `sort_order` int UNSIGNED DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`invoice_id`),
+  UNIQUE KEY `invoice_number` (`invoice_number`),
+  KEY `idx_invoices_customer` (`customer_id`),
+  KEY `idx_invoices_job` (`job_id`),
+  KEY `idx_invoices_status` (`status`),
+  KEY `idx_invoices_issue_date` (`issue_date`),
+  KEY `idx_invoices_due_date` (`due_date`),
+  KEY `idx_invoices_number` (`invoice_number`),
+  KEY `fk_invoices_template` (`template_id`),
+  KEY `invoices_ibfk_1` (`created_by`),
+  CONSTRAINT `fk_invoices_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customerID`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_invoices_job` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_invoices_template` FOREIGN KEY (`template_id`) REFERENCES `invoice_templates` (`template_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `invoices_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `invoice_payments`
+-- Table structure for table `jobCategory`
 --
 
-CREATE TABLE `invoice_payments` (
-  `payment_id` bigint UNSIGNED NOT NULL,
-  `invoice_id` bigint UNSIGNED NOT NULL,
-  `amount` decimal(12,2) NOT NULL,
-  `payment_method` varchar(100) DEFAULT NULL,
-  `payment_date` date NOT NULL,
-  `reference_number` varchar(100) DEFAULT NULL,
-  `notes` text,
-  `created_by` bigint UNSIGNED DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `invoice_settings`
---
-
-CREATE TABLE `invoice_settings` (
-  `setting_id` int NOT NULL,
-  `setting_key` varchar(100) NOT NULL,
-  `setting_value` text,
-  `setting_type` enum('text','number','boolean','json') NOT NULL DEFAULT 'text',
-  `description` text,
-  `updated_by` bigint UNSIGNED DEFAULT NULL,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `invoice_templates`
---
-
-CREATE TABLE `invoice_templates` (
-  `template_id` int NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `description` text,
-  `html_template` longtext NOT NULL,
-  `css_styles` longtext,
-  `is_default` tinyint(1) NOT NULL DEFAULT '0',
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `created_by` bigint UNSIGNED DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `jobCategory`
---
-
+DROP TABLE IF EXISTS `jobCategory`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `jobCategory` (
-  `jobcategoryID` int NOT NULL,
+  `jobcategoryID` int NOT NULL AUTO_INCREMENT,
   `name` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `abbreviation` varchar(3) DEFAULT NULL
+  `abbreviation` varchar(3) DEFAULT NULL,
+  PRIMARY KEY (`jobcategoryID`)
+) ENGINE=InnoDB AUTO_INCREMENT=1006 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `job_accessories`
+--
+
+DROP TABLE IF EXISTS `job_accessories`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `job_accessories` (
+  `job_accessory_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `job_id` int NOT NULL COMMENT 'FK to jobs',
+  `parent_device_id` varchar(50) DEFAULT NULL COMMENT 'The device this accessory is assigned to',
+  `accessory_product_id` int NOT NULL COMMENT 'The accessory product',
+  `quantity_assigned` int NOT NULL DEFAULT '1' COMMENT 'Quantity assigned to job',
+  `quantity_scanned_out` int NOT NULL DEFAULT '0' COMMENT 'Quantity scanned out',
+  `quantity_scanned_in` int NOT NULL DEFAULT '0' COMMENT 'Quantity scanned back in',
+  `price_per_unit` decimal(10,2) DEFAULT NULL COMMENT 'Price override per unit',
+  `notes` text COMMENT 'Additional notes',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`job_accessory_id`),
+  KEY `idx_job_accessories_job` (`job_id`),
+  KEY `idx_job_accessories_device` (`parent_device_id`),
+  KEY `idx_job_accessories_product` (`accessory_product_id`),
+  CONSTRAINT `fk_job_accessories_device` FOREIGN KEY (`parent_device_id`) REFERENCES `devices` (`deviceID`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_job_accessories_job` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_job_accessories_product` FOREIGN KEY (`accessory_product_id`) REFERENCES `products` (`productID`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Tracks accessories assigned to jobs';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `job_attachments`
+--
+
+DROP TABLE IF EXISTS `job_attachments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `job_attachments` (
+  `attachment_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `job_id` int NOT NULL,
+  `filename` varchar(255) NOT NULL,
+  `original_filename` varchar(255) NOT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `file_size` bigint NOT NULL,
+  `mime_type` varchar(100) NOT NULL,
+  `uploaded_by` bigint unsigned DEFAULT NULL,
+  `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `description` text,
+  `is_active` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`attachment_id`),
+  KEY `uploaded_by` (`uploaded_by`),
+  KEY `idx_job_attachments_job_id` (`job_id`),
+  KEY `idx_job_attachments_uploaded_at` (`uploaded_at`),
+  CONSTRAINT `job_attachments_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
+  CONSTRAINT `job_attachments_ibfk_2` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=62 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `job_consumables`
+--
+
+DROP TABLE IF EXISTS `job_consumables`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `job_consumables` (
+  `job_consumable_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `job_id` int NOT NULL COMMENT 'FK to jobs',
+  `parent_device_id` varchar(50) DEFAULT NULL COMMENT 'The device this consumable is assigned to',
+  `consumable_product_id` int NOT NULL COMMENT 'The consumable product',
+  `quantity_assigned` decimal(10,3) NOT NULL DEFAULT '1.000' COMMENT 'Quantity assigned to job',
+  `quantity_scanned_out` decimal(10,3) NOT NULL DEFAULT '0.000' COMMENT 'Quantity scanned out',
+  `quantity_scanned_in` decimal(10,3) NOT NULL DEFAULT '0.000' COMMENT 'Quantity scanned back in',
+  `price_per_unit` decimal(10,2) DEFAULT NULL COMMENT 'Price override per unit',
+  `notes` text COMMENT 'Additional notes',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`job_consumable_id`),
+  KEY `idx_job_consumables_job` (`job_id`),
+  KEY `idx_job_consumables_device` (`parent_device_id`),
+  KEY `idx_job_consumables_product` (`consumable_product_id`),
+  CONSTRAINT `fk_job_consumables_device` FOREIGN KEY (`parent_device_id`) REFERENCES `devices` (`deviceID`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_job_consumables_job` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_job_consumables_product` FOREIGN KEY (`consumable_product_id`) REFERENCES `products` (`productID`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Tracks consumables assigned to jobs';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `job_device_events`
+--
+
+DROP TABLE IF EXISTS `job_device_events`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `job_device_events` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `jobID` int NOT NULL,
+  `deviceID` varchar(50) NOT NULL,
+  `event_type` enum('scanned','packed','issued','returned','unpacked') NOT NULL,
+  `actor` varchar(100) DEFAULT NULL COMMENT 'User who performed the action',
+  `timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `metadata` json DEFAULT NULL COMMENT 'Additional event data',
+  PRIMARY KEY (`id`),
+  KEY `idx_job_device_events_job` (`jobID`),
+  KEY `idx_job_device_events_device` (`deviceID`),
+  KEY `idx_job_device_events_type` (`event_type`),
+  KEY `idx_job_device_events_timestamp` (`timestamp`),
+  CONSTRAINT `fk_job_device_events_device` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE CASCADE,
+  CONSTRAINT `fk_job_device_events_job` FOREIGN KEY (`jobID`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `jobdevices`
+-- Table structure for table `job_edit_sessions`
 --
 
+DROP TABLE IF EXISTS `job_edit_sessions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `job_edit_sessions` (
+  `session_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `job_id` int NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `username` varchar(255) NOT NULL,
+  `display_name` varchar(255) NOT NULL,
+  `started_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_seen` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`session_id`),
+  UNIQUE KEY `uk_job_edit_sessions_job_user` (`job_id`,`user_id`),
+  KEY `idx_job_edit_sessions_job` (`job_id`),
+  KEY `idx_job_edit_sessions_user` (`user_id`),
+  KEY `idx_job_edit_sessions_last_seen` (`last_seen`),
+  CONSTRAINT `fk_job_edit_sessions_job` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
+  CONSTRAINT `fk_job_edit_sessions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2064 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `job_history`
+--
+
+DROP TABLE IF EXISTS `job_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `job_history` (
+  `history_id` bigint NOT NULL AUTO_INCREMENT,
+  `job_id` int NOT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `changed_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `change_type` enum('created','updated','status_changed','device_added','device_removed','deleted') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `field_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `old_value` text COLLATE utf8mb4_unicode_ci,
+  `new_value` text COLLATE utf8mb4_unicode_ci,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`history_id`),
+  KEY `idx_job_id` (`job_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_changed_at` (`changed_at`),
+  CONSTRAINT `job_history_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
+  CONSTRAINT `job_history_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `job_package_reservations`
+--
+
+DROP TABLE IF EXISTS `job_package_reservations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `job_package_reservations` (
+  `reservation_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `job_package_id` bigint unsigned NOT NULL,
+  `device_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `quantity` int NOT NULL DEFAULT '1',
+  `reservation_status` enum('reserved','assigned','released') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'reserved',
+  `reserved_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `assigned_at` timestamp NULL DEFAULT NULL,
+  `released_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`reservation_id`),
+  KEY `idx_reservations_job_package` (`job_package_id`),
+  KEY `idx_reservations_device` (`device_id`),
+  KEY `idx_reservations_status` (`reservation_status`),
+  CONSTRAINT `fk_reservations_job_package` FOREIGN KEY (`job_package_id`) REFERENCES `job_packages` (`job_package_id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=525 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `job_packages`
+--
+
+DROP TABLE IF EXISTS `job_packages`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `job_packages` (
+  `job_package_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `job_id` int NOT NULL,
+  `package_id` int NOT NULL,
+  `quantity` int NOT NULL DEFAULT '1',
+  `custom_price` decimal(12,2) DEFAULT NULL COMMENT 'Override package price for this job',
+  `added_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `added_by` bigint unsigned DEFAULT NULL,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  PRIMARY KEY (`job_package_id`),
+  KEY `idx_job_packages_job` (`job_id`),
+  KEY `idx_job_packages_package` (`package_id`),
+  CONSTRAINT `fk_job_packages_job` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
+  CONSTRAINT `fk_job_packages_package` FOREIGN KEY (`package_id`) REFERENCES `product_packages` (`package_id`) ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=99 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `job_rental_equipment`
+--
+
+DROP TABLE IF EXISTS `job_rental_equipment`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `job_rental_equipment` (
+  `job_id` int NOT NULL,
+  `equipment_id` int unsigned NOT NULL,
+  `quantity` int unsigned NOT NULL DEFAULT '1',
+  `days_used` int unsigned NOT NULL DEFAULT '1',
+  `total_cost` decimal(12,2) NOT NULL,
+  `notes` varchar(500) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`job_id`,`equipment_id`),
+  KEY `idx_job_id` (`job_id`),
+  KEY `idx_equipment_id` (`equipment_id`),
+  KEY `idx_created_at` (`created_at`),
+  CONSTRAINT `job_rental_equipment_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
+  CONSTRAINT `job_rental_equipment_ibfk_2` FOREIGN KEY (`equipment_id`) REFERENCES `rental_equipment` (`equipment_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `jobdevices`
+--
+
+DROP TABLE IF EXISTS `jobdevices`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `jobdevices` (
   `jobID` int NOT NULL,
   `deviceID` varchar(50) NOT NULL,
@@ -1023,64 +1640,39 @@ CREATE TABLE `jobdevices` (
   `is_package_item` tinyint(1) DEFAULT '0' COMMENT 'TRUE if this device is from a package (for UI display)',
   `pack_status` enum('pending','packed','issued','returned') NOT NULL DEFAULT 'pending',
   `pack_ts` datetime DEFAULT NULL,
-  KEY `idx_package_id` (`package_id`)
+  PRIMARY KEY (`jobID`,`deviceID`),
+  KEY `deviceID` (`deviceID`),
+  KEY `idx_jobdevices_deviceid` (`deviceID`),
+  KEY `idx_jobdevices_jobid` (`jobID`),
+  KEY `idx_jobdevices_composite` (`deviceID`,`jobID`),
+  KEY `idx_jobdevices_job` (`jobID`),
+  KEY `idx_jobdevices_device` (`deviceID`),
+  KEY `idx_jobdevices_pack_status` (`pack_status`),
+  KEY `idx_jobdevices_job_pack` (`jobID`,`pack_status`),
+  KEY `idx_package_id` (`package_id`),
+  CONSTRAINT `jobdevices_ibfk_2` FOREIGN KEY (`jobID`) REFERENCES `jobs` (`jobID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `jobdevices_ibfk_3` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `job_packages`
---
-
-CREATE TABLE `job_packages` (
-  `job_package_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `job_id` int NOT NULL,
-  `package_id` int NOT NULL COMMENT 'References equipment_packages.packageID',
-  `quantity` int UNSIGNED NOT NULL DEFAULT '1',
-  `custom_price` decimal(12,2) DEFAULT NULL COMMENT 'Override package price for this job',
-  `added_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `added_by` bigint UNSIGNED DEFAULT NULL,
-  `notes` text COMMENT 'Special notes for this package assignment',
-  PRIMARY KEY (`job_package_id`),
-  KEY `idx_job_packages_job` (`job_id`),
-  KEY `idx_job_packages_package` (`package_id`),
-  KEY `idx_job_packages_added_by` (`added_by`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Packages assigned to jobs as single line items';
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `job_package_reservations`
+-- Table structure for table `jobs`
 --
 
-CREATE TABLE `job_package_reservations` (
-  `reservation_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `job_package_id` bigint UNSIGNED NOT NULL COMMENT 'References job_packages',
-  `device_id` varchar(50) NOT NULL COMMENT 'Reserved device',
-  `quantity` int UNSIGNED NOT NULL DEFAULT '1' COMMENT 'Number of this device reserved',
-  `reservation_status` enum('reserved','assigned','released') NOT NULL DEFAULT 'reserved',
-  `reserved_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `assigned_at` timestamp NULL DEFAULT NULL,
-  `released_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`reservation_id`),
-  KEY `idx_job_pkg_res_job_package` (`job_package_id`),
-  KEY `idx_job_pkg_res_device` (`device_id`),
-  KEY `idx_job_pkg_res_status` (`reservation_status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Track device reservations for package assignments';
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `jobs`
---
-
+DROP TABLE IF EXISTS `jobs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `jobs` (
-  `jobID` int NOT NULL,
+  `jobID` int NOT NULL AUTO_INCREMENT,
   `customerID` int DEFAULT NULL,
   `startDate` date DEFAULT NULL,
   `endDate` date DEFAULT NULL,
   `statusID` int DEFAULT NULL,
   `jobcategoryID` int DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` bigint unsigned DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `description` varchar(50) DEFAULT NULL,
   `discount` decimal(10,2) DEFAULT '0.00',
   `discount_type` enum('percent','amount') DEFAULT 'amount',
@@ -1095,14 +1687,39 @@ CREATE TABLE `jobs` (
   `contract_signed` tinyint(1) DEFAULT '0',
   `contract_documentID` int DEFAULT NULL,
   `completion_percentage` int DEFAULT '0',
-  `job_code` varchar(16) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Trigger `jobs`
---
-DELIMITER $$
-CREATE TRIGGER `jobs_before_insert` BEFORE INSERT ON `jobs` FOR EACH ROW BEGIN
+  `job_code` varchar(16) NOT NULL,
+  PRIMARY KEY (`jobID`),
+  UNIQUE KEY `ux_jobs_job_code` (`job_code`),
+  KEY `idx_jobs_customerID` (`customerID`),
+  KEY `idx_jobs_jobcategoryID` (`jobcategoryID`),
+  KEY `statusID` (`statusID`),
+  KEY `contract_documentID` (`contract_documentID`),
+  KEY `idx_jobs_statusid` (`statusID`),
+  KEY `idx_jobs_dates` (`startDate`,`endDate`),
+  KEY `idx_jobs_status` (`statusID`),
+  KEY `idx_created_by` (`created_by`),
+  KEY `idx_updated_by` (`updated_by`),
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_updated_at` (`updated_at`),
+  FULLTEXT KEY `idx_jobs_search` (`description`,`internal_notes`,`customer_notes`),
+  CONSTRAINT `fk_jobs_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL,
+  CONSTRAINT `fk_jobs_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL,
+  CONSTRAINT `jobs_ibfk_1` FOREIGN KEY (`customerID`) REFERENCES `customers` (`customerID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `jobs_ibfk_2` FOREIGN KEY (`jobcategoryID`) REFERENCES `jobCategory` (`jobcategoryID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `jobs_ibfk_3` FOREIGN KEY (`statusID`) REFERENCES `status` (`statusID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `jobs_ibfk_5` FOREIGN KEY (`contract_documentID`) REFERENCES `documents` (`documentID`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=1119 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_AUTO_VALUE_ON_ZERO' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `jobs_before_insert` BEFORE INSERT ON `jobs` FOR EACH ROW BEGIN
   IF NEW.discount_type = 'percent' THEN
     -- Prozentualer Rabatt
     SET NEW.final_revenue = ROUND(
@@ -1116,11 +1733,22 @@ CREATE TRIGGER `jobs_before_insert` BEFORE INSERT ON `jobs` FOR EACH ROW BEGIN
       2
     );
   END IF;
-END
-$$
+END */;;
 DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `jobs_before_update` BEFORE UPDATE ON `jobs` FOR EACH ROW BEGIN
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_AUTO_VALUE_ON_ZERO' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `jobs_before_update` BEFORE UPDATE ON `jobs` FOR EACH ROW BEGIN
   IF NEW.discount_type = 'percent' THEN
     SET NEW.final_revenue = ROUND(
       NEW.revenue * (1 - NEW.discount/100),
@@ -1132,95 +1760,22 @@ CREATE TRIGGER `jobs_before_update` BEFORE UPDATE ON `jobs` FOR EACH ROW BEGIN
       2
     );
   END IF;
-END
-$$
+END */;;
 DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `job_attachments`
---
-
-CREATE TABLE `job_attachments` (
-  `attachment_id` bigint UNSIGNED NOT NULL,
-  `job_id` int NOT NULL,
-  `filename` varchar(255) NOT NULL,
-  `original_filename` varchar(255) NOT NULL,
-  `file_path` varchar(500) NOT NULL,
-  `file_size` bigint NOT NULL,
-  `mime_type` varchar(100) NOT NULL,
-  `uploaded_by` bigint UNSIGNED DEFAULT NULL,
-  `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `description` text,
-  `is_active` tinyint(1) DEFAULT '1'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
--- Tabellenstruktur für Tabelle `job_edit_sessions`
+-- Table structure for table `label_templates`
 --
 
-CREATE TABLE `job_edit_sessions` (
-  `session_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `job_id` int NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
-  `username` varchar(255) NOT NULL,
-  `display_name` varchar(255) NOT NULL,
-  `started_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `last_seen` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`session_id`),
-  UNIQUE KEY `uk_job_edit_sessions_job_user` (`job_id`,`user_id`),
-  KEY `idx_job_edit_sessions_job` (`job_id`),
-  KEY `idx_job_edit_sessions_user` (`user_id`),
-  KEY `idx_job_edit_sessions_last_seen` (`last_seen`),
-  CONSTRAINT `fk_job_edit_sessions_job` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
-  CONSTRAINT `fk_job_edit_sessions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `job_device_events`
---
-
-CREATE TABLE `job_device_events` (
-  `id` bigint UNSIGNED NOT NULL,
-  `jobID` int NOT NULL,
-  `deviceID` varchar(50) NOT NULL,
-  `event_type` enum('scanned','packed','issued','returned','unpacked') NOT NULL,
-  `actor` varchar(100) DEFAULT NULL COMMENT 'User who performed the action',
-  `timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `metadata` json DEFAULT NULL COMMENT 'Additional event data'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `job_rental_equipment`
---
-
-CREATE TABLE `job_rental_equipment` (
-  `job_id` int NOT NULL,
-  `equipment_id` int UNSIGNED NOT NULL,
-  `quantity` int UNSIGNED NOT NULL DEFAULT '1',
-  `days_used` int UNSIGNED NOT NULL DEFAULT '1',
-  `total_cost` decimal(12,2) NOT NULL,
-  `notes` varchar(500) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `label_templates`
---
-
+DROP TABLE IF EXISTS `label_templates`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `label_templates` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text COLLATE utf8mb4_unicode_ci,
   `width` decimal(10,2) NOT NULL COMMENT 'Width in millimeters',
@@ -1228,17 +1783,40 @@ CREATE TABLE `label_templates` (
   `template_json` longtext COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'JSON array of label elements',
   `is_default` tinyint(1) DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_is_default` (`is_default`),
+  KEY `idx_name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `led_controller_zone_types`
+--
+
+DROP TABLE IF EXISTS `led_controller_zone_types`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `led_controller_zone_types` (
+  `controller_id` int NOT NULL,
+  `zone_type_id` int NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`controller_id`,`zone_type_id`),
+  KEY `fk_led_controller_zone_types_zone_type` (`zone_type_id`),
+  CONSTRAINT `fk_led_controller_zone_types_controller` FOREIGN KEY (`controller_id`) REFERENCES `led_controllers` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_led_controller_zone_types_zone_type` FOREIGN KEY (`zone_type_id`) REFERENCES `zone_types` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `led_controllers`
+-- Table structure for table `led_controllers`
 --
 
+DROP TABLE IF EXISTS `led_controllers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `led_controllers` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `controller_id` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
   `display_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `topic_suffix` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
@@ -1251,57 +1829,60 @@ CREATE TABLE `led_controllers` (
   `metadata` json DEFAULT NULL,
   `status_data` json DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `led_controller_zone_types`
---
-
-CREATE TABLE `led_controller_zone_types` (
-  `controller_id` int NOT NULL,
-  `zone_type_id` int NOT NULL,
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `controller_id` (`controller_id`),
+  KEY `idx_led_controllers_last_seen` (`last_seen`)
+) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `maintenanceLogs`
+-- Table structure for table `maintenanceLogs`
 --
 
+DROP TABLE IF EXISTS `maintenanceLogs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `maintenanceLogs` (
-  `maintenanceLogID` int NOT NULL,
+  `maintenanceLogID` int NOT NULL AUTO_INCREMENT,
   `deviceID` varchar(50) DEFAULT NULL,
   `date` datetime DEFAULT NULL,
   `employeeID` int DEFAULT NULL,
   `cost` decimal(10,2) DEFAULT NULL,
-  `notes` text
+  `notes` text,
+  PRIMARY KEY (`maintenanceLogID`),
+  KEY `idx_maintenanceLogs_deviceID` (`deviceID`),
+  KEY `idx_maintenanceLogs_employeeID` (`employeeID`),
+  CONSTRAINT `fk_maintenanceLogs_device` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `maintenanceLogs_ibfk_2` FOREIGN KEY (`employeeID`) REFERENCES `employee` (`employeeID`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `manufacturer`
+-- Table structure for table `manufacturer`
 --
 
+DROP TABLE IF EXISTS `manufacturer`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `manufacturer` (
-  `manufacturerID` int NOT NULL,
+  `manufacturerID` int NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
-  `website` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `website` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`manufacturerID`)
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `offline_sync_queue`
+-- Table structure for table `offline_sync_queue`
 --
 
+DROP TABLE IF EXISTS `offline_sync_queue`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `offline_sync_queue` (
-  `queueID` int NOT NULL,
-  `userID` bigint UNSIGNED NOT NULL,
+  `queueID` int NOT NULL AUTO_INCREMENT,
+  `userID` bigint unsigned NOT NULL,
   `action` enum('create','update','delete') NOT NULL,
   `entity_type` varchar(50) NOT NULL,
   `entity_data` json NOT NULL,
@@ -1309,52 +1890,458 @@ CREATE TABLE `offline_sync_queue` (
   `synced` tinyint(1) DEFAULT '0',
   `synced_at` timestamp NULL DEFAULT NULL,
   `retry_count` int DEFAULT '0',
-  `error_message` text
+  `error_message` text,
+  PRIMARY KEY (`queueID`),
+  KEY `idx_user_synced` (`userID`,`synced`),
+  KEY `idx_timestamp_synced` (`timestamp`,`synced`),
+  CONSTRAINT `offline_sync_queue_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `package_categories`
+-- Table structure for table `package_categories`
 --
 
+DROP TABLE IF EXISTS `package_categories`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `package_categories` (
-  `categoryID` int NOT NULL,
+  `categoryID` int NOT NULL AUTO_INCREMENT,
   `name` varchar(100) NOT NULL,
   `description` text,
   `color` varchar(7) DEFAULT NULL COMMENT 'Hex color code for UI (#007bff)',
-  `sort_order` int UNSIGNED DEFAULT NULL,
+  `sort_order` int unsigned DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`categoryID`),
+  UNIQUE KEY `uk_package_categories_name` (`name`),
+  KEY `idx_package_categories_active` (`is_active`),
+  KEY `idx_package_categories_sort` (`sort_order`)
+) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `package_devices`
+-- Table structure for table `package_devices`
 --
 
+DROP TABLE IF EXISTS `package_devices`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `package_devices` (
   `packageID` int NOT NULL,
   `deviceID` varchar(50) NOT NULL,
-  `quantity` int UNSIGNED NOT NULL DEFAULT '1',
+  `quantity` int unsigned NOT NULL DEFAULT '1',
   `custom_price` decimal(12,2) DEFAULT NULL COMMENT 'Override price for this device in package',
   `is_required` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether device is required (1) or optional (0)',
   `notes` text COMMENT 'Special notes about this device in package',
-  `sort_order` int UNSIGNED DEFAULT NULL COMMENT 'Display order within package',
+  `sort_order` int unsigned DEFAULT NULL COMMENT 'Display order within package',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`packageID`,`deviceID`),
+  KEY `idx_package_devices_package` (`packageID`),
+  KEY `idx_package_devices_device` (`deviceID`),
+  KEY `idx_package_devices_required` (`is_required`),
+  KEY `idx_package_devices_sort` (`sort_order`),
+  CONSTRAINT `fk_package_devices_device` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_package_devices_package` FOREIGN KEY (`packageID`) REFERENCES `equipment_packages` (`packageID`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `products`
+-- Table structure for table `pdf_extraction_items`
 --
 
-CREATE TABLE `products` (
+DROP TABLE IF EXISTS `pdf_extraction_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pdf_extraction_items` (
+  `item_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `extraction_id` bigint unsigned NOT NULL,
+  `line_number` int DEFAULT NULL COMMENT 'Position in PDF',
+  `raw_product_text` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Original text from PDF',
+  `quantity` int DEFAULT NULL COMMENT 'Extracted quantity',
+  `unit_price` decimal(12,2) DEFAULT NULL COMMENT 'Extracted unit price',
+  `line_total` decimal(12,2) DEFAULT NULL COMMENT 'Extracted line total',
+  `mapped_product_id` int DEFAULT NULL COMMENT 'Linked product after mapping',
+  `mapped_package_id` int DEFAULT NULL,
+  `mapping_confidence` decimal(5,2) DEFAULT NULL COMMENT 'Mapping confidence 0-100',
+  `mapping_status` enum('pending','auto_mapped','user_confirmed','user_rejected','needs_creation') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
+  `user_notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`item_id`),
+  KEY `idx_pdf_items_extraction` (`extraction_id`),
+  KEY `idx_pdf_items_product` (`mapped_product_id`),
+  KEY `idx_pdf_items_status` (`mapping_status`),
+  KEY `idx_pdf_items_package` (`mapped_package_id`),
+  CONSTRAINT `fk_pdf_items_extraction` FOREIGN KEY (`extraction_id`) REFERENCES `pdf_extractions` (`extraction_id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pdf_items_package` FOREIGN KEY (`mapped_package_id`) REFERENCES `product_packages` (`package_id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_pdf_items_product` FOREIGN KEY (`mapped_product_id`) REFERENCES `products` (`productID`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=1073 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Individual line items extracted from PDFs';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `pdf_extractions`
+--
+
+DROP TABLE IF EXISTS `pdf_extractions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pdf_extractions` (
+  `extraction_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `upload_id` bigint unsigned NOT NULL,
+  `raw_text` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci COMMENT 'Full OCR extracted text',
+  `extracted_data` json DEFAULT NULL COMMENT 'Structured data: customer, dates, items, prices',
+  `confidence_score` decimal(5,2) DEFAULT NULL COMMENT 'Overall OCR confidence 0-100',
+  `page_count` int DEFAULT '1',
+  `extraction_method` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'unipdf' COMMENT 'OCR engine used',
+  `extracted_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `customer_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Extracted customer name',
+  `customer_id` int DEFAULT NULL COMMENT 'Matched customer ID',
+  `document_date` date DEFAULT NULL COMMENT 'Extracted document date',
+  `document_number` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Invoice/offer number',
+  `total_amount` decimal(12,2) DEFAULT NULL COMMENT 'Extracted total price',
+  `discount_amount` decimal(12,2) DEFAULT NULL COMMENT 'Extracted discount',
+  `metadata` json DEFAULT NULL COMMENT 'Additional extraction metadata',
+  `parsed_total` decimal(10,2) DEFAULT NULL COMMENT 'Subtotal before discount',
+  `discount_percent` decimal(5,2) DEFAULT NULL COMMENT 'Discount percentage',
+  PRIMARY KEY (`extraction_id`),
+  UNIQUE KEY `unique_upload_extraction` (`upload_id`),
+  KEY `idx_pdf_extractions_customer` (`customer_id`),
+  KEY `idx_pdf_extractions_date` (`document_date`),
+  CONSTRAINT `fk_pdf_extractions_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customerID`) ON DELETE SET NULL,
+  CONSTRAINT `fk_pdf_extractions_upload` FOREIGN KEY (`upload_id`) REFERENCES `pdf_uploads` (`upload_id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=133 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='OCR extraction results from PDFs';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `pdf_mapping_events`
+--
+
+DROP TABLE IF EXISTS `pdf_mapping_events`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pdf_mapping_events` (
+  `event_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `extraction_id` bigint unsigned DEFAULT NULL,
+  `item_id` bigint unsigned DEFAULT NULL,
+  `pdf_product_text` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `normalized_text` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `product_id` int DEFAULT NULL,
+  `package_id` int DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`event_id`),
+  KEY `idx_mapping_events_extraction` (`extraction_id`),
+  KEY `idx_mapping_events_product` (`product_id`),
+  KEY `idx_mapping_events_text` (`pdf_product_text`),
+  KEY `idx_mapping_events_normalized` (`normalized_text`),
+  KEY `idx_mapping_events_package` (`package_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=733 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Audit trail für PDF-Mappings';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `pdf_package_mappings`
+--
+
+DROP TABLE IF EXISTS `pdf_package_mappings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pdf_package_mappings` (
+  `mapping_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `pdf_package_text` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `normalized_text` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `package_id` int NOT NULL,
+  `mapping_type` enum('exact','fuzzy','manual') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'manual',
+  `confidence_score` decimal(5,2) DEFAULT NULL,
+  `usage_count` int DEFAULT '0',
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_active` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`mapping_id`),
+  KEY `idx_pdf_package_mappings_package` (`package_id`),
+  KEY `idx_pdf_package_mappings_text` (`pdf_package_text`(255)),
+  KEY `idx_pdf_package_mappings_normalized` (`normalized_text`(255)),
+  KEY `idx_pdf_package_mappings_type` (`mapping_type`)
+) ENGINE=InnoDB AUTO_INCREMENT=174 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `pdf_product_mappings`
+--
+
+DROP TABLE IF EXISTS `pdf_product_mappings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pdf_product_mappings` (
+  `mapping_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `pdf_product_text` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Text from PDF',
+  `normalized_text` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Cleaned/normalized version',
+  `product_id` int NOT NULL COMMENT 'Mapped product ID',
+  `mapping_type` enum('exact','fuzzy','manual') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'manual',
+  `confidence_score` decimal(5,2) DEFAULT NULL COMMENT 'Mapping confidence 0-100',
+  `usage_count` int DEFAULT '0' COMMENT 'How many times this mapping was used',
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_active` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`mapping_id`),
+  UNIQUE KEY `unique_pdf_text_product` (`pdf_product_text`,`product_id`),
+  KEY `idx_pdf_mappings_product` (`product_id`),
+  KEY `idx_pdf_mappings_text` (`pdf_product_text`),
+  KEY `idx_pdf_mappings_normalized` (`normalized_text`),
+  KEY `idx_pdf_mappings_type` (`mapping_type`),
+  KEY `fk_pdf_mappings_user` (`created_by`),
+  CONSTRAINT `fk_pdf_mappings_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`productID`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pdf_mappings_user` FOREIGN KEY (`created_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=654 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Saved mappings between PDF text and products';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `pdf_uploads`
+--
+
+DROP TABLE IF EXISTS `pdf_uploads`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pdf_uploads` (
+  `upload_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `job_id` int DEFAULT NULL COMMENT 'Associated job if already exists',
+  `original_filename` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `stored_filename` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `file_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `file_size` bigint NOT NULL,
+  `mime_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `file_hash` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'SHA256 hash for deduplication',
+  `uploaded_by` bigint unsigned DEFAULT NULL,
+  `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `processing_status` enum('pending','processing','completed','failed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
+  `processing_started_at` timestamp NULL DEFAULT NULL,
+  `processing_completed_at` timestamp NULL DEFAULT NULL,
+  `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `is_active` tinyint(1) DEFAULT '1',
+  `document_id` int DEFAULT NULL,
+  PRIMARY KEY (`upload_id`),
+  KEY `idx_pdf_uploads_job` (`job_id`),
+  KEY `idx_pdf_uploads_status` (`processing_status`),
+  KEY `idx_pdf_uploads_hash` (`file_hash`),
+  KEY `idx_pdf_uploads_user` (`uploaded_by`),
+  KEY `fk_pdf_uploads_document` (`document_id`),
+  CONSTRAINT `fk_pdf_uploads_document` FOREIGN KEY (`document_id`) REFERENCES `documents` (`documentID`) ON DELETE SET NULL,
+  CONSTRAINT `fk_pdf_uploads_job` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE SET NULL,
+  CONSTRAINT `fk_pdf_uploads_user` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=135 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Uploaded PDF files for job creation';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `product_accessories`
+--
+
+DROP TABLE IF EXISTS `product_accessories`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `product_accessories` (
+  `product_id` int NOT NULL COMMENT 'Main product ID',
+  `accessory_product_id` int NOT NULL COMMENT 'Accessory product ID',
+  `is_optional` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'TRUE if accessory is optional',
+  `default_quantity` int NOT NULL DEFAULT '1' COMMENT 'Default quantity when adding to job',
+  `sort_order` int DEFAULT NULL COMMENT 'Display order',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`product_id`,`accessory_product_id`),
+  KEY `idx_product_accessories_product` (`product_id`),
+  KEY `idx_product_accessories_accessory` (`accessory_product_id`),
+  CONSTRAINT `fk_product_accessories_accessory` FOREIGN KEY (`accessory_product_id`) REFERENCES `products` (`productID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_product_accessories_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`productID`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Links products to their available accessories';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `product_consumables`
+--
+
+DROP TABLE IF EXISTS `product_consumables`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `product_consumables` (
+  `product_id` int NOT NULL COMMENT 'Main product ID',
+  `consumable_product_id` int NOT NULL COMMENT 'Consumable product ID',
+  `default_quantity` decimal(10,3) NOT NULL DEFAULT '1.000' COMMENT 'Default quantity when adding to job',
+  `sort_order` int DEFAULT NULL COMMENT 'Display order',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`product_id`,`consumable_product_id`),
+  KEY `idx_product_consumables_product` (`product_id`),
+  KEY `idx_product_consumables_consumable` (`consumable_product_id`),
+  CONSTRAINT `fk_product_consumables_consumable` FOREIGN KEY (`consumable_product_id`) REFERENCES `products` (`productID`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_product_consumables_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`productID`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Links products to their available consumables';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `product_dependencies`
+--
+
+DROP TABLE IF EXISTS `product_dependencies`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `product_dependencies` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `product_id` int NOT NULL COMMENT 'Main product that has the dependency',
+  `dependency_product_id` int NOT NULL COMMENT 'The dependent product (accessory/consumable)',
+  `is_optional` tinyint(1) DEFAULT '1' COMMENT 'Whether the dependency is optional (shows as suggestion)',
+  `default_quantity` decimal(10,2) DEFAULT '1.00' COMMENT 'Suggested quantity for this dependency',
+  `notes` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Optional notes about why this dependency is needed',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_dependency` (`product_id`,`dependency_product_id`),
+  KEY `idx_product_id` (`product_id`),
+  KEY `idx_dependency_product_id` (`dependency_product_id`),
+  CONSTRAINT `product_dependencies_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`productID`) ON DELETE CASCADE,
+  CONSTRAINT `product_dependencies_ibfk_2` FOREIGN KEY (`dependency_product_id`) REFERENCES `products` (`productID`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Stores product dependencies for job assignment suggestions';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `product_images`
+--
+
+DROP TABLE IF EXISTS `product_images`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `product_images` (
+  `imageID` bigint unsigned NOT NULL AUTO_INCREMENT,
   `productID` int NOT NULL,
+  `filename` varchar(255) NOT NULL,
+  `original_name` varchar(255) DEFAULT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `file_size` bigint unsigned DEFAULT NULL,
+  `mime_type` varchar(100) DEFAULT NULL,
+  `is_primary` tinyint(1) DEFAULT '0',
+  `alt_text` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`imageID`),
+  KEY `idx_product_images_product` (`productID`),
+  KEY `idx_product_images_primary` (`productID`,`is_primary`),
+  CONSTRAINT `fk_product_images_product` FOREIGN KEY (`productID`) REFERENCES `products` (`productID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `product_locations`
+--
+
+DROP TABLE IF EXISTS `product_locations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `product_locations` (
+  `location_id` int NOT NULL AUTO_INCREMENT,
+  `product_id` int NOT NULL,
+  `zone_id` int NOT NULL,
+  `quantity` decimal(10,3) NOT NULL DEFAULT '0.000',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`location_id`),
+  UNIQUE KEY `unique_product_zone` (`product_id`,`zone_id`),
+  KEY `zone_id` (`zone_id`),
+  CONSTRAINT `product_locations_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`productID`) ON DELETE CASCADE,
+  CONSTRAINT `product_locations_ibfk_2` FOREIGN KEY (`zone_id`) REFERENCES `storage_zones` (`zone_id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `product_package_aliases`
+--
+
+DROP TABLE IF EXISTS `product_package_aliases`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `product_package_aliases` (
+  `alias_id` int NOT NULL AUTO_INCREMENT,
+  `package_id` int NOT NULL,
+  `alias` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`alias_id`),
+  UNIQUE KEY `uq_package_alias` (`package_id`,`alias`),
+  KEY `idx_alias` (`alias`),
+  CONSTRAINT `fk_package_alias_package` FOREIGN KEY (`package_id`) REFERENCES `product_packages` (`package_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `product_package_items`
+--
+
+DROP TABLE IF EXISTS `product_package_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `product_package_items` (
+  `package_item_id` int NOT NULL AUTO_INCREMENT,
+  `package_id` int NOT NULL,
+  `product_id` int NOT NULL,
+  `quantity` int NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`package_item_id`),
+  UNIQUE KEY `unique_package_product` (`package_id`,`product_id`),
+  KEY `idx_package_id` (`package_id`),
+  KEY `idx_product_id` (`product_id`),
+  CONSTRAINT `product_package_items_ibfk_1` FOREIGN KEY (`package_id`) REFERENCES `product_packages` (`package_id`) ON DELETE CASCADE,
+  CONSTRAINT `product_package_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`productID`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `product_packages`
+--
+
+DROP TABLE IF EXISTS `product_packages`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `product_packages` (
+  `package_id` int NOT NULL AUTO_INCREMENT,
+  `product_id` int DEFAULT NULL,
+  `package_code` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `website_visible` tinyint(1) NOT NULL DEFAULT '0',
+  `price` decimal(10,2) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`package_id`),
+  UNIQUE KEY `uq_product_package_code` (`package_code`),
+  KEY `idx_name` (`name`),
+  KEY `idx_product_id` (`product_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Temporary view structure for view `product_revenue`
+--
+
+DROP TABLE IF EXISTS `product_revenue`;
+/*!50001 DROP VIEW IF EXISTS `product_revenue`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `product_revenue` AS SELECT 
+ 1 AS `product_name`,
+ 1 AS `total_revenue`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `products`
+--
+
+DROP TABLE IF EXISTS `products`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `products` (
+  `productID` int NOT NULL AUTO_INCREMENT,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `categoryID` int DEFAULT NULL,
   `subcategoryID` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
@@ -1369,14 +2356,45 @@ CREATE TABLE `products` (
   `width` decimal(10,2) DEFAULT NULL COMMENT 'in cm',
   `depth` decimal(10,2) DEFAULT NULL COMMENT 'in cm',
   `powerconsumption` decimal(10,2) DEFAULT NULL COMMENT 'in W',
-  `pos_in_category` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Trigger `products`
---
-DELIMITER $$
-CREATE TRIGGER `pos_in_subcategory` BEFORE INSERT ON `products` FOR EACH ROW BEGIN
+  `pos_in_category` int DEFAULT NULL,
+  `is_accessory` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'TRUE if this is an accessory product',
+  `is_consumable` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'TRUE if this is a consumable product',
+  `count_type_id` int DEFAULT NULL COMMENT 'FK to count_types for accessories/consumables',
+  `stock_quantity` decimal(10,3) DEFAULT NULL COMMENT 'Current stock for accessories/consumables',
+  `min_stock_level` decimal(10,3) DEFAULT NULL COMMENT 'Minimum stock alert level',
+  `generic_barcode` varchar(255) DEFAULT NULL COMMENT 'Generic barcode for accessories/consumables',
+  `price_per_unit` decimal(10,2) DEFAULT NULL COMMENT 'Price per unit for accessories/consumables',
+  `website_visible` tinyint(1) NOT NULL DEFAULT '0',
+  `website_thumbnail` varchar(255) DEFAULT NULL,
+  `website_images_json` json DEFAULT NULL,
+  PRIMARY KEY (`productID`),
+  KEY `idx_products_categoryID` (`categoryID`),
+  KEY `idx_products_manufacturerID` (`manufacturerID`),
+  KEY `idx_products_brandID` (`brandID`),
+  KEY `idx_products_subcategoryID` (`subcategoryID`),
+  KEY `idx_products_subbiercategoryID` (`subbiercategoryID`),
+  KEY `idx_products_is_accessory` (`is_accessory`),
+  KEY `idx_products_is_consumable` (`is_consumable`),
+  KEY `idx_products_generic_barcode` (`generic_barcode`),
+  KEY `fk_products_count_type` (`count_type_id`),
+  CONSTRAINT `fk_products_count_type` FOREIGN KEY (`count_type_id`) REFERENCES `count_types` (`count_type_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `products_ibfk_1` FOREIGN KEY (`brandID`) REFERENCES `brands` (`brandID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `products_ibfk_2` FOREIGN KEY (`categoryID`) REFERENCES `categories` (`categoryID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `products_ibfk_3` FOREIGN KEY (`manufacturerID`) REFERENCES `manufacturer` (`manufacturerID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `products_ibfk_4` FOREIGN KEY (`subbiercategoryID`) REFERENCES `subbiercategories` (`subbiercategoryID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `products_ibfk_5` FOREIGN KEY (`subcategoryID`) REFERENCES `subcategories` (`subcategoryID`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=1000006 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_AUTO_VALUE_ON_ZERO' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `pos_in_subcategory` BEFORE INSERT ON `products` FOR EACH ROW BEGIN
   DECLARE next_pos INT;
 
   -- Ermittele die höchste bereits vergebene Position in dieser Subkategorie
@@ -1387,50 +2405,23 @@ CREATE TRIGGER `pos_in_subcategory` BEFORE INSERT ON `products` FOR EACH ROW BEG
 
   -- Setze das neue pos_in_category-Feld
   SET NEW.pos_in_category = next_pos;
-END
-$$
+END */;;
 DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `product_images`
---
-
-CREATE TABLE `product_images` (
-  `imageID` bigint UNSIGNED NOT NULL,
-  `productID` int NOT NULL,
-  `filename` varchar(255) NOT NULL,
-  `original_name` varchar(255) DEFAULT NULL,
-  `file_path` varchar(500) NOT NULL,
-  `file_size` bigint UNSIGNED DEFAULT NULL,
-  `mime_type` varchar(100) DEFAULT NULL,
-  `is_primary` tinyint(1) DEFAULT '0',
-  `alt_text` varchar(255) DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
--- Stellvertreter-Struktur des Views `product_revenue`
--- (Siehe unten für die tatsächliche Ansicht)
---
-CREATE TABLE `product_revenue` (
-`product_name` varchar(50)
-,`total_revenue` decimal(32,2)
-);
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `push_subscriptions`
+-- Table structure for table `push_subscriptions`
 --
 
+DROP TABLE IF EXISTS `push_subscriptions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `push_subscriptions` (
-  `subscriptionID` int NOT NULL,
-  `userID` bigint UNSIGNED NOT NULL,
+  `subscriptionID` int NOT NULL AUTO_INCREMENT,
+  `userID` bigint unsigned NOT NULL,
   `endpoint` text NOT NULL,
   `keys_p256dh` text NOT NULL,
   `keys_auth` text NOT NULL,
@@ -1438,57 +2429,77 @@ CREATE TABLE `push_subscriptions` (
   `device_type` varchar(50) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `last_used` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `is_active` tinyint(1) DEFAULT '1'
+  `is_active` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`subscriptionID`),
+  KEY `idx_user_active` (`userID`,`is_active`),
+  KEY `idx_last_used` (`last_used`),
+  CONSTRAINT `push_subscriptions_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `rental_equipment`
+-- Table structure for table `rental_equipment`
 --
 
+DROP TABLE IF EXISTS `rental_equipment`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `rental_equipment` (
-  `equipment_id` int UNSIGNED NOT NULL,
+  `equipment_id` int unsigned NOT NULL AUTO_INCREMENT,
   `product_name` varchar(200) NOT NULL,
   `supplier_name` varchar(100) NOT NULL,
   `rental_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `customer_price` decimal(12,2) NOT NULL DEFAULT '0.00',
   `category` varchar(50) DEFAULT NULL,
   `description` varchar(1000) DEFAULT NULL,
   `notes` varchar(500) DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `created_by` int UNSIGNED DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `created_by` int unsigned DEFAULT NULL,
+  PRIMARY KEY (`equipment_id`),
+  KEY `idx_product_name` (`product_name`),
+  KEY `idx_supplier_name` (`supplier_name`),
+  KEY `idx_category` (`category`),
+  KEY `idx_is_active` (`is_active`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `retention_policies`
+-- Table structure for table `retention_policies`
 --
 
+DROP TABLE IF EXISTS `retention_policies`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `retention_policies` (
-  `id` bigint UNSIGNED NOT NULL,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `data_type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `retention_period_days` int UNSIGNED NOT NULL,
+  `retention_period_days` int unsigned NOT NULL,
   `legal_basis` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
   `auto_delete` tinyint(1) DEFAULT '0',
   `policy_description` text COLLATE utf8mb4_unicode_ci,
   `effective_from` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `effective_until` timestamp NULL DEFAULT NULL,
-  `created_by` bigint UNSIGNED DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_active_policy` (`data_type`,`effective_until`),
+  KEY `idx_retention_policies_type` (`data_type`),
+  KEY `idx_retention_policies_effective` (`effective_from`,`effective_until`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `roles`
+-- Table structure for table `roles`
 --
 
+DROP TABLE IF EXISTS `roles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `roles` (
-  `roleID` int NOT NULL,
+  `roleID` int NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL,
   `display_name` varchar(100) NOT NULL,
   `description` text,
@@ -1496,18 +2507,23 @@ CREATE TABLE `roles` (
   `is_system_role` tinyint(1) DEFAULT '0',
   `is_active` tinyint(1) DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`roleID`),
+  UNIQUE KEY `name` (`name`),
+  KEY `idx_active_system` (`is_active`,`is_system_role`)
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `saved_searches`
+-- Table structure for table `saved_searches`
 --
 
+DROP TABLE IF EXISTS `saved_searches`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `saved_searches` (
-  `searchID` int NOT NULL,
-  `userID` bigint UNSIGNED NOT NULL,
+  `searchID` int NOT NULL AUTO_INCREMENT,
+  `userID` bigint unsigned NOT NULL,
   `name` varchar(100) NOT NULL,
   `search_type` enum('global','jobs','devices','customers','cases') NOT NULL,
   `filters` json NOT NULL,
@@ -1516,17 +2532,23 @@ CREATE TABLE `saved_searches` (
   `usage_count` int DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `last_used` timestamp NULL DEFAULT NULL
+  `last_used` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`searchID`),
+  KEY `idx_user_type` (`userID`,`search_type`),
+  KEY `idx_usage_count` (`usage_count` DESC),
+  CONSTRAINT `saved_searches_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `scan_events`
+-- Table structure for table `scan_events`
 --
 
+DROP TABLE IF EXISTS `scan_events`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `scan_events` (
-  `scan_id` bigint NOT NULL,
+  `scan_id` bigint NOT NULL AUTO_INCREMENT,
   `scan_code` varchar(255) NOT NULL COMMENT 'The scanned barcode/QR code',
   `scan_type` enum('barcode','qr_code','rfid') NOT NULL DEFAULT 'barcode',
   `device_id` varchar(50) DEFAULT NULL COMMENT 'Resolved device ID',
@@ -1539,58 +2561,78 @@ CREATE TABLE `scan_events` (
   `metadata` json DEFAULT NULL COMMENT 'Additional data',
   `ip_address` varchar(45) DEFAULT NULL,
   `user_agent` text,
-  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`scan_id`),
+  KEY `idx_scan_code` (`scan_code`),
+  KEY `idx_scan_device` (`device_id`),
+  KEY `idx_scan_job` (`job_id`),
+  KEY `idx_scan_timestamp` (`timestamp`),
+  KEY `idx_scan_success` (`success`)
+) ENGINE=InnoDB AUTO_INCREMENT=152 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `search_history`
+-- Table structure for table `search_history`
 --
 
+DROP TABLE IF EXISTS `search_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `search_history` (
-  `historyID` int NOT NULL,
-  `userID` bigint UNSIGNED DEFAULT NULL,
+  `historyID` int NOT NULL AUTO_INCREMENT,
+  `userID` bigint unsigned DEFAULT NULL,
   `search_term` varchar(500) DEFAULT NULL,
   `search_type` varchar(50) DEFAULT NULL,
   `filters` json DEFAULT NULL,
   `results_count` int DEFAULT NULL,
   `execution_time_ms` int DEFAULT NULL,
-  `searched_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `searched_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`historyID`),
+  KEY `idx_user_date` (`userID`,`searched_at`),
+  KEY `idx_search_type` (`search_type`,`searched_at`),
+  CONSTRAINT `search_history_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `sessions`
+-- Table structure for table `sessions`
 --
 
+DROP TABLE IF EXISTS `sessions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sessions` (
   `session_id` varchar(191) NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
   `expires_at` datetime(3) NOT NULL,
-  `created_at` datetime(3) DEFAULT NULL
+  `created_at` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`session_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `status`
+-- Table structure for table `status`
 --
 
+DROP TABLE IF EXISTS `status`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `status` (
-  `statusID` int NOT NULL,
-  `status` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  `statusID` int NOT NULL AUTO_INCREMENT,
+  `status` varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  PRIMARY KEY (`statusID`)
+) ENGINE=InnoDB AUTO_INCREMENT=1006 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `storage_zones`
+-- Table structure for table `storage_zones`
 --
 
+DROP TABLE IF EXISTS `storage_zones`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `storage_zones` (
-  `zone_id` int NOT NULL,
+  `zone_id` int NOT NULL AUTO_INCREMENT,
   `code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Short code: SHELF-A1, RACK-B2, VAN-01',
   `barcode` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -1602,27 +2644,44 @@ CREATE TABLE `storage_zones` (
   `metadata` json DEFAULT NULL COMMENT 'Flexible attributes (GPS, dimensions, etc.)',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`zone_id`),
+  UNIQUE KEY `code` (`code`),
+  KEY `idx_zone_type` (`type`),
+  KEY `idx_zone_active` (`is_active`),
+  KEY `idx_zone_parent` (`parent_zone_id`),
+  KEY `idx_zone_barcode` (`barcode`),
+  CONSTRAINT `storage_zones_ibfk_1` FOREIGN KEY (`parent_zone_id`) REFERENCES `storage_zones` (`zone_id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `subbiercategories`
+-- Table structure for table `subbiercategories`
 --
 
+DROP TABLE IF EXISTS `subbiercategories`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `subbiercategories` (
   `subbiercategoryID` varchar(50) NOT NULL,
   `name` varchar(20) DEFAULT NULL,
   `abbreviation` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  `subcategoryID` varchar(50) NOT NULL
+  `subcategoryID` varchar(50) NOT NULL,
+  PRIMARY KEY (`subbiercategoryID`),
+  KEY `idx_subbiercategories_subcategoyID_unique` (`subcategoryID`) USING BTREE,
+  CONSTRAINT `subbiercategories_ibfk_1` FOREIGN KEY (`subcategoryID`) REFERENCES `subcategories` (`subcategoryID`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Trigger `subbiercategories`
---
-DELIMITER $$
-CREATE TRIGGER `before_insert_subbiercategory` BEFORE INSERT ON `subbiercategories` FOR EACH ROW BEGIN
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_AUTO_VALUE_ON_ZERO' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `before_insert_subbiercategory` BEFORE INSERT ON `subbiercategories` FOR EACH ROW BEGIN
     DECLARE subcat_abkuerzung VARCHAR(50);
     DECLARE naechste_nummer INT;
     
@@ -1641,28 +2700,40 @@ CREATE TRIGGER `before_insert_subbiercategory` BEFORE INSERT ON `subbiercategori
     
     -- subbiercategoryID setzen als Kombination aus Unterkategorie-Abkürzung und nächster Nummer
     SET NEW.subbiercategoryID = CONCAT(subcat_abkuerzung, naechste_nummer);
-END
-$$
+END */;;
 DELIMITER ;
-
--- --------------------------------------------------------
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
--- Tabellenstruktur für Tabelle `subcategories`
+-- Table structure for table `subcategories`
 --
 
+DROP TABLE IF EXISTS `subcategories`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `subcategories` (
   `subcategoryID` varchar(50) NOT NULL,
   `name` varchar(20) NOT NULL,
   `abbreviation` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
-  `categoryID` int DEFAULT NULL
+  `categoryID` int DEFAULT NULL,
+  PRIMARY KEY (`subcategoryID`),
+  KEY `categoryID` (`categoryID`),
+  CONSTRAINT `subcategories_ibfk_1` FOREIGN KEY (`categoryID`) REFERENCES `categories` (`categoryID`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Trigger `subcategories`
---
-DELIMITER $$
-CREATE TRIGGER `before_insert_subcategory` BEFORE INSERT ON `subcategories` FOR EACH ROW BEGIN
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'NO_AUTO_VALUE_ON_ZERO' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `before_insert_subcategory` BEFORE INSERT ON `subcategories` FOR EACH ROW BEGIN
     DECLARE cat_abkuerzung VARCHAR(50);
     DECLARE naechste_nummer INT;
     
@@ -1681,18 +2752,211 @@ CREATE TRIGGER `before_insert_subcategory` BEFORE INSERT ON `subcategories` FOR 
     
     -- subcategoryID setzen als Kombination aus Kategorie-Abkürzung und nächster Nummer
     SET NEW.subcategoryID = CONCAT(cat_abkuerzung, naechste_nummer);
-END
-$$
+END */;;
 DELIMITER ;
-
--- --------------------------------------------------------
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
--- Tabellenstruktur für Tabelle `users`
+-- Table structure for table `user_2fa`
 --
 
+DROP TABLE IF EXISTS `user_2fa`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_2fa` (
+  `two_fa_id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `secret` varchar(255) NOT NULL,
+  `qr_code_url` text,
+  `is_enabled` tinyint(1) DEFAULT '0',
+  `is_verified` tinyint(1) DEFAULT '0',
+  `backup_codes` json DEFAULT NULL,
+  `last_used` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`two_fa_id`),
+  UNIQUE KEY `user_id` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `user_dashboard_widgets`
+--
+
+DROP TABLE IF EXISTS `user_dashboard_widgets`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_dashboard_widgets` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `widgets` json NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_user_dashboard_widgets_user` (`user_id`),
+  CONSTRAINT `fk_dashboard_widgets_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `user_passkeys`
+--
+
+DROP TABLE IF EXISTS `user_passkeys`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_passkeys` (
+  `passkey_id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `credential_id` varchar(255) NOT NULL,
+  `public_key` blob,
+  `sign_count` int unsigned DEFAULT '0',
+  `aaguid` binary(16) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `last_used` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`passkey_id`),
+  UNIQUE KEY `credential_id` (`credential_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `user_preferences`
+--
+
+DROP TABLE IF EXISTS `user_preferences`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_preferences` (
+  `preference_id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `language` varchar(191) NOT NULL DEFAULT 'de',
+  `theme` varchar(191) NOT NULL DEFAULT 'dark',
+  `time_zone` varchar(191) NOT NULL DEFAULT 'Europe/Berlin',
+  `date_format` varchar(191) NOT NULL DEFAULT 'DD.MM.YYYY',
+  `time_format` varchar(191) NOT NULL DEFAULT '24h',
+  `email_notifications` tinyint(1) NOT NULL DEFAULT '1',
+  `system_notifications` tinyint(1) NOT NULL DEFAULT '1',
+  `job_status_notifications` tinyint(1) NOT NULL DEFAULT '1',
+  `device_alert_notifications` tinyint(1) NOT NULL DEFAULT '1',
+  `items_per_page` bigint NOT NULL DEFAULT '25',
+  `default_view` varchar(191) NOT NULL DEFAULT 'list',
+  `show_advanced_options` tinyint(1) NOT NULL DEFAULT '0',
+  `auto_save_enabled` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime(3) DEFAULT NULL,
+  `updated_at` datetime(3) DEFAULT NULL,
+  PRIMARY KEY (`preference_id`),
+  UNIQUE KEY `user_id` (`user_id`),
+  CONSTRAINT `fk_user_preferences_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `user_profiles`
+--
+
+DROP TABLE IF EXISTS `user_profiles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_profiles` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL COMMENT 'FK to users.userID',
+  `display_name` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Custom display name',
+  `avatar_url` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Avatar image URL',
+  `prefs` json DEFAULT NULL COMMENT 'UI preferences (dark mode, table density, etc.)',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_id` (`user_id`),
+  KEY `idx_user_profile_user_id` (`user_id`),
+  CONSTRAINT `fk_user_profiles_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='WarehouseCore-specific user profiles';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `user_roles`
+--
+
+DROP TABLE IF EXISTS `user_roles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_roles` (
+  `userID` bigint unsigned NOT NULL,
+  `roleID` int NOT NULL,
+  `assigned_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `assigned_by` bigint unsigned DEFAULT NULL,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  PRIMARY KEY (`userID`,`roleID`),
+  KEY `assigned_by` (`assigned_by`),
+  KEY `idx_user_active` (`userID`,`is_active`),
+  KEY `idx_role_active` (`roleID`,`is_active`),
+  CONSTRAINT `user_roles_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE CASCADE,
+  CONSTRAINT `user_roles_ibfk_2` FOREIGN KEY (`roleID`) REFERENCES `roles` (`roleID`) ON DELETE CASCADE,
+  CONSTRAINT `user_roles_ibfk_3` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `user_roles_wh`
+--
+
+DROP TABLE IF EXISTS `user_roles_wh`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_roles_wh` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL COMMENT 'FK to users.userID',
+  `role_id` int NOT NULL COMMENT 'FK to roles.roleID',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_role_wh` (`user_id`,`role_id`),
+  KEY `idx_user_id_wh` (`user_id`),
+  KEY `idx_role_id_wh` (`role_id`),
+  CONSTRAINT `fk_user_roles_wh_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`roleID`) ON DELETE CASCADE,
+  CONSTRAINT `fk_user_roles_wh_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='WarehouseCore user-to-role assignments';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `user_sessions`
+--
+
+DROP TABLE IF EXISTS `user_sessions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_sessions` (
+  `session_id` varchar(191) NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_active` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `expires_at` timestamp NOT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `device_info` json DEFAULT NULL,
+  PRIMARY KEY (`session_id`),
+  KEY `idx_user_active` (`user_id`,`is_active`),
+  KEY `idx_expires` (`expires_at`),
+  KEY `idx_last_active` (`last_active`),
+  CONSTRAINT `user_sessions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `users`
+--
+
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `users` (
-  `userID` bigint UNSIGNED NOT NULL,
+  `userID` bigint unsigned NOT NULL AUTO_INCREMENT,
   `username` varchar(191) NOT NULL,
   `email` varchar(191) NOT NULL,
   `password_hash` longtext NOT NULL,
@@ -1711,2120 +2975,718 @@ CREATE TABLE `users` (
   `locked_until` timestamp NULL DEFAULT NULL,
   `two_factor_enabled` tinyint(1) DEFAULT '0',
   `two_factor_secret` varchar(100) DEFAULT NULL,
-  `force_password_change` tinyint(1) DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `user_2fa`
---
-
-CREATE TABLE `user_2fa` (
-  `two_fa_id` int NOT NULL,
-  `user_id` int NOT NULL,
-  `secret` varchar(255) NOT NULL,
-  `qr_code_url` text,
-  `is_enabled` tinyint(1) DEFAULT '0',
-  `is_verified` tinyint(1) DEFAULT '0',
-  `backup_codes` json DEFAULT NULL,
-  `last_used` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+  PRIMARY KEY (`userID`),
+  UNIQUE KEY `username` (`username`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `user_passkeys`
+-- Temporary view structure for view `v_job_pack_progress`
 --
 
-CREATE TABLE `user_passkeys` (
-  `passkey_id` int NOT NULL,
-  `user_id` int NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `credential_id` varchar(255) NOT NULL,
-  `public_key` blob,
-  `sign_count` int UNSIGNED DEFAULT '0',
-  `aaguid` binary(16) DEFAULT NULL,
-  `is_active` tinyint(1) DEFAULT '1',
-  `last_used` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `user_preferences`
---
-
-CREATE TABLE `user_preferences` (
-  `preference_id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
-  `language` varchar(191) NOT NULL DEFAULT 'de',
-  `theme` varchar(191) NOT NULL DEFAULT 'dark',
-  `time_zone` varchar(191) NOT NULL DEFAULT 'Europe/Berlin',
-  `date_format` varchar(191) NOT NULL DEFAULT 'DD.MM.YYYY',
-  `time_format` varchar(191) NOT NULL DEFAULT '24h',
-  `email_notifications` tinyint(1) NOT NULL DEFAULT '1',
-  `system_notifications` tinyint(1) NOT NULL DEFAULT '1',
-  `job_status_notifications` tinyint(1) NOT NULL DEFAULT '1',
-  `device_alert_notifications` tinyint(1) NOT NULL DEFAULT '1',
-  `items_per_page` bigint NOT NULL DEFAULT '25',
-  `default_view` varchar(191) NOT NULL DEFAULT 'list',
-  `show_advanced_options` tinyint(1) NOT NULL DEFAULT '0',
-  `auto_save_enabled` tinyint(1) NOT NULL DEFAULT '1',
-  `created_at` datetime(3) DEFAULT NULL,
-  `updated_at` datetime(3) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+DROP TABLE IF EXISTS `v_job_pack_progress`;
+/*!50001 DROP VIEW IF EXISTS `v_job_pack_progress`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `v_job_pack_progress` AS SELECT 
+ 1 AS `jobID`,
+ 1 AS `job_description`,
+ 1 AS `total_devices`,
+ 1 AS `packed_devices`,
+ 1 AS `issued_devices`,
+ 1 AS `returned_devices`,
+ 1 AS `pending_devices`,
+ 1 AS `pack_progress_percent`*/;
+SET character_set_client = @saved_cs_client;
 
 --
--- Tabellenstruktur für Tabelle `user_dashboard_widgets`
+-- Temporary view structure for view `view_device_product`
 --
 
-CREATE TABLE `user_dashboard_widgets` (
-  `id` bigint UNSIGNED NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
-  `widgets` json NOT NULL,
-  `created_at` datetime(3) DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime(3) DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `user_profiles`
---
-
-CREATE TABLE `user_profiles` (
-  `id` int NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL COMMENT 'FK to users.userID',
-  `display_name` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Custom display name',
-  `avatar_url` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Avatar image URL',
-  `prefs` json DEFAULT NULL COMMENT 'UI preferences (dark mode, table density, etc.)',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='WarehouseCore-specific user profiles';
-
--- --------------------------------------------------------
+DROP TABLE IF EXISTS `view_device_product`;
+/*!50001 DROP VIEW IF EXISTS `view_device_product`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `view_device_product` AS SELECT 
+ 1 AS `deviceID`,
+ 1 AS `product_name`,
+ 1 AS `productID`*/;
+SET character_set_client = @saved_cs_client;
 
 --
--- Tabellenstruktur für Tabelle `user_roles`
+-- Temporary view structure for view `vw_cable_overview`
 --
 
-CREATE TABLE `user_roles` (
-  `userID` bigint UNSIGNED NOT NULL,
-  `roleID` int NOT NULL,
-  `assigned_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `assigned_by` bigint UNSIGNED DEFAULT NULL,
-  `expires_at` timestamp NULL DEFAULT NULL,
-  `is_active` tinyint(1) DEFAULT '1'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+DROP TABLE IF EXISTS `vw_cable_overview`;
+/*!50001 DROP VIEW IF EXISTS `vw_cable_overview`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_cable_overview` AS SELECT 
+ 1 AS `cable_name`,
+ 1 AS `length_display`*/;
+SET character_set_client = @saved_cs_client;
 
 --
--- Tabellenstruktur für Tabelle `user_roles_wh`
+-- Temporary view structure for view `vw_device_availability`
 --
 
-CREATE TABLE `user_roles_wh` (
-  `id` int NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL COMMENT 'FK to users.userID',
-  `role_id` int NOT NULL COMMENT 'FK to roles.roleID',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='WarehouseCore user-to-role assignments';
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `user_sessions`
---
-
-CREATE TABLE `user_sessions` (
-  `session_id` varchar(191) NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `last_active` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `expires_at` timestamp NOT NULL,
-  `is_active` tinyint(1) DEFAULT '1',
-  `device_info` json DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+DROP TABLE IF EXISTS `vw_device_availability`;
+/*!50001 DROP VIEW IF EXISTS `vw_device_availability`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_device_availability` AS SELECT 
+ 1 AS `deviceID`,
+ 1 AS `product_name`,
+ 1 AS `status_today`*/;
+SET character_set_client = @saved_cs_client;
 
 --
--- Stellvertreter-Struktur des Views `view_device_product`
--- (Siehe unten für die tatsächliche Ansicht)
---
-CREATE TABLE `view_device_product` (
-`deviceID` varchar(50)
-,`product_name` varchar(50)
-,`productID` int
-);
-
--- --------------------------------------------------------
-
---
--- Stellvertreter-Struktur des Views `vw_cable_overview`
--- (Siehe unten für die tatsächliche Ansicht)
---
-CREATE TABLE `vw_cable_overview` (
-`cable_name` varchar(100)
-,`length_display` varchar(14)
-);
-
--- --------------------------------------------------------
-
---
--- Stellvertreter-Struktur des Views `vw_device_availability`
--- (Siehe unten für die tatsächliche Ansicht)
---
-CREATE TABLE `vw_device_availability` (
-`deviceID` varchar(50)
-,`product_name` varchar(50)
-,`status_today` varchar(6)
-);
-
--- --------------------------------------------------------
-
---
--- Stellvertreter-Struktur des Views `vw_device_earnings_paid`
--- (Siehe unten für die tatsächliche Ansicht)
---
-CREATE TABLE `vw_device_earnings_paid` (
-`deviceID` varchar(50)
-,`numJobs` bigint
-,`productName` varchar(50)
-,`totalEarnings` decimal(42,2)
-);
-
--- --------------------------------------------------------
-
---
--- Stellvertreter-Struktur des Views `vw_invoice_summary`
--- (Siehe unten für die tatsächliche Ansicht)
---
-CREATE TABLE `vw_invoice_summary` (
-`balance_due` decimal(12,2)
-,`customer_id` int
-,`customer_name` varchar(101)
-,`days_overdue` int
-,`due_date` date
-,`invoice_id` bigint unsigned
-,`invoice_number` varchar(50)
-,`issue_date` date
-,`item_count` bigint
-,`job_description` varchar(50)
-,`job_id` int
-,`paid_amount` decimal(12,2)
-,`status` enum('draft','sent','paid','overdue','cancelled')
-,`total_amount` decimal(12,2)
-);
-
--- --------------------------------------------------------
-
---
--- Stellvertreter-Struktur des Views `vw_package_devices_detail`
--- (Siehe unten für die tatsächliche Ansicht)
---
-CREATE TABLE `vw_package_devices_detail` (
-`custom_price` decimal(12,2)
-,`defaultPrice` decimal(10,2)
-,`deviceID` varchar(50)
-,`deviceStatus` varchar(50)
-,`effectivePrice` decimal(12,2)
-,`is_required` tinyint(1)
-,`lineTotal` decimal(22,2)
-,`notes` text
-,`packageID` int
-,`packageName` varchar(100)
-,`productCategory` varchar(43)
-,`productName` varchar(50)
-,`quantity` int unsigned
-,`serialNumber` varchar(50)
-,`sort_order` int unsigned
-);
-
--- --------------------------------------------------------
-
---
--- Stellvertreter-Struktur des Views `vw_package_summary`
--- (Siehe unten für die tatsächliche Ansicht)
---
-CREATE TABLE `vw_package_summary` (
-`categoryColor` varchar(7)
-,`categoryName` varchar(100)
-,`createdAt` timestamp
-,`description` text
-,`deviceCount` bigint
-,`discountPercent` decimal(5,2)
-,`isActive` tinyint(1)
-,`minRentalDays` int
-,`optionalDevices` decimal(31,0)
-,`packageID` int
-,`packageName` varchar(100)
-,`packagePrice` decimal(12,2)
-,`requiredDevices` decimal(31,0)
-,`totalDevices` decimal(32,0)
-,`updatedAt` timestamp
-,`usageCount` int
-);
-
--- --------------------------------------------------------
-
---
--- Stellvertreter-Struktur des Views `v_job_pack_progress`
--- (Siehe unten für die tatsächliche Ansicht)
---
-CREATE TABLE `v_job_pack_progress` (
-`issued_devices` bigint
-,`job_description` varchar(50)
-,`jobID` int
-,`pack_progress_percent` decimal(26,2)
-,`packed_devices` bigint
-,`pending_devices` bigint
-,`returned_devices` bigint
-,`total_devices` bigint
-);
-
--- --------------------------------------------------------
-
---
--- Tabellenstruktur für Tabelle `webauthn_sessions`
+-- Temporary view structure for view `vw_device_earnings_paid`
 --
 
+DROP TABLE IF EXISTS `vw_device_earnings_paid`;
+/*!50001 DROP VIEW IF EXISTS `vw_device_earnings_paid`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_device_earnings_paid` AS SELECT 
+ 1 AS `deviceID`,
+ 1 AS `productName`,
+ 1 AS `numJobs`,
+ 1 AS `totalEarnings`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary view structure for view `vw_device_status_count`
+--
+
+DROP TABLE IF EXISTS `vw_device_status_count`;
+/*!50001 DROP VIEW IF EXISTS `vw_device_status_count`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_device_status_count` AS SELECT 
+ 1 AS `device_status`,
+ 1 AS `device_count`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary view structure for view `vw_invoice_summary`
+--
+
+DROP TABLE IF EXISTS `vw_invoice_summary`;
+/*!50001 DROP VIEW IF EXISTS `vw_invoice_summary`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_invoice_summary` AS SELECT 
+ 1 AS `invoice_id`,
+ 1 AS `invoice_number`,
+ 1 AS `status`,
+ 1 AS `issue_date`,
+ 1 AS `due_date`,
+ 1 AS `total_amount`,
+ 1 AS `paid_amount`,
+ 1 AS `balance_due`,
+ 1 AS `customer_id`,
+ 1 AS `customer_name`,
+ 1 AS `job_id`,
+ 1 AS `job_description`,
+ 1 AS `days_overdue`,
+ 1 AS `item_count`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary view structure for view `vw_job_accessories_detail`
+--
+
+DROP TABLE IF EXISTS `vw_job_accessories_detail`;
+/*!50001 DROP VIEW IF EXISTS `vw_job_accessories_detail`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_job_accessories_detail` AS SELECT 
+ 1 AS `job_accessory_id`,
+ 1 AS `job_id`,
+ 1 AS `job_description`,
+ 1 AS `parent_device_id`,
+ 1 AS `parent_product_id`,
+ 1 AS `parent_product_name`,
+ 1 AS `accessory_product_id`,
+ 1 AS `accessory_name`,
+ 1 AS `quantity_assigned`,
+ 1 AS `quantity_scanned_out`,
+ 1 AS `quantity_scanned_in`,
+ 1 AS `quantity_pending_out`,
+ 1 AS `quantity_pending_in`,
+ 1 AS `price_per_unit`,
+ 1 AS `total_price`,
+ 1 AS `count_type`,
+ 1 AS `count_type_abbr`,
+ 1 AS `generic_barcode`,
+ 1 AS `notes`,
+ 1 AS `created_at`,
+ 1 AS `updated_at`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary view structure for view `vw_job_consumables_detail`
+--
+
+DROP TABLE IF EXISTS `vw_job_consumables_detail`;
+/*!50001 DROP VIEW IF EXISTS `vw_job_consumables_detail`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_job_consumables_detail` AS SELECT 
+ 1 AS `job_consumable_id`,
+ 1 AS `job_id`,
+ 1 AS `job_description`,
+ 1 AS `parent_device_id`,
+ 1 AS `parent_product_id`,
+ 1 AS `parent_product_name`,
+ 1 AS `consumable_product_id`,
+ 1 AS `consumable_name`,
+ 1 AS `quantity_assigned`,
+ 1 AS `quantity_scanned_out`,
+ 1 AS `quantity_scanned_in`,
+ 1 AS `quantity_pending_out`,
+ 1 AS `quantity_pending_in`,
+ 1 AS `price_per_unit`,
+ 1 AS `total_price`,
+ 1 AS `count_type`,
+ 1 AS `count_type_abbr`,
+ 1 AS `generic_barcode`,
+ 1 AS `notes`,
+ 1 AS `created_at`,
+ 1 AS `updated_at`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary view structure for view `vw_job_count_current_year`
+--
+
+DROP TABLE IF EXISTS `vw_job_count_current_year`;
+/*!50001 DROP VIEW IF EXISTS `vw_job_count_current_year`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_job_count_current_year` AS SELECT 
+ 1 AS `jobYear`,
+ 1 AS `jobCount`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary view structure for view `vw_low_stock_alert`
+--
+
+DROP TABLE IF EXISTS `vw_low_stock_alert`;
+/*!50001 DROP VIEW IF EXISTS `vw_low_stock_alert`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_low_stock_alert` AS SELECT 
+ 1 AS `productID`,
+ 1 AS `name`,
+ 1 AS `stock_quantity`,
+ 1 AS `min_stock_level`,
+ 1 AS `quantity_below_min`,
+ 1 AS `count_type`,
+ 1 AS `count_type_abbr`,
+ 1 AS `generic_barcode`,
+ 1 AS `item_type`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary view structure for view `vw_package_devices_detail`
+--
+
+DROP TABLE IF EXISTS `vw_package_devices_detail`;
+/*!50001 DROP VIEW IF EXISTS `vw_package_devices_detail`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_package_devices_detail` AS SELECT 
+ 1 AS `packageID`,
+ 1 AS `packageName`,
+ 1 AS `deviceID`,
+ 1 AS `serialNumber`,
+ 1 AS `deviceStatus`,
+ 1 AS `productName`,
+ 1 AS `productCategory`,
+ 1 AS `defaultPrice`,
+ 1 AS `custom_price`,
+ 1 AS `effectivePrice`,
+ 1 AS `quantity`,
+ 1 AS `is_required`,
+ 1 AS `notes`,
+ 1 AS `sort_order`,
+ 1 AS `lineTotal`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary view structure for view `vw_package_summary`
+--
+
+DROP TABLE IF EXISTS `vw_package_summary`;
+/*!50001 DROP VIEW IF EXISTS `vw_package_summary`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_package_summary` AS SELECT 
+ 1 AS `packageID`,
+ 1 AS `packageName`,
+ 1 AS `description`,
+ 1 AS `packagePrice`,
+ 1 AS `discountPercent`,
+ 1 AS `minRentalDays`,
+ 1 AS `isActive`,
+ 1 AS `usageCount`,
+ 1 AS `categoryName`,
+ 1 AS `categoryColor`,
+ 1 AS `deviceCount`,
+ 1 AS `totalDevices`,
+ 1 AS `requiredDevices`,
+ 1 AS `optionalDevices`,
+ 1 AS `createdAt`,
+ 1 AS `updatedAt`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary view structure for view `vw_product_accessories`
+--
+
+DROP TABLE IF EXISTS `vw_product_accessories`;
+/*!50001 DROP VIEW IF EXISTS `vw_product_accessories`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_product_accessories` AS SELECT 
+ 1 AS `product_id`,
+ 1 AS `product_name`,
+ 1 AS `accessory_product_id`,
+ 1 AS `accessory_name`,
+ 1 AS `accessory_stock`,
+ 1 AS `accessory_price`,
+ 1 AS `count_type`,
+ 1 AS `count_type_abbr`,
+ 1 AS `is_optional`,
+ 1 AS `default_quantity`,
+ 1 AS `sort_order`,
+ 1 AS `generic_barcode`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary view structure for view `vw_product_consumables`
+--
+
+DROP TABLE IF EXISTS `vw_product_consumables`;
+/*!50001 DROP VIEW IF EXISTS `vw_product_consumables`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_product_consumables` AS SELECT 
+ 1 AS `product_id`,
+ 1 AS `product_name`,
+ 1 AS `consumable_product_id`,
+ 1 AS `consumable_name`,
+ 1 AS `consumable_stock`,
+ 1 AS `consumable_price`,
+ 1 AS `count_type`,
+ 1 AS `count_type_abbr`,
+ 1 AS `default_quantity`,
+ 1 AS `sort_order`,
+ 1 AS `generic_barcode`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary view structure for view `vw_product_earnings_summary`
+--
+
+DROP TABLE IF EXISTS `vw_product_earnings_summary`;
+/*!50001 DROP VIEW IF EXISTS `vw_product_earnings_summary`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `vw_product_earnings_summary` AS SELECT 
+ 1 AS `productName`,
+ 1 AS `deviceCount`,
+ 1 AS `totalEarnings`*/;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Table structure for table `webauthn_sessions`
+--
+
+DROP TABLE IF EXISTS `webauthn_sessions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `webauthn_sessions` (
   `session_id` varchar(191) NOT NULL,
-  `user_id` bigint UNSIGNED NOT NULL DEFAULT '0',
+  `user_id` bigint unsigned NOT NULL DEFAULT '0',
   `challenge` varchar(255) NOT NULL,
   `session_type` varchar(50) NOT NULL,
   `session_data` text,
   `expires_at` timestamp NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`session_id`),
+  KEY `idx_user_session` (`user_id`,`session_type`),
+  KEY `idx_expires` (`expires_at`),
+  KEY `idx_session_type` (`session_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Tabellenstruktur für Tabelle `zone_types`
+-- Table structure for table `zone_types`
 --
 
+DROP TABLE IF EXISTS `zone_types`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `zone_types` (
-  `id` int NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `key` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Machine-readable key: shelf, bin, eurobox, etc.',
   `label` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Display name',
   `description` text COLLATE utf8mb4_unicode_ci COMMENT 'Detailed description',
   `default_led_pattern` enum('solid','breathe','blink') COLLATE utf8mb4_unicode_ci DEFAULT 'breathe',
   `default_led_color` varchar(9) COLLATE utf8mb4_unicode_ci DEFAULT '#FF7A00',
-  `default_intensity` tinyint UNSIGNED DEFAULT '180',
+  `default_intensity` tinyint unsigned DEFAULT '180',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Configurable zone types with LED defaults';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pdf_uploads`
---
-
-CREATE TABLE `pdf_uploads` (
-  `upload_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `job_id` int DEFAULT NULL COMMENT 'Associated job if already exists',
-  `document_id` int DEFAULT NULL COMMENT 'Reference to File Pool document',
-  `original_filename` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `stored_filename` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `file_path` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `file_size` bigint NOT NULL,
-  `mime_type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `file_hash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'SHA256 hash for deduplication',
-  `uploaded_by` bigint UNSIGNED DEFAULT NULL,
-  `uploaded_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `processing_status` enum('pending','processing','completed','failed') COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
-  `processing_started_at` timestamp NULL DEFAULT NULL,
-  `processing_completed_at` timestamp NULL DEFAULT NULL,
-  `error_message` text COLLATE utf8mb4_unicode_ci,
-  `is_active` tinyint(1) DEFAULT '1',
-  PRIMARY KEY (`upload_id`),
-  KEY `idx_pdf_uploads_job` (`job_id`),
-  KEY `idx_pdf_uploads_status` (`processing_status`),
-  KEY `idx_pdf_uploads_hash` (`file_hash`),
-  KEY `idx_pdf_uploads_user` (`uploaded_by`),
-  KEY `idx_pdf_uploads_document` (`document_id`),
-  CONSTRAINT `fk_pdf_uploads_document` FOREIGN KEY (`document_id`) REFERENCES `documents` (`documentID`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Uploaded PDF files for job creation';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pdf_extractions`
---
-
-CREATE TABLE `pdf_extractions` (
-  `extraction_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `upload_id` bigint UNSIGNED NOT NULL,
-  `raw_text` longtext COLLATE utf8mb4_unicode_ci COMMENT 'Full OCR extracted text',
-  `extracted_data` json DEFAULT NULL COMMENT 'Structured data: customer, dates, items, prices',
-  `confidence_score` decimal(5,2) DEFAULT NULL COMMENT 'Overall OCR confidence 0-100',
-  `page_count` int DEFAULT '1',
-  `extraction_method` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'tesseract' COMMENT 'OCR engine used',
-  `extracted_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `customer_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Extracted customer name',
-  `customer_id` int DEFAULT NULL COMMENT 'Matched customer ID',
-  `document_date` date DEFAULT NULL COMMENT 'Extracted document date',
-  `document_number` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Invoice/offer number',
-  `parsed_total` decimal(12,2) DEFAULT NULL COMMENT 'Subtotal before discount',
-  `total_amount` decimal(12,2) DEFAULT NULL COMMENT 'Final amount after discount',
-  `discount_amount` decimal(12,2) DEFAULT NULL COMMENT 'Extracted discount amount',
-  `discount_percent` decimal(5,2) DEFAULT NULL COMMENT 'Extracted discount percentage',
-  `metadata` json DEFAULT NULL COMMENT 'Additional extraction metadata',
-  PRIMARY KEY (`extraction_id`),
-  UNIQUE KEY `unique_upload_extraction` (`upload_id`),
-  KEY `idx_pdf_extractions_customer` (`customer_id`),
-  KEY `idx_pdf_extractions_date` (`document_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='OCR extraction results from PDFs';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pdf_extraction_items`
---
-
-CREATE TABLE `pdf_extraction_items` (
-  `item_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `extraction_id` bigint UNSIGNED NOT NULL,
-  `line_number` int DEFAULT NULL COMMENT 'Position in PDF',
-  `raw_product_text` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Original text from PDF',
-  `quantity` int DEFAULT NULL COMMENT 'Extracted quantity',
-  `unit_price` decimal(12,2) DEFAULT NULL COMMENT 'Extracted unit price',
-  `line_total` decimal(12,2) DEFAULT NULL COMMENT 'Extracted line total',
-  `mapped_product_id` int DEFAULT NULL COMMENT 'Linked product after mapping',
-  `mapped_package_id` int DEFAULT NULL COMMENT 'Linked package after mapping',
-  `mapping_confidence` decimal(5,2) DEFAULT NULL COMMENT 'Mapping confidence 0-100',
-  `mapping_status` enum('pending','auto_mapped','user_confirmed','user_rejected','needs_creation') COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
-  `user_notes` text COLLATE utf8mb4_unicode_ci,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`item_id`),
-  KEY `idx_pdf_items_extraction` (`extraction_id`),
-  KEY `idx_pdf_items_product` (`mapped_product_id`),
-  KEY `idx_pdf_items_package` (`mapped_package_id`),
-  KEY `idx_pdf_items_status` (`mapping_status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Individual line items extracted from PDFs';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pdf_product_mappings`
---
-
-CREATE TABLE `pdf_product_mappings` (
-  `mapping_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `pdf_product_text` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Text from PDF',
-  `normalized_text` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Cleaned/normalized version',
-  `product_id` int NOT NULL COMMENT 'Mapped product ID',
-  `mapping_type` enum('exact','fuzzy','manual') COLLATE utf8mb4_unicode_ci DEFAULT 'manual',
-  `confidence_score` decimal(5,2) DEFAULT NULL COMMENT 'Mapping confidence 0-100',
-  `usage_count` int DEFAULT '0' COMMENT 'How many times this mapping was used',
-  `last_used_at` timestamp NULL DEFAULT NULL,
-  `created_by` bigint UNSIGNED DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `is_active` tinyint(1) DEFAULT '1',
-  PRIMARY KEY (`mapping_id`),
-  UNIQUE KEY `unique_pdf_text_product` (`pdf_product_text`,`product_id`),
-  KEY `idx_pdf_mappings_product` (`product_id`),
-  KEY `idx_pdf_mappings_text` (`pdf_product_text`),
-  KEY `idx_pdf_mappings_normalized` (`normalized_text`),
-  KEY `idx_pdf_mappings_type` (`mapping_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Saved mappings between PDF text and products';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pdf_customer_mappings`
---
-
-CREATE TABLE `pdf_package_mappings` (
-  `mapping_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `pdf_package_text` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Text from PDF',
-  `normalized_text` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Cleaned/normalized version',
-  `package_id` int NOT NULL COMMENT 'Mapped package ID',
-  `mapping_type` enum('exact','fuzzy','manual') COLLATE utf8mb4_unicode_ci DEFAULT 'manual',
-  `confidence_score` decimal(5,2) DEFAULT NULL COMMENT 'Mapping confidence 0-100',
-  `usage_count` int DEFAULT '0' COMMENT 'How many times this mapping was used',
-  `last_used_at` timestamp NULL DEFAULT NULL,
-  `created_by` bigint UNSIGNED DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `is_active` tinyint(1) DEFAULT '1',
-  PRIMARY KEY (`mapping_id`),
-  KEY `idx_pdf_package_mappings_package` (`package_id`),
-  KEY `idx_pdf_package_mappings_text` (`pdf_package_text`),
-  KEY `idx_pdf_package_mappings_normalized` (`normalized_text`),
-  KEY `idx_pdf_package_mappings_type` (`mapping_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Saved mappings between PDF text and packages';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pdf_customer_mappings`
---
-
-CREATE TABLE `pdf_customer_mappings` (
-  `mapping_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `pdf_customer_text` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Customer text from PDF',
-  `normalized_text` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Normalized customer text',
-  `customer_id` int NOT NULL COMMENT 'Mapped customer ID',
-  `mapping_type` enum('exact','fuzzy','manual') COLLATE utf8mb4_unicode_ci DEFAULT 'manual',
-  `confidence_score` decimal(5,2) DEFAULT NULL COMMENT 'Mapping confidence 0-100',
-  `usage_count` int DEFAULT '0' COMMENT 'Times this mapping was used',
-  `last_used_at` timestamp NULL DEFAULT NULL,
-  `created_by` bigint UNSIGNED DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `is_active` tinyint(1) DEFAULT '1',
-  PRIMARY KEY (`mapping_id`),
-  KEY `idx_pdf_customer_mappings_text` (`pdf_customer_text`),
-  KEY `idx_pdf_customer_mappings_customer` (`customer_id`),
-  KEY `idx_pdf_customer_mappings_normalized` (`normalized_text`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Saved mappings between PDF text and customers';
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pdf_mapping_events`
---
-
-CREATE TABLE `pdf_mapping_events` (
-  `event_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
-  `extraction_id` bigint UNSIGNED DEFAULT NULL,
-  `item_id` bigint UNSIGNED DEFAULT NULL,
-  `pdf_product_text` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `normalized_text` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `product_id` int DEFAULT NULL,
-  `package_id` int DEFAULT NULL,
-  `created_by` bigint UNSIGNED DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`event_id`),
-  KEY `idx_mapping_events_extraction` (`extraction_id`),
-  KEY `idx_mapping_events_product` (`product_id`),
-  KEY `idx_mapping_events_package` (`package_id`),
-  KEY `idx_mapping_events_text` (`pdf_product_text`),
-  KEY `idx_mapping_events_normalized` (`normalized_text`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Audit trail for manual or auto PDF mappings';
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `key` (`key`),
+  KEY `idx_zone_type_key` (`key`)
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Configurable zone types with LED defaults';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- --------------------------------------------------------
-
---
--- Indizes der exportierten Tabellen
---
-
---
--- Indizes für die Tabelle `analytics_cache`
---
-ALTER TABLE `analytics_cache`
-  ADD PRIMARY KEY (`cacheID`),
-  ADD UNIQUE KEY `unique_metric` (`metric_name`,`period_type`,`period_date`),
-  ADD KEY `idx_metric_period` (`metric_name`,`period_type`);
-
---
--- Indizes für die Tabelle `app_settings`
---
-ALTER TABLE `app_settings`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_scope_key` (`scope`,`k`),
-  ADD KEY `idx_setting_key` (`k`);
-
---
--- Indizes für die Tabelle `archived_documents`
---
-ALTER TABLE `archived_documents`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_document` (`document_type`,`document_id`),
-  ADD KEY `idx_archived_docs_type` (`document_type`),
-  ADD KEY `idx_archived_docs_retention` (`retention_until`),
-  ADD KEY `idx_archived_docs_hash` (`original_hash`),
-  ADD KEY `idx_archived_documents_legal` (`legal_basis`);
-
---
--- Indizes für die Tabelle `audit_events`
---
-ALTER TABLE `audit_events`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `event_hash` (`event_hash`),
-  ADD KEY `idx_audit_events_timestamp` (`timestamp`),
-  ADD KEY `idx_audit_events_entity` (`entity_type`,`entity_id`),
-  ADD KEY `idx_audit_events_user` (`user_id`),
-  ADD KEY `idx_audit_events_object_type` (`object_type`),
-  ADD KEY `idx_audit_events_object_id` (`object_id`),
-  ADD KEY `idx_audit_events_user_id` (`user_id`),
-  ADD KEY `idx_audit_events_session_id` (`session_id`),
-  ADD KEY `idx_audit_events_previous_hash` (`previous_hash`),
-  ADD KEY `idx_audit_events_retention_date` (`retention_date`),
-  ADD KEY `idx_audit_events_event_type` (`event_type`);
-
---
--- Indizes für die Tabelle `audit_log`
---
-ALTER TABLE `audit_log`
-  ADD PRIMARY KEY (`auditID`),
-  ADD KEY `idx_entity` (`entity_type`,`entity_id`),
-  ADD KEY `idx_user_time` (`userID`,`timestamp`),
-  ADD KEY `idx_action_time` (`action`,`timestamp`),
-  ADD KEY `idx_timestamp` (`timestamp`);
-
---
--- Indizes für die Tabelle `audit_logs`
---
-ALTER TABLE `audit_logs`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_audit_logs_entity` (`entity_type`,`entity_id`),
-  ADD KEY `idx_audit_logs_user` (`user_id`),
-  ADD KEY `idx_audit_logs_timestamp` (`timestamp`),
-  ADD KEY `idx_audit_logs_hash` (`hash`),
-  ADD KEY `idx_audit_logs_chain` (`previous_hash`,`hash`);
-
---
--- Indizes für die Tabelle `authentication_attempts`
---
-ALTER TABLE `authentication_attempts`
-  ADD PRIMARY KEY (`attempt_id`);
-
---
--- Indizes für die Tabelle `brands`
---
-ALTER TABLE `brands`
-  ADD PRIMARY KEY (`brandID`),
-  ADD KEY `idx_brands_manufacturerID` (`manufacturerID`);
-
---
--- Indizes für die Tabelle `cables`
---
-ALTER TABLE `cables`
-  ADD PRIMARY KEY (`cableID`),
-  ADD KEY `connector1` (`connector1`),
-  ADD KEY `connector2` (`connector2`),
-  ADD KEY `typ` (`typ`);
-
---
--- Indizes für die Tabelle `cable_connectors`
---
-ALTER TABLE `cable_connectors`
-  ADD PRIMARY KEY (`cable_connectorsID`);
-
---
--- Indizes für die Tabelle `cable_types`
---
-ALTER TABLE `cable_types`
-  ADD PRIMARY KEY (`cable_typesID`);
-
---
--- Indizes für die Tabelle `cases`
---
-ALTER TABLE `cases`
-  ADD PRIMARY KEY (`caseID`),
-  ADD KEY `idx_case_zone` (`zone_id`);
-
---
--- Indizes für die Tabelle `categories`
---
-ALTER TABLE `categories`
-  ADD PRIMARY KEY (`categoryID`);
-
---
--- Indizes für die Tabelle `company_settings`
---
-ALTER TABLE `company_settings`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_company_settings_updated` (`updated_at`),
-  ADD KEY `idx_company_settings_iban` (`iban`(34)),
-  ADD KEY `idx_company_settings_register_number` (`register_number`(50));
-
---
--- Indizes für die Tabelle `consent_records`
---
-ALTER TABLE `consent_records`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_consent_user` (`user_id`),
-  ADD KEY `idx_consent_type_purpose` (`data_type`,`purpose`),
-  ADD KEY `idx_consent_date` (`consent_date`),
-  ADD KEY `idx_consent_expiry` (`expiry_date`);
-
---
--- Indizes für die Tabelle `customers`
---
-ALTER TABLE `customers`
-  ADD PRIMARY KEY (`customerID`),
-  ADD KEY `idx_customers_search_company` (`companyname`),
-  ADD KEY `idx_customers_search_name` (`firstname`,`lastname`),
-  ADD KEY `idx_customers_email` (`email`);
-ALTER TABLE `customers` ADD FULLTEXT KEY `idx_customers_search` (`companyname`,`firstname`,`lastname`,`email`);
-
---
--- Indizes für die Tabelle `data_processing_records`
---
-ALTER TABLE `data_processing_records`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_data_processing_user` (`user_id`),
-  ADD KEY `idx_data_processing_type` (`data_type`),
-  ADD KEY `idx_data_processing_purpose` (`purpose`),
-  ADD KEY `idx_data_processing_expiry` (`expires_at`);
-
---
--- Indizes für die Tabelle `data_subject_requests`
---
-ALTER TABLE `data_subject_requests`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_data_subject_user` (`user_id`),
-  ADD KEY `idx_data_subject_type` (`request_type`),
-  ADD KEY `idx_data_subject_status` (`status`),
-  ADD KEY `idx_data_subject_requested` (`requested_at`);
-
---
--- Indizes für die Tabelle `defect_reports`
---
-ALTER TABLE `defect_reports`
-  ADD PRIMARY KEY (`defect_id`),
-  ADD KEY `idx_defect_device` (`device_id`),
-  ADD KEY `idx_defect_status` (`status`),
-  ADD KEY `idx_defect_severity` (`severity`),
-  ADD KEY `idx_defect_reported` (`reported_at`);
-
---
--- Indizes für die Tabelle `devices`
---
-ALTER TABLE `devices`
-  ADD PRIMARY KEY (`deviceID`),
-  ADD UNIQUE KEY `qr_code` (`qr_code`),
-  ADD KEY `idx_devices_insuranceID` (`insuranceID`),
-  ADD KEY `idx_devices_productID` (`productID`),
-  ADD KEY `idx_devices_location` (`current_location`),
-  ADD KEY `idx_devices_qr` (`qr_code`),
-  ADD KEY `idx_devices_status` (`status`),
-  ADD KEY `idx_devices_search` (`deviceID`,`serialnumber`),
-  ADD KEY `idx_devices_product_status` (`productID`,`status`),
-  ADD KEY `idx_device_zone` (`zone_id`),
-  ADD KEY `idx_devices_label_path` (`label_path`);
-
---
--- Indizes für die Tabelle `devicescases`
---
-ALTER TABLE `devicescases`
-  ADD PRIMARY KEY (`caseID`,`deviceID`),
-  ADD KEY `deviceID` (`deviceID`);
-
---
--- Indizes für die Tabelle `devicestatushistory`
---
-ALTER TABLE `devicestatushistory`
-  ADD PRIMARY KEY (`statushistoryID`),
-  ADD KEY `idx_devicestatushistory_deviceID` (`deviceID`);
-
---
--- Indizes für die Tabelle `device_movements`
---
-ALTER TABLE `device_movements`
-  ADD PRIMARY KEY (`movement_id`),
-  ADD KEY `idx_movement_device` (`device_id`),
-  ADD KEY `idx_movement_action` (`action`),
-  ADD KEY `idx_movement_timestamp` (`timestamp`),
-  ADD KEY `idx_movement_from_zone` (`from_zone_id`),
-  ADD KEY `idx_movement_to_zone` (`to_zone_id`),
-  ADD KEY `idx_movement_job` (`to_job_id`);
-
---
--- Indizes für die Tabelle `digital_signatures`
---
-ALTER TABLE `digital_signatures`
-  ADD PRIMARY KEY (`signatureID`),
-  ADD KEY `idx_document_signer` (`documentID`,`signer_email`),
-  ADD KEY `idx_signed_date` (`signed_at`);
-
---
--- Indizes für die Tabelle `documents`
---
-ALTER TABLE `documents`
-  ADD PRIMARY KEY (`documentID`),
-  ADD KEY `uploaded_by` (`uploaded_by`),
-  ADD KEY `parent_documentID` (`parent_documentID`),
-  ADD KEY `idx_entity_type` (`entity_type`,`entity_id`,`document_type`),
-  ADD KEY `idx_uploaded_date` (`uploaded_at`,`document_type`),
-  ADD KEY `idx_filename` (`filename`),
-  ADD KEY `idx_documents_entity` (`entity_type`,`entity_id`,`document_type`),
-  ADD KEY `idx_documents_date` (`uploaded_at`,`document_type`);
-
---
--- Indizes für die Tabelle `document_signatures`
---
-ALTER TABLE `document_signatures`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_document_signature` (`document_type`,`document_id`),
-  ADD KEY `idx_doc_signatures_type` (`document_type`),
-  ADD KEY `idx_doc_signatures_signer` (`signer_id`),
-  ADD KEY `idx_doc_signatures_status` (`verification_status`),
-  ADD KEY `idx_document_signatures_hash` (`content_hash`);
-
---
--- Indizes für die Tabelle `email_templates`
---
-ALTER TABLE `email_templates`
-  ADD PRIMARY KEY (`template_id`),
-  ADD KEY `idx_email_templates_type` (`template_type`),
-  ADD KEY `idx_email_templates_default` (`is_default`),
-  ADD KEY `idx_email_templates_active` (`is_active`),
-  ADD KEY `idx_email_templates_created_by` (`created_by`);
-
---
--- Indizes für die Tabelle `employee`
---
-ALTER TABLE `employee`
-  ADD PRIMARY KEY (`employeeID`);
-
---
--- Indizes für die Tabelle `employeejob`
---
-ALTER TABLE `employeejob`
-  ADD PRIMARY KEY (`employeeID`,`jobID`),
-  ADD KEY `idx_employeejob_jobID` (`jobID`);
-
---
--- Indizes für die Tabelle `encrypted_personal_data`
---
-ALTER TABLE `encrypted_personal_data`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_user_data_type` (`user_id`,`data_type`),
-  ADD KEY `idx_encrypted_data_user` (`user_id`),
-  ADD KEY `idx_encrypted_data_type` (`data_type`),
-  ADD KEY `idx_encrypted_data_key_version` (`key_version`);
-
---
--- Indizes für die Tabelle `equipment_packages`
---
-ALTER TABLE `equipment_packages`
-  ADD PRIMARY KEY (`packageID`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `idx_active_usage` (`is_active`,`usage_count` DESC),
-  ADD KEY `idx_equipment_packages_category` (`categoryID`);
-
---
--- Indizes für die Tabelle `equipment_usage_logs`
---
-ALTER TABLE `equipment_usage_logs`
-  ADD PRIMARY KEY (`logID`),
-  ADD KEY `idx_device_timestamp` (`deviceID`,`timestamp`),
-  ADD KEY `idx_job_action` (`jobID`,`action`),
-  ADD KEY `idx_timestamp_action` (`timestamp`,`action`),
-  ADD KEY `idx_usage_logs_device_date` (`deviceID`,`timestamp`);
-
---
--- Indizes für die Tabelle `financial_transactions`
---
-ALTER TABLE `financial_transactions`
-  ADD PRIMARY KEY (`transactionID`),
-  ADD KEY `jobID` (`jobID`),
-  ADD KEY `created_by` (`created_by`),
-  ADD KEY `idx_customer_date` (`customerID`,`transaction_date`),
-  ADD KEY `idx_status_due` (`status`,`due_date`),
-  ADD KEY `idx_type_date` (`type`,`transaction_date`),
-  ADD KEY `idx_transactions_customer_date` (`customerID`,`transaction_date`),
-  ADD KEY `idx_transactions_status` (`status`,`due_date`);
-
---
--- Indizes für die Tabelle `gobd_records`
---
-ALTER TABLE `gobd_records`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_gobd_records_data_hash` (`data_hash`),
-  ADD KEY `idx_gobd_records_archive_date` (`archive_date`),
-  ADD KEY `idx_gobd_records_retention_date` (`retention_date`),
-  ADD KEY `idx_gobd_records_user_id` (`user_id`),
-  ADD KEY `idx_gobd_records_company_id` (`company_id`),
-  ADD KEY `idx_gobd_records_document_type` (`document_type`),
-  ADD KEY `idx_gobd_records_document_id` (`document_id`);
-
---
--- Indizes für die Tabelle `inspection_schedules`
---
-ALTER TABLE `inspection_schedules`
-  ADD PRIMARY KEY (`schedule_id`),
-  ADD KEY `idx_inspection_device` (`device_id`),
-  ADD KEY `idx_inspection_product` (`product_id`),
-  ADD KEY `idx_inspection_next` (`next_inspection`),
-  ADD KEY `idx_inspection_active` (`is_active`);
-
---
--- Indizes für die Tabelle `insuranceprovider`
---
-ALTER TABLE `insuranceprovider`
-  ADD PRIMARY KEY (`insuranceproviderID`);
-
---
--- Indizes für die Tabelle `insurances`
---
-ALTER TABLE `insurances`
-  ADD PRIMARY KEY (`insuranceID`),
-  ADD KEY `insuranceproviderID` (`insuranceproviderID`);
-
---
--- Indizes für die Tabelle `invoices`
---
-ALTER TABLE `invoices`
-  ADD PRIMARY KEY (`invoice_id`),
-  ADD UNIQUE KEY `invoice_number` (`invoice_number`),
-  ADD KEY `idx_invoices_customer` (`customer_id`),
-  ADD KEY `idx_invoices_job` (`job_id`),
-  ADD KEY `idx_invoices_status` (`status`),
-  ADD KEY `idx_invoices_issue_date` (`issue_date`),
-  ADD KEY `idx_invoices_due_date` (`due_date`),
-  ADD KEY `idx_invoices_number` (`invoice_number`),
-  ADD KEY `fk_invoices_template` (`template_id`),
-  ADD KEY `invoices_ibfk_1` (`created_by`);
-
---
--- Indizes für die Tabelle `invoice_line_items`
---
-ALTER TABLE `invoice_line_items`
-  ADD PRIMARY KEY (`line_item_id`),
-  ADD KEY `idx_invoice_line_items_invoice` (`invoice_id`),
-  ADD KEY `idx_invoice_line_items_device` (`device_id`),
-  ADD KEY `idx_invoice_line_items_package` (`package_id`),
-  ADD KEY `idx_invoice_line_items_type` (`item_type`);
-
---
--- Indizes für die Tabelle `invoice_payments`
---
-ALTER TABLE `invoice_payments`
-  ADD PRIMARY KEY (`payment_id`),
-  ADD KEY `idx_invoice_payments_invoice` (`invoice_id`),
-  ADD KEY `idx_invoice_payments_date` (`payment_date`),
-  ADD KEY `invoice_payments_ibfk_2` (`created_by`);
-
---
--- Indizes für die Tabelle `invoice_settings`
---
-ALTER TABLE `invoice_settings`
-  ADD PRIMARY KEY (`setting_id`),
-  ADD UNIQUE KEY `setting_key` (`setting_key`),
-  ADD KEY `idx_invoice_settings_key` (`setting_key`),
-  ADD KEY `invoice_settings_ibfk_1` (`updated_by`);
-
---
--- Indizes für die Tabelle `invoice_templates`
---
-ALTER TABLE `invoice_templates`
-  ADD PRIMARY KEY (`template_id`),
-  ADD KEY `idx_invoice_templates_default` (`is_default`),
-  ADD KEY `idx_invoice_templates_active` (`is_active`),
-  ADD KEY `fk_invoice_templates_created_by` (`created_by`);
-
---
--- Indizes für die Tabelle `jobCategory`
---
-ALTER TABLE `jobCategory`
-  ADD PRIMARY KEY (`jobcategoryID`);
-
---
--- Indizes für die Tabelle `jobdevices`
---
-ALTER TABLE `jobdevices`
-  ADD PRIMARY KEY (`jobID`,`deviceID`),
-  ADD KEY `deviceID` (`deviceID`),
-  ADD KEY `idx_jobdevices_deviceid` (`deviceID`),
-  ADD KEY `idx_jobdevices_jobid` (`jobID`),
-  ADD KEY `idx_jobdevices_composite` (`deviceID`,`jobID`),
-  ADD KEY `idx_jobdevices_job` (`jobID`),
-  ADD KEY `idx_jobdevices_device` (`deviceID`),
-  ADD KEY `idx_jobdevices_pack_status` (`pack_status`),
-  ADD KEY `idx_jobdevices_job_pack` (`jobID`,`pack_status`);
-
---
--- Indizes für die Tabelle `jobs`
---
-ALTER TABLE `jobs`
-  ADD PRIMARY KEY (`jobID`),
-  ADD UNIQUE KEY `ux_jobs_job_code` (`job_code`),
-  ADD KEY `idx_jobs_customerID` (`customerID`),
-  ADD KEY `idx_jobs_jobcategoryID` (`jobcategoryID`),
-  ADD KEY `statusID` (`statusID`),
-  ADD KEY `contract_documentID` (`contract_documentID`),
-  ADD KEY `idx_jobs_statusid` (`statusID`),
-  ADD KEY `idx_jobs_dates` (`startDate`,`endDate`),
-  ADD KEY `idx_jobs_status` (`statusID`);
-ALTER TABLE `jobs` ADD FULLTEXT KEY `idx_jobs_search` (`description`,`internal_notes`,`customer_notes`);
-
---
--- Indizes für die Tabelle `job_attachments`
---
-ALTER TABLE `job_attachments`
-  ADD PRIMARY KEY (`attachment_id`),
-  ADD KEY `uploaded_by` (`uploaded_by`),
-  ADD KEY `idx_job_attachments_job_id` (`job_id`),
-  ADD KEY `idx_job_attachments_uploaded_at` (`uploaded_at`);
-
---
--- Indizes für die Tabelle `job_device_events`
---
-ALTER TABLE `job_device_events`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_job_device_events_job` (`jobID`),
-  ADD KEY `idx_job_device_events_device` (`deviceID`),
-  ADD KEY `idx_job_device_events_type` (`event_type`),
-  ADD KEY `idx_job_device_events_timestamp` (`timestamp`);
-
---
--- Indizes für die Tabelle `job_rental_equipment`
---
-ALTER TABLE `job_rental_equipment`
-  ADD PRIMARY KEY (`job_id`,`equipment_id`),
-  ADD KEY `idx_job_id` (`job_id`),
-  ADD KEY `idx_equipment_id` (`equipment_id`),
-  ADD KEY `idx_created_at` (`created_at`);
-
---
--- Indizes für die Tabelle `label_templates`
---
-ALTER TABLE `label_templates`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_is_default` (`is_default`),
-  ADD KEY `idx_name` (`name`);
-
---
--- Indizes für die Tabelle `led_controllers`
---
-ALTER TABLE `led_controllers`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `controller_id` (`controller_id`),
-  ADD KEY `idx_led_controllers_last_seen` (`last_seen`);
-
---
--- Indizes für die Tabelle `led_controller_zone_types`
---
-ALTER TABLE `led_controller_zone_types`
-  ADD PRIMARY KEY (`controller_id`,`zone_type_id`),
-  ADD KEY `fk_led_controller_zone_types_zone_type` (`zone_type_id`);
-
---
--- Indizes für die Tabelle `maintenanceLogs`
---
-ALTER TABLE `maintenanceLogs`
-  ADD PRIMARY KEY (`maintenanceLogID`),
-  ADD KEY `idx_maintenanceLogs_deviceID` (`deviceID`),
-  ADD KEY `idx_maintenanceLogs_employeeID` (`employeeID`);
-
---
--- Indizes für die Tabelle `manufacturer`
---
-ALTER TABLE `manufacturer`
-  ADD PRIMARY KEY (`manufacturerID`);
-
---
--- Indizes für die Tabelle `offline_sync_queue`
---
-ALTER TABLE `offline_sync_queue`
-  ADD PRIMARY KEY (`queueID`),
-  ADD KEY `idx_user_synced` (`userID`,`synced`),
-  ADD KEY `idx_timestamp_synced` (`timestamp`,`synced`);
-
---
--- Indizes für die Tabelle `package_categories`
---
-ALTER TABLE `package_categories`
-  ADD PRIMARY KEY (`categoryID`),
-  ADD UNIQUE KEY `uk_package_categories_name` (`name`),
-  ADD KEY `idx_package_categories_active` (`is_active`),
-  ADD KEY `idx_package_categories_sort` (`sort_order`);
-
---
--- Indizes für die Tabelle `package_devices`
---
-ALTER TABLE `package_devices`
-  ADD PRIMARY KEY (`packageID`,`deviceID`),
-  ADD KEY `idx_package_devices_package` (`packageID`),
-  ADD KEY `idx_package_devices_device` (`deviceID`),
-  ADD KEY `idx_package_devices_required` (`is_required`),
-  ADD KEY `idx_package_devices_sort` (`sort_order`);
-
---
--- Indizes für die Tabelle `products`
---
-ALTER TABLE `products`
-  ADD PRIMARY KEY (`productID`),
-  ADD KEY `idx_products_categoryID` (`categoryID`),
-  ADD KEY `idx_products_manufacturerID` (`manufacturerID`),
-  ADD KEY `idx_products_brandID` (`brandID`),
-  ADD KEY `idx_products_subcategoryID` (`subcategoryID`),
-  ADD KEY `idx_products_subbiercategoryID` (`subbiercategoryID`);
-
---
--- Indizes für die Tabelle `product_images`
---
-ALTER TABLE `product_images`
-  ADD PRIMARY KEY (`imageID`),
-  ADD KEY `idx_product_images_product` (`productID`),
-  ADD KEY `idx_product_images_primary` (`productID`,`is_primary`);
-
---
--- Indizes für die Tabelle `push_subscriptions`
---
-ALTER TABLE `push_subscriptions`
-  ADD PRIMARY KEY (`subscriptionID`),
-  ADD KEY `idx_user_active` (`userID`,`is_active`),
-  ADD KEY `idx_last_used` (`last_used`);
-
---
--- Indizes für die Tabelle `rental_equipment`
---
-ALTER TABLE `rental_equipment`
-  ADD PRIMARY KEY (`equipment_id`),
-  ADD KEY `idx_product_name` (`product_name`),
-  ADD KEY `idx_supplier_name` (`supplier_name`),
-  ADD KEY `idx_category` (`category`),
-  ADD KEY `idx_is_active` (`is_active`);
-
---
--- Indizes für die Tabelle `retention_policies`
---
-ALTER TABLE `retention_policies`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_active_policy` (`data_type`,`effective_until`),
-  ADD KEY `idx_retention_policies_type` (`data_type`),
-  ADD KEY `idx_retention_policies_effective` (`effective_from`,`effective_until`);
-
---
--- Indizes für die Tabelle `roles`
---
-ALTER TABLE `roles`
-  ADD PRIMARY KEY (`roleID`),
-  ADD UNIQUE KEY `name` (`name`),
-  ADD KEY `idx_active_system` (`is_active`,`is_system_role`);
-
---
--- Indizes für die Tabelle `saved_searches`
---
-ALTER TABLE `saved_searches`
-  ADD PRIMARY KEY (`searchID`),
-  ADD KEY `idx_user_type` (`userID`,`search_type`),
-  ADD KEY `idx_usage_count` (`usage_count` DESC);
-
---
--- Indizes für die Tabelle `scan_events`
---
-ALTER TABLE `scan_events`
-  ADD PRIMARY KEY (`scan_id`),
-  ADD KEY `idx_scan_code` (`scan_code`),
-  ADD KEY `idx_scan_device` (`device_id`),
-  ADD KEY `idx_scan_job` (`job_id`),
-  ADD KEY `idx_scan_timestamp` (`timestamp`),
-  ADD KEY `idx_scan_success` (`success`);
-
---
--- Indizes für die Tabelle `search_history`
---
-ALTER TABLE `search_history`
-  ADD PRIMARY KEY (`historyID`),
-  ADD KEY `idx_user_date` (`userID`,`searched_at`),
-  ADD KEY `idx_search_type` (`search_type`,`searched_at`);
-
---
--- Indizes für die Tabelle `sessions`
---
-ALTER TABLE `sessions`
-  ADD PRIMARY KEY (`session_id`);
-
---
--- Indizes für die Tabelle `status`
---
-ALTER TABLE `status`
-  ADD PRIMARY KEY (`statusID`);
-
---
--- Indizes für die Tabelle `storage_zones`
---
-ALTER TABLE `storage_zones`
-  ADD PRIMARY KEY (`zone_id`),
-  ADD UNIQUE KEY `code` (`code`),
-  ADD KEY `idx_zone_type` (`type`),
-  ADD KEY `idx_zone_active` (`is_active`),
-  ADD KEY `idx_zone_parent` (`parent_zone_id`),
-  ADD KEY `idx_zone_barcode` (`barcode`);
-
---
--- Indizes für die Tabelle `subbiercategories`
---
-ALTER TABLE `subbiercategories`
-  ADD PRIMARY KEY (`subbiercategoryID`),
-  ADD KEY `idx_subbiercategories_subcategoyID_unique` (`subcategoryID`) USING BTREE;
-
---
--- Indizes für die Tabelle `subcategories`
---
-ALTER TABLE `subcategories`
-  ADD PRIMARY KEY (`subcategoryID`),
-  ADD KEY `categoryID` (`categoryID`);
-
---
--- Indizes für die Tabelle `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`userID`),
-  ADD UNIQUE KEY `username` (`username`),
-  ADD UNIQUE KEY `email` (`email`);
-
---
--- Indizes für die Tabelle `user_2fa`
---
-ALTER TABLE `user_2fa`
-  ADD PRIMARY KEY (`two_fa_id`),
-  ADD UNIQUE KEY `user_id` (`user_id`);
-
---
--- Indizes für die Tabelle `user_passkeys`
---
-ALTER TABLE `user_passkeys`
-  ADD PRIMARY KEY (`passkey_id`),
-  ADD UNIQUE KEY `credential_id` (`credential_id`);
-
---
--- Indizes für die Tabelle `user_preferences`
---
-ALTER TABLE `user_preferences`
-  ADD PRIMARY KEY (`preference_id`),
-  ADD UNIQUE KEY `user_id` (`user_id`);
-
---
--- Indizes für die Tabelle `user_dashboard_widgets`
---
-ALTER TABLE `user_dashboard_widgets`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `idx_user_dashboard_widgets_user` (`user_id`);
-
---
--- Indizes für die Tabelle `user_profiles`
---
-ALTER TABLE `user_profiles`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `user_id` (`user_id`),
-  ADD KEY `idx_user_profile_user_id` (`user_id`);
-
---
--- Indizes für die Tabelle `user_roles`
---
-ALTER TABLE `user_roles`
-  ADD PRIMARY KEY (`userID`,`roleID`),
-  ADD KEY `assigned_by` (`assigned_by`),
-  ADD KEY `idx_user_active` (`userID`,`is_active`),
-  ADD KEY `idx_role_active` (`roleID`,`is_active`);
-
---
--- Indizes für die Tabelle `user_roles_wh`
---
-ALTER TABLE `user_roles_wh`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_user_role_wh` (`user_id`,`role_id`),
-  ADD KEY `idx_user_id_wh` (`user_id`),
-  ADD KEY `idx_role_id_wh` (`role_id`);
-
---
--- Indizes für die Tabelle `user_sessions`
---
-ALTER TABLE `user_sessions`
-  ADD PRIMARY KEY (`session_id`),
-  ADD KEY `idx_user_active` (`user_id`,`is_active`),
-  ADD KEY `idx_expires` (`expires_at`),
-  ADD KEY `idx_last_active` (`last_active`);
-
---
--- Indizes für die Tabelle `webauthn_sessions`
---
-ALTER TABLE `webauthn_sessions`
-  ADD PRIMARY KEY (`session_id`),
-  ADD KEY `idx_user_session` (`user_id`,`session_type`),
-  ADD KEY `idx_expires` (`expires_at`),
-  ADD KEY `idx_session_type` (`session_type`);
-
---
--- Indizes für die Tabelle `zone_types`
---
-ALTER TABLE `zone_types`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `key` (`key`),
-  ADD KEY `idx_zone_type_key` (`key`);
-
---
--- AUTO_INCREMENT für exportierte Tabellen
---
-
---
--- AUTO_INCREMENT für Tabelle `analytics_cache`
---
-ALTER TABLE `analytics_cache`
-  MODIFY `cacheID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `app_settings`
---
-ALTER TABLE `app_settings`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `archived_documents`
---
-ALTER TABLE `archived_documents`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `audit_events`
---
-ALTER TABLE `audit_events`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `audit_log`
---
-ALTER TABLE `audit_log`
-  MODIFY `auditID` bigint NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `audit_logs`
---
-ALTER TABLE `audit_logs`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `authentication_attempts`
---
-ALTER TABLE `authentication_attempts`
-  MODIFY `attempt_id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `brands`
---
-ALTER TABLE `brands`
-  MODIFY `brandID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `cables`
---
-ALTER TABLE `cables`
-  MODIFY `cableID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `cable_connectors`
---
-ALTER TABLE `cable_connectors`
-  MODIFY `cable_connectorsID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `cable_types`
---
-ALTER TABLE `cable_types`
-  MODIFY `cable_typesID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `cases`
---
-ALTER TABLE `cases`
-  MODIFY `caseID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `categories`
---
-ALTER TABLE `categories`
-  MODIFY `categoryID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `company_settings`
---
-ALTER TABLE `company_settings`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `consent_records`
---
-ALTER TABLE `consent_records`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `customers`
---
-ALTER TABLE `customers`
-  MODIFY `customerID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `data_processing_records`
---
-ALTER TABLE `data_processing_records`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `data_subject_requests`
---
-ALTER TABLE `data_subject_requests`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `defect_reports`
---
-ALTER TABLE `defect_reports`
-  MODIFY `defect_id` bigint NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `devicestatushistory`
---
-ALTER TABLE `devicestatushistory`
-  MODIFY `statushistoryID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `device_movements`
---
-ALTER TABLE `device_movements`
-  MODIFY `movement_id` bigint NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `digital_signatures`
---
-ALTER TABLE `digital_signatures`
-  MODIFY `signatureID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `documents`
---
-ALTER TABLE `documents`
-  MODIFY `documentID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `document_signatures`
---
-ALTER TABLE `document_signatures`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `email_templates`
---
-ALTER TABLE `email_templates`
-  MODIFY `template_id` int UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `employee`
---
-ALTER TABLE `employee`
-  MODIFY `employeeID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `encrypted_personal_data`
---
-ALTER TABLE `encrypted_personal_data`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `equipment_packages`
---
-ALTER TABLE `equipment_packages`
-  MODIFY `packageID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `equipment_usage_logs`
---
-ALTER TABLE `equipment_usage_logs`
-  MODIFY `logID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `financial_transactions`
---
-ALTER TABLE `financial_transactions`
-  MODIFY `transactionID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `gobd_records`
---
-ALTER TABLE `gobd_records`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `inspection_schedules`
---
-ALTER TABLE `inspection_schedules`
-  MODIFY `schedule_id` bigint NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `insuranceprovider`
---
-ALTER TABLE `insuranceprovider`
-  MODIFY `insuranceproviderID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `insurances`
---
-ALTER TABLE `insurances`
-  MODIFY `insuranceID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `invoices`
---
-ALTER TABLE `invoices`
-  MODIFY `invoice_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `invoice_line_items`
---
-ALTER TABLE `invoice_line_items`
-  MODIFY `line_item_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `invoice_payments`
---
-ALTER TABLE `invoice_payments`
-  MODIFY `payment_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `invoice_settings`
---
-ALTER TABLE `invoice_settings`
-  MODIFY `setting_id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `invoice_templates`
---
-ALTER TABLE `invoice_templates`
-  MODIFY `template_id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `jobCategory`
---
-ALTER TABLE `jobCategory`
-  MODIFY `jobcategoryID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `jobs`
---
-ALTER TABLE `jobs`
-  MODIFY `jobID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `job_attachments`
---
-ALTER TABLE `job_attachments`
-  MODIFY `attachment_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `job_device_events`
---
-ALTER TABLE `job_device_events`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `label_templates`
---
-ALTER TABLE `label_templates`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `led_controllers`
---
-ALTER TABLE `led_controllers`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `maintenanceLogs`
---
-ALTER TABLE `maintenanceLogs`
-  MODIFY `maintenanceLogID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `manufacturer`
---
-ALTER TABLE `manufacturer`
-  MODIFY `manufacturerID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `offline_sync_queue`
---
-ALTER TABLE `offline_sync_queue`
-  MODIFY `queueID` int NOT NULL AUTO_INCREMENT;
-
 --
--- AUTO_INCREMENT für Tabelle `package_categories`
+-- Dumping events for database 'RentalCore'
 --
-ALTER TABLE `package_categories`
-  MODIFY `categoryID` int NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT für Tabelle `products`
+-- Dumping routines for database 'RentalCore'
 --
-ALTER TABLE `products`
-  MODIFY `productID` int NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT für Tabelle `product_images`
+-- Final view structure for view `device_earnings_summary`
 --
-ALTER TABLE `product_images`
-  MODIFY `imageID` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
---
--- AUTO_INCREMENT für Tabelle `push_subscriptions`
---
-ALTER TABLE `push_subscriptions`
-  MODIFY `subscriptionID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `rental_equipment`
---
-ALTER TABLE `rental_equipment`
-  MODIFY `equipment_id` int UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `retention_policies`
---
-ALTER TABLE `retention_policies`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `roles`
---
-ALTER TABLE `roles`
-  MODIFY `roleID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `saved_searches`
---
-ALTER TABLE `saved_searches`
-  MODIFY `searchID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `scan_events`
---
-ALTER TABLE `scan_events`
-  MODIFY `scan_id` bigint NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `search_history`
---
-ALTER TABLE `search_history`
-  MODIFY `historyID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `status`
---
-ALTER TABLE `status`
-  MODIFY `statusID` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `storage_zones`
---
-ALTER TABLE `storage_zones`
-  MODIFY `zone_id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `users`
---
-ALTER TABLE `users`
-  MODIFY `userID` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `user_2fa`
---
-ALTER TABLE `user_2fa`
-  MODIFY `two_fa_id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `user_passkeys`
---
-ALTER TABLE `user_passkeys`
-  MODIFY `passkey_id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `user_dashboard_widgets`
---
-ALTER TABLE `user_dashboard_widgets`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `user_preferences`
---
-ALTER TABLE `user_preferences`
-  MODIFY `preference_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `user_profiles`
---
-ALTER TABLE `user_profiles`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `user_roles_wh`
---
-ALTER TABLE `user_roles_wh`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `zone_types`
---
-ALTER TABLE `zone_types`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `pdf_uploads`
---
-ALTER TABLE `pdf_uploads`
-  MODIFY `upload_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `pdf_extractions`
---
-ALTER TABLE `pdf_extractions`
-  MODIFY `extraction_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `pdf_extraction_items`
---
-ALTER TABLE `pdf_extraction_items`
-  MODIFY `item_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT für Tabelle `pdf_product_mappings`
---
-ALTER TABLE `pdf_product_mappings`
-  MODIFY `mapping_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
-
--- --------------------------------------------------------
-
---
--- Struktur des Views `device_earnings_summary`
---
-DROP TABLE IF EXISTS `device_earnings_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `device_earnings_summary`  AS SELECT `d`.`deviceID` AS `deviceID`, `p`.`name` AS `deviceName`, count(distinct `jd`.`jobID`) AS `numJobs`, round(coalesce(sum((case when (`j`.`discount_type` = 'percent') then (coalesce(`jd`.`custom_price`,(((to_days(`j`.`endDate`) - to_days(`j`.`startDate`)) + 1) * `p`.`itemcostperday`)) * (1 - (`j`.`discount` / 100))) when (`j`.`discount_type` = 'amount') then greatest((coalesce(`jd`.`custom_price`,(((to_days(`j`.`endDate`) - to_days(`j`.`startDate`)) + 1) * `p`.`itemcostperday`)) - (`j`.`discount` / `jd_count`.`device_count`)),0) else coalesce(`jd`.`custom_price`,(((to_days(`j`.`endDate`) - to_days(`j`.`startDate`)) + 1) * `p`.`itemcostperday`)) end)),0),2) AS `totalEarnings` FROM ((((`devices` `d` left join `jobdevices` `jd` on((`d`.`deviceID` = `jd`.`deviceID`))) left join (select `jobdevices`.`jobID` AS `jobID`,count(0) AS `device_count` from `jobdevices` group by `jobdevices`.`jobID`) `jd_count` on((`jd`.`jobID` = `jd_count`.`jobID`))) left join `jobs` `j` on((`jd`.`jobID` = `j`.`jobID`))) left join `products` `p` on((`d`.`productID` = `p`.`productID`))) GROUP BY `d`.`deviceID`, `p`.`name` ;
-
--- --------------------------------------------------------
-
---
--- Struktur des Views `product_revenue`
---
-DROP TABLE IF EXISTS `product_revenue`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `product_revenue`  AS SELECT `p`.`name` AS `product_name`, sum(`jd`.`custom_price`) AS `total_revenue` FROM (((`jobdevices` `jd` join `devices` `d` on((`jd`.`deviceID` = `d`.`deviceID`))) join `products` `p` on((`d`.`productID` = `p`.`productID`))) join `jobs` `j` on((`jd`.`jobID` = `j`.`jobID`))) GROUP BY `p`.`name` ORDER BY `total_revenue` DESC ;
-
--- --------------------------------------------------------
-
---
--- Struktur des Views `view_device_product`
---
-DROP TABLE IF EXISTS `view_device_product`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `view_device_product`  AS SELECT `d`.`deviceID` AS `deviceID`, `p`.`name` AS `product_name`, `p`.`productID` AS `productID` FROM (`devices` `d` join `products` `p` on((`d`.`productID` = `p`.`productID`))) ;
-
--- --------------------------------------------------------
-
---
--- Struktur des Views `vw_cable_overview`
---
-DROP TABLE IF EXISTS `vw_cable_overview`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `vw_cable_overview`  AS SELECT `cables`.`name` AS `cable_name`, concat(round(`cables`.`length`,2),' m') AS `length_display` FROM `cables` ;
-
--- --------------------------------------------------------
-
---
--- Struktur des Views `vw_device_availability`
---
-DROP TABLE IF EXISTS `vw_device_availability`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`tsweb`@`%` SQL SECURITY DEFINER VIEW `vw_device_availability`  AS SELECT `d`.`deviceID` AS `deviceID`, coalesce(`p`.`name`,`d`.`deviceID`) AS `product_name`, (case when exists(select 1 from (`jobdevices` `jd` join `jobs` `j` on((`j`.`jobID` = `jd`.`jobID`))) where ((`jd`.`deviceID` = `d`.`deviceID`) and (`j`.`startDate` <= curdate()) and (`j`.`endDate` >= curdate()))) then 'booked' else 'free' end) AS `status_today` FROM (`devices` `d` left join `products` `p` on((`p`.`productID` = `d`.`productID`))) ;
-
--- --------------------------------------------------------
-
---
--- Struktur des Views `vw_device_earnings_paid`
---
-DROP TABLE IF EXISTS `vw_device_earnings_paid`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `vw_device_earnings_paid`  AS WITH   `jd_counts` as (select `jd`.`jobID` AS `jobID`,count(0) AS `device_count` from `jobdevices` `jd` group by `jd`.`jobID`), `eligible_jobs` as (select `j`.`jobID` AS `jobID` from (`jobs` `j` left join `status` `s` on((`s`.`statusID` = `j`.`statusID`))) where ((lower(`s`.`status`) in ('completed','abgeschlossen','closed','paid','bezahlt','done','finished')) or exists(select 1 from `invoices` `i` where ((`i`.`job_id` = `j`.`jobID`) and (`i`.`status` = 'paid'))))) select `d`.`deviceID` AS `deviceID`,coalesce(`p`.`name`,`d`.`deviceID`) AS `productName`,count(distinct `jd`.`jobID`) AS `numJobs`,round(coalesce(sum((case when (`j`.`discount_type` = 'percent') then (coalesce(`jd`.`custom_price`,`p`.`itemcostperday`) * (1 - (`j`.`discount` / 100))) when (`j`.`discount_type` = 'amount') then greatest((coalesce(`jd`.`custom_price`,`p`.`itemcostperday`) - (`j`.`discount` / nullif(`jc`.`device_count`,0))),0) else coalesce(`jd`.`custom_price`,`p`.`itemcostperday`) end)),0),2) AS `totalEarnings` from (((((`devices` `d` left join `jobdevices` `jd` on((`d`.`deviceID` = `jd`.`deviceID`))) left join `eligible_jobs` `ej` on((`ej`.`jobID` = `jd`.`jobID`))) left join `jobs` `j` on((`j`.`jobID` = `jd`.`jobID`))) left join `jd_counts` `jc` on((`jc`.`jobID` = `jd`.`jobID`))) left join `products` `p` on((`p`.`productID` = `d`.`productID`))) where (`ej`.`jobID` is not null) group by `d`.`deviceID`,`productName`  ;
-
--- --------------------------------------------------------
-
---
--- Struktur des Views `vw_invoice_summary`
---
-DROP TABLE IF EXISTS `vw_invoice_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `vw_invoice_summary`  AS SELECT `i`.`invoice_id` AS `invoice_id`, `i`.`invoice_number` AS `invoice_number`, `i`.`status` AS `status`, `i`.`issue_date` AS `issue_date`, `i`.`due_date` AS `due_date`, `i`.`total_amount` AS `total_amount`, `i`.`paid_amount` AS `paid_amount`, `i`.`balance_due` AS `balance_due`, `c`.`customerID` AS `customer_id`, coalesce(`c`.`companyname`,concat(`c`.`firstname`,' ',`c`.`lastname`)) AS `customer_name`, `j`.`jobID` AS `job_id`, `j`.`description` AS `job_description`, (to_days(curdate()) - to_days(`i`.`due_date`)) AS `days_overdue`, count(`ili`.`line_item_id`) AS `item_count` FROM (((`invoices` `i` left join `customers` `c` on((`i`.`customer_id` = `c`.`customerID`))) left join `jobs` `j` on((`i`.`job_id` = `j`.`jobID`))) left join `invoice_line_items` `ili` on((`i`.`invoice_id` = `ili`.`invoice_id`))) GROUP BY `i`.`invoice_id`, `i`.`invoice_number`, `i`.`status`, `i`.`issue_date`, `i`.`due_date`, `i`.`total_amount`, `i`.`paid_amount`, `i`.`balance_due`, `c`.`customerID`, `c`.`companyname`, `c`.`firstname`, `c`.`lastname`, `j`.`jobID`, `j`.`description` ;
-
--- --------------------------------------------------------
-
---
--- Struktur des Views `vw_package_devices_detail`
---
-DROP TABLE IF EXISTS `vw_package_devices_detail`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `vw_package_devices_detail`  AS SELECT `pd`.`packageID` AS `packageID`, `ep`.`name` AS `packageName`, `pd`.`deviceID` AS `deviceID`, `d`.`serialnumber` AS `serialNumber`, `d`.`status` AS `deviceStatus`, `p`.`name` AS `productName`, concat(`sc`.`name`,' > ',`sbc`.`name`) AS `productCategory`, `p`.`itemcostperday` AS `defaultPrice`, `pd`.`custom_price` AS `custom_price`, coalesce(`pd`.`custom_price`,`p`.`itemcostperday`) AS `effectivePrice`, `pd`.`quantity` AS `quantity`, `pd`.`is_required` AS `is_required`, `pd`.`notes` AS `notes`, `pd`.`sort_order` AS `sort_order`, (coalesce(`pd`.`custom_price`,`p`.`itemcostperday`) * `pd`.`quantity`) AS `lineTotal` FROM (((((`package_devices` `pd` join `equipment_packages` `ep` on((`pd`.`packageID` = `ep`.`packageID`))) join `devices` `d` on((`pd`.`deviceID` = `d`.`deviceID`))) left join `products` `p` on((`d`.`productID` = `p`.`productID`))) left join `subcategories` `sc` on((`p`.`subcategoryID` = `sc`.`subcategoryID`))) left join `subbiercategories` `sbc` on((`p`.`subbiercategoryID` = `sbc`.`subbiercategoryID`))) ORDER BY `pd`.`packageID` ASC, `pd`.`sort_order` ASC, `pd`.`deviceID` ASC ;
-
--- --------------------------------------------------------
-
---
--- Struktur des Views `vw_package_summary`
---
-DROP TABLE IF EXISTS `vw_package_summary`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `vw_package_summary`  AS SELECT `ep`.`packageID` AS `packageID`, `ep`.`name` AS `packageName`, `ep`.`description` AS `description`, `ep`.`package_price` AS `packagePrice`, `ep`.`discount_percent` AS `discountPercent`, `ep`.`min_rental_days` AS `minRentalDays`, `ep`.`is_active` AS `isActive`, `ep`.`usage_count` AS `usageCount`, `pc`.`name` AS `categoryName`, `pc`.`color` AS `categoryColor`, count(`pd`.`deviceID`) AS `deviceCount`, sum(`pd`.`quantity`) AS `totalDevices`, sum((case when (`pd`.`is_required` = 1) then `pd`.`quantity` else 0 end)) AS `requiredDevices`, sum((case when (`pd`.`is_required` = 0) then `pd`.`quantity` else 0 end)) AS `optionalDevices`, `ep`.`created_at` AS `createdAt`, `ep`.`updated_at` AS `updatedAt` FROM ((`equipment_packages` `ep` left join `package_categories` `pc` on((`ep`.`categoryID` = `pc`.`categoryID`))) left join `package_devices` `pd` on((`ep`.`packageID` = `pd`.`packageID`))) GROUP BY `ep`.`packageID`, `ep`.`name`, `ep`.`description`, `ep`.`package_price`, `ep`.`discount_percent`, `ep`.`min_rental_days`, `ep`.`is_active`, `ep`.`usage_count`, `pc`.`name`, `pc`.`color`, `ep`.`created_at`, `ep`.`updated_at` ;
-
--- --------------------------------------------------------
-
---
--- Struktur des Views `v_job_pack_progress`
---
-DROP TABLE IF EXISTS `v_job_pack_progress`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`tsweb`@`%` SQL SECURITY DEFINER VIEW `v_job_pack_progress`  AS SELECT `j`.`jobID` AS `jobID`, `j`.`description` AS `job_description`, count(`jd`.`deviceID`) AS `total_devices`, count((case when (`jd`.`pack_status` = 'packed') then 1 end)) AS `packed_devices`, count((case when (`jd`.`pack_status` = 'issued') then 1 end)) AS `issued_devices`, count((case when (`jd`.`pack_status` = 'returned') then 1 end)) AS `returned_devices`, count((case when (`jd`.`pack_status` = 'pending') then 1 end)) AS `pending_devices`, (case when (count(`jd`.`deviceID`) = 0) then 100.0 else round(((count((case when (`jd`.`pack_status` = 'packed') then 1 end)) * 100.0) / count(`jd`.`deviceID`)),2) end) AS `pack_progress_percent` FROM (`jobs` `j` left join `jobdevices` `jd` on((`j`.`jobID` = `jd`.`jobID`))) GROUP BY `j`.`jobID`, `j`.`description` ;
-
---
--- Constraints der exportierten Tabellen
---
-
---
--- Constraints der Tabelle `audit_log`
---
-ALTER TABLE `audit_log`
-  ADD CONSTRAINT `audit_log_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE SET NULL;
-
---
--- Constraints der Tabelle `brands`
---
-ALTER TABLE `brands`
-  ADD CONSTRAINT `brands_ibfk_1` FOREIGN KEY (`manufacturerID`) REFERENCES `manufacturer` (`manufacturerID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
-
---
--- Constraints der Tabelle `cables`
---
-ALTER TABLE `cables`
-  ADD CONSTRAINT `cables_ibfk_1` FOREIGN KEY (`connector1`) REFERENCES `cable_connectors` (`cable_connectorsID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `cables_ibfk_2` FOREIGN KEY (`connector2`) REFERENCES `cable_connectors` (`cable_connectorsID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `cables_ibfk_3` FOREIGN KEY (`typ`) REFERENCES `cable_types` (`cable_typesID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
-
---
--- Constraints der Tabelle `devices`
---
-ALTER TABLE `devices`
-  ADD CONSTRAINT `devices_ibfk_1` FOREIGN KEY (`productID`) REFERENCES `products` (`productID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `devices_ibfk_2` FOREIGN KEY (`insuranceID`) REFERENCES `insurances` (`insuranceID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
-
---
--- Constraints der Tabelle `devicescases`
---
-ALTER TABLE `devicescases`
-  ADD CONSTRAINT `devicescases_ibfk_1` FOREIGN KEY (`caseID`) REFERENCES `cases` (`caseID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `devicescases_ibfk_2` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
-
---
--- Constraints der Tabelle `devicestatushistory`
---
-ALTER TABLE `devicestatushistory`
-  ADD CONSTRAINT `devicestatushistory_ibfk_1` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints der Tabelle `digital_signatures`
---
-ALTER TABLE `digital_signatures`
-  ADD CONSTRAINT `digital_signatures_ibfk_1` FOREIGN KEY (`documentID`) REFERENCES `documents` (`documentID`) ON DELETE CASCADE;
-
---
--- Constraints der Tabelle `documents`
---
-ALTER TABLE `documents`
-  ADD CONSTRAINT `documents_ibfk_1` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL,
-  ADD CONSTRAINT `documents_ibfk_2` FOREIGN KEY (`parent_documentID`) REFERENCES `documents` (`documentID`) ON DELETE SET NULL;
-
---
--- Constraints der Tabelle `employeejob`
---
-ALTER TABLE `employeejob`
-  ADD CONSTRAINT `employeejob_ibfk_1` FOREIGN KEY (`employeeID`) REFERENCES `employee` (`employeeID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `employeejob_ibfk_2` FOREIGN KEY (`jobID`) REFERENCES `jobs` (`jobID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
-
---
--- Constraints der Tabelle `equipment_packages`
---
-ALTER TABLE `equipment_packages`
-  ADD CONSTRAINT `equipment_packages_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_equipment_packages_category` FOREIGN KEY (`categoryID`) REFERENCES `package_categories` (`categoryID`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Constraints der Tabelle `equipment_usage_logs`
---
-ALTER TABLE `equipment_usage_logs`
-  ADD CONSTRAINT `equipment_usage_logs_ibfk_1` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `equipment_usage_logs_ibfk_2` FOREIGN KEY (`jobID`) REFERENCES `jobs` (`jobID`) ON DELETE SET NULL;
-
---
--- Constraints der Tabelle `financial_transactions`
---
-ALTER TABLE `financial_transactions`
-  ADD CONSTRAINT `financial_transactions_ibfk_1` FOREIGN KEY (`jobID`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `financial_transactions_ibfk_2` FOREIGN KEY (`customerID`) REFERENCES `customers` (`customerID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `financial_transactions_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL;
-
---
--- Constraints der Tabelle `insurances`
---
-ALTER TABLE `insurances`
-  ADD CONSTRAINT `insurances_ibfk_1` FOREIGN KEY (`insuranceproviderID`) REFERENCES `insuranceprovider` (`insuranceproviderID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
-
---
--- Constraints der Tabelle `invoices`
---
-ALTER TABLE `invoices`
-  ADD CONSTRAINT `fk_invoices_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customerID`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_invoices_job` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_invoices_template` FOREIGN KEY (`template_id`) REFERENCES `invoice_templates` (`template_id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `invoices_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Constraints der Tabelle `invoice_line_items`
---
-ALTER TABLE `invoice_line_items`
-  ADD CONSTRAINT `invoice_line_items_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`invoice_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `invoice_line_items_ibfk_2` FOREIGN KEY (`device_id`) REFERENCES `devices` (`deviceID`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `invoice_line_items_ibfk_3` FOREIGN KEY (`package_id`) REFERENCES `equipment_packages` (`packageID`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Constraints der Tabelle `invoice_payments`
---
-ALTER TABLE `invoice_payments`
-  ADD CONSTRAINT `invoice_payments_ibfk_1` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`invoice_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `invoice_payments_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Constraints der Tabelle `invoice_settings`
---
-ALTER TABLE `invoice_settings`
-  ADD CONSTRAINT `invoice_settings_ibfk_1` FOREIGN KEY (`updated_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Constraints der Tabelle `invoice_templates`
---
-ALTER TABLE `invoice_templates`
-  ADD CONSTRAINT `fk_invoice_templates_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL ON UPDATE CASCADE;
-
---
--- Constraints der Tabelle `jobdevices`
---
-ALTER TABLE `jobdevices`
-  ADD CONSTRAINT `jobdevices_ibfk_2` FOREIGN KEY (`jobID`) REFERENCES `jobs` (`jobID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `jobdevices_ibfk_3` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
-
---
--- Constraints der Tabelle `job_packages`
---
-ALTER TABLE `job_packages`
-  ADD CONSTRAINT `fk_job_packages_job` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_job_packages_package` FOREIGN KEY (`package_id`) REFERENCES `product_packages` (`package_id`) ON DELETE RESTRICT,
-  ADD CONSTRAINT `job_packages_ibfk_3` FOREIGN KEY (`added_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL;
-
---
--- Constraints der Tabelle `job_package_reservations`
---
-ALTER TABLE `job_package_reservations`
-  ADD CONSTRAINT `job_package_reservations_ibfk_1` FOREIGN KEY (`job_package_id`) REFERENCES `job_packages` (`job_package_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `job_package_reservations_ibfk_2` FOREIGN KEY (`device_id`) REFERENCES `devices` (`deviceID`) ON DELETE CASCADE;
-
---
--- Constraints der Tabelle `jobs`
---
-ALTER TABLE `jobs`
-  ADD CONSTRAINT `jobs_ibfk_1` FOREIGN KEY (`customerID`) REFERENCES `customers` (`customerID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `jobs_ibfk_2` FOREIGN KEY (`jobcategoryID`) REFERENCES `jobCategory` (`jobcategoryID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `jobs_ibfk_3` FOREIGN KEY (`statusID`) REFERENCES `status` (`statusID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `jobs_ibfk_5` FOREIGN KEY (`contract_documentID`) REFERENCES `documents` (`documentID`) ON DELETE SET NULL;
-
---
--- Constraints der Tabelle `job_attachments`
---
-ALTER TABLE `job_attachments`
-  ADD CONSTRAINT `job_attachments_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `job_attachments_ibfk_2` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL;
-
---
--- Constraints der Tabelle `job_device_events`
---
-ALTER TABLE `job_device_events`
-  ADD CONSTRAINT `fk_job_device_events_device` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_job_device_events_job` FOREIGN KEY (`jobID`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE;
-
---
--- Constraints der Tabelle `job_rental_equipment`
---
-ALTER TABLE `job_rental_equipment`
-  ADD CONSTRAINT `job_rental_equipment_ibfk_1` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `job_rental_equipment_ibfk_2` FOREIGN KEY (`equipment_id`) REFERENCES `rental_equipment` (`equipment_id`) ON DELETE CASCADE;
-
---
--- Constraints der Tabelle `led_controller_zone_types`
---
-ALTER TABLE `led_controller_zone_types`
-  ADD CONSTRAINT `fk_led_controller_zone_types_controller` FOREIGN KEY (`controller_id`) REFERENCES `led_controllers` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_led_controller_zone_types_zone_type` FOREIGN KEY (`zone_type_id`) REFERENCES `zone_types` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints der Tabelle `maintenanceLogs`
---
-ALTER TABLE `maintenanceLogs`
-  ADD CONSTRAINT `fk_maintenanceLogs_device` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `maintenanceLogs_ibfk_2` FOREIGN KEY (`employeeID`) REFERENCES `employee` (`employeeID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
-
---
--- Constraints der Tabelle `offline_sync_queue`
---
-ALTER TABLE `offline_sync_queue`
-  ADD CONSTRAINT `offline_sync_queue_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE CASCADE;
-
---
--- Constraints der Tabelle `package_devices`
---
-ALTER TABLE `package_devices`
-  ADD CONSTRAINT `fk_package_devices_device` FOREIGN KEY (`deviceID`) REFERENCES `devices` (`deviceID`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_package_devices_package` FOREIGN KEY (`packageID`) REFERENCES `equipment_packages` (`packageID`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints der Tabelle `products`
---
-ALTER TABLE `products`
-  ADD CONSTRAINT `products_ibfk_1` FOREIGN KEY (`brandID`) REFERENCES `brands` (`brandID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `products_ibfk_2` FOREIGN KEY (`categoryID`) REFERENCES `categories` (`categoryID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `products_ibfk_3` FOREIGN KEY (`manufacturerID`) REFERENCES `manufacturer` (`manufacturerID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `products_ibfk_4` FOREIGN KEY (`subbiercategoryID`) REFERENCES `subbiercategories` (`subbiercategoryID`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `products_ibfk_5` FOREIGN KEY (`subcategoryID`) REFERENCES `subcategories` (`subcategoryID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
-
---
--- Constraints der Tabelle `product_images`
---
-ALTER TABLE `product_images`
-  ADD CONSTRAINT `fk_product_images_product` FOREIGN KEY (`productID`) REFERENCES `products` (`productID`) ON DELETE CASCADE;
-
---
--- Constraints der Tabelle `push_subscriptions`
---
-ALTER TABLE `push_subscriptions`
-  ADD CONSTRAINT `push_subscriptions_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE CASCADE;
-
---
--- Constraints der Tabelle `saved_searches`
---
-ALTER TABLE `saved_searches`
-  ADD CONSTRAINT `saved_searches_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE CASCADE;
-
---
--- Constraints der Tabelle `search_history`
---
-ALTER TABLE `search_history`
-  ADD CONSTRAINT `search_history_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE SET NULL;
-
---
--- Constraints der Tabelle `storage_zones`
---
-ALTER TABLE `storage_zones`
-  ADD CONSTRAINT `storage_zones_ibfk_1` FOREIGN KEY (`parent_zone_id`) REFERENCES `storage_zones` (`zone_id`) ON DELETE SET NULL;
-
---
--- Constraints der Tabelle `subbiercategories`
---
-ALTER TABLE `subbiercategories`
-  ADD CONSTRAINT `subbiercategories_ibfk_1` FOREIGN KEY (`subcategoryID`) REFERENCES `subcategories` (`subcategoryID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
-
---
--- Constraints der Tabelle `subcategories`
---
-ALTER TABLE `subcategories`
-  ADD CONSTRAINT `subcategories_ibfk_1` FOREIGN KEY (`categoryID`) REFERENCES `categories` (`categoryID`) ON DELETE RESTRICT ON UPDATE RESTRICT;
-
---
--- Constraints der Tabelle `user_preferences`
---
-ALTER TABLE `user_preferences`
-  ADD CONSTRAINT `fk_user_preferences_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints der Tabelle `user_dashboard_widgets`
---
-ALTER TABLE `user_dashboard_widgets`
-  ADD CONSTRAINT `fk_dashboard_widgets_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints der Tabelle `user_profiles`
---
-ALTER TABLE `user_profiles`
-  ADD CONSTRAINT `fk_user_profiles_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE;
-
---
--- Constraints der Tabelle `user_roles`
---
-ALTER TABLE `user_roles`
-  ADD CONSTRAINT `user_roles_ibfk_1` FOREIGN KEY (`userID`) REFERENCES `users` (`userID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `user_roles_ibfk_2` FOREIGN KEY (`roleID`) REFERENCES `roles` (`roleID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `user_roles_ibfk_3` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL;
-
---
--- Constraints der Tabelle `user_roles_wh`
---
-ALTER TABLE `user_roles_wh`
-  ADD CONSTRAINT `fk_user_roles_wh_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`roleID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_user_roles_wh_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE;
-
---
--- Constraints der Tabelle `user_sessions`
---
-ALTER TABLE `user_sessions`
-  ADD CONSTRAINT `user_sessions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) ON DELETE CASCADE;
-
---
--- Constraints der Tabelle `pdf_uploads`
---
-ALTER TABLE `pdf_uploads`
-  ADD CONSTRAINT `fk_pdf_uploads_job` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`jobID`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_pdf_uploads_user` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL;
-
---
--- Constraints der Tabelle `pdf_extractions`
---
-ALTER TABLE `pdf_extractions`
-  ADD CONSTRAINT `fk_pdf_extractions_upload` FOREIGN KEY (`upload_id`) REFERENCES `pdf_uploads` (`upload_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_pdf_extractions_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`customerID`) ON DELETE SET NULL;
-
---
--- Constraints der Tabelle `pdf_extraction_items`
---
-ALTER TABLE `pdf_extraction_items`
-  ADD CONSTRAINT `fk_pdf_items_extraction` FOREIGN KEY (`extraction_id`) REFERENCES `pdf_extractions` (`extraction_id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_pdf_items_product` FOREIGN KEY (`mapped_product_id`) REFERENCES `products` (`productID`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_pdf_items_package` FOREIGN KEY (`mapped_package_id`) REFERENCES `product_packages` (`package_id`) ON DELETE SET NULL;
+/*!50001 DROP VIEW IF EXISTS `device_earnings_summary`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `device_earnings_summary` AS select `d`.`deviceID` AS `deviceID`,`p`.`name` AS `deviceName`,count(distinct `jd`.`jobID`) AS `numJobs`,round(coalesce(sum((case when (`j`.`discount_type` = 'percent') then (coalesce(`jd`.`custom_price`,(((to_days(`j`.`endDate`) - to_days(`j`.`startDate`)) + 1) * `p`.`itemcostperday`)) * (1 - (`j`.`discount` / 100))) when (`j`.`discount_type` = 'amount') then greatest((coalesce(`jd`.`custom_price`,(((to_days(`j`.`endDate`) - to_days(`j`.`startDate`)) + 1) * `p`.`itemcostperday`)) - (`j`.`discount` / `jd_count`.`device_count`)),0) else coalesce(`jd`.`custom_price`,(((to_days(`j`.`endDate`) - to_days(`j`.`startDate`)) + 1) * `p`.`itemcostperday`)) end)),0),2) AS `totalEarnings` from ((((`devices` `d` left join `jobdevices` `jd` on((`d`.`deviceID` = `jd`.`deviceID`))) left join (select `jobdevices`.`jobID` AS `jobID`,count(0) AS `device_count` from `jobdevices` group by `jobdevices`.`jobID`) `jd_count` on((`jd`.`jobID` = `jd_count`.`jobID`))) left join `jobs` `j` on((`jd`.`jobID` = `j`.`jobID`))) left join `products` `p` on((`d`.`productID` = `p`.`productID`))) group by `d`.`deviceID`,`p`.`name` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
 
 --
--- Constraints der Tabelle `pdf_product_mappings`
+-- Final view structure for view `product_revenue`
 --
-ALTER TABLE `pdf_product_mappings`
-  ADD CONSTRAINT `fk_pdf_mappings_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`productID`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_pdf_mappings_user` FOREIGN KEY (`created_by`) REFERENCES `users` (`userID`) ON DELETE SET NULL;
 
---
--- Insert default admin user (username: admin, password: admin)
--- This user is created automatically on fresh database setup
--- User MUST change password on first login (force_password_change=1)
---
-INSERT INTO `users` (`userID`, `username`, `email`, `password_hash`, `first_name`, `last_name`, `is_active`, `created_at`, `updated_at`, `last_login`, `timezone`, `language`, `avatar_path`, `notification_preferences`, `last_active`, `force_password_change`)
-VALUES (1, 'admin', 'admin@localhost', '$2a$14$/ubu0Bnral/RW8ipdAZijugcByjwP4040HbXUaDdSkE.vyhwKdOHO', 'System', 'Administrator', 1, NOW(), NOW(), NULL, 'Europe/Berlin', 'en', NULL, NULL, NULL, 1);
+/*!50001 DROP VIEW IF EXISTS `product_revenue`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `product_revenue` AS select `p`.`name` AS `product_name`,sum(`jd`.`custom_price`) AS `total_revenue` from (((`jobdevices` `jd` join `devices` `d` on((`jd`.`deviceID` = `d`.`deviceID`))) join `products` `p` on((`d`.`productID` = `p`.`productID`))) join `jobs` `j` on((`jd`.`jobID` = `j`.`jobID`))) group by `p`.`name` order by `total_revenue` desc */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
 
 --
--- Assign full admin roles to default admin user
--- User gets both RentalCore Admin (roleID=1) and WarehouseCore Admin (roleID=5)
---
-INSERT INTO `user_roles` (`userID`, `roleID`, `assigned_at`, `is_active`) VALUES
-(1, 1, NOW(), 1);
-
-COMMIT;
+-- Final view structure for view `v_job_pack_progress`
+--
+
+/*!50001 DROP VIEW IF EXISTS `v_job_pack_progress`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_general_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`tsweb`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `v_job_pack_progress` AS select `j`.`jobID` AS `jobID`,`j`.`description` AS `job_description`,count(`jd`.`deviceID`) AS `total_devices`,count((case when (`jd`.`pack_status` = 'packed') then 1 end)) AS `packed_devices`,count((case when (`jd`.`pack_status` = 'issued') then 1 end)) AS `issued_devices`,count((case when (`jd`.`pack_status` = 'returned') then 1 end)) AS `returned_devices`,count((case when (`jd`.`pack_status` = 'pending') then 1 end)) AS `pending_devices`,(case when (count(`jd`.`deviceID`) = 0) then 100.0 else round(((count((case when (`jd`.`pack_status` = 'packed') then 1 end)) * 100.0) / count(`jd`.`deviceID`)),2) end) AS `pack_progress_percent` from (`jobs` `j` left join `jobdevices` `jd` on((`j`.`jobID` = `jd`.`jobID`))) group by `j`.`jobID`,`j`.`description` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
 
+--
+-- Final view structure for view `view_device_product`
+--
+
+/*!50001 DROP VIEW IF EXISTS `view_device_product`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `view_device_product` AS select `d`.`deviceID` AS `deviceID`,`p`.`name` AS `product_name`,`p`.`productID` AS `productID` from (`devices` `d` join `products` `p` on((`d`.`productID` = `p`.`productID`))) */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_cable_overview`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_cable_overview`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_cable_overview` AS select `cables`.`name` AS `cable_name`,concat(round(`cables`.`length`,2),' m') AS `length_display` from `cables` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_device_availability`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_device_availability`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`tsweb`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_device_availability` AS select `d`.`deviceID` AS `deviceID`,coalesce(`p`.`name`,`d`.`deviceID`) AS `product_name`,(case when exists(select 1 from (`jobdevices` `jd` join `jobs` `j` on((`j`.`jobID` = `jd`.`jobID`))) where ((`jd`.`deviceID` = `d`.`deviceID`) and (`j`.`startDate` <= curdate()) and (`j`.`endDate` >= curdate()))) then 'booked' else 'free' end) AS `status_today` from (`devices` `d` left join `products` `p` on((`p`.`productID` = `d`.`productID`))) */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_device_earnings_paid`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_device_earnings_paid`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_device_earnings_paid` AS with `jd_counts` as (select `jd`.`jobID` AS `jobID`,count(0) AS `device_count` from `jobdevices` `jd` group by `jd`.`jobID`), `eligible_jobs` as (select `j`.`jobID` AS `jobID` from (`jobs` `j` left join `status` `s` on((`s`.`statusID` = `j`.`statusID`))) where ((lower(`s`.`status`) in ('completed','abgeschlossen','closed','paid','bezahlt','done','finished')) or exists(select 1 from `invoices` `i` where ((`i`.`job_id` = `j`.`jobID`) and (`i`.`status` = 'paid'))))) select `d`.`deviceID` AS `deviceID`,coalesce(`p`.`name`,`d`.`deviceID`) AS `productName`,count(distinct `jd`.`jobID`) AS `numJobs`,round(coalesce(sum((case when (`j`.`discount_type` = 'percent') then (coalesce(`jd`.`custom_price`,`p`.`itemcostperday`) * (1 - (`j`.`discount` / 100))) when (`j`.`discount_type` = 'amount') then greatest((coalesce(`jd`.`custom_price`,`p`.`itemcostperday`) - (`j`.`discount` / nullif(`jc`.`device_count`,0))),0) else coalesce(`jd`.`custom_price`,`p`.`itemcostperday`) end)),0),2) AS `totalEarnings` from (((((`devices` `d` left join `jobdevices` `jd` on((`d`.`deviceID` = `jd`.`deviceID`))) left join `eligible_jobs` `ej` on((`ej`.`jobID` = `jd`.`jobID`))) left join `jobs` `j` on((`j`.`jobID` = `jd`.`jobID`))) left join `jd_counts` `jc` on((`jc`.`jobID` = `jd`.`jobID`))) left join `products` `p` on((`p`.`productID` = `d`.`productID`))) where (`ej`.`jobID` is not null) group by `d`.`deviceID`,`productName` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_device_status_count`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_device_status_count`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_device_status_count` AS select `d`.`status` AS `device_status`,count(0) AS `device_count` from `devices` `d` group by `d`.`status` order by `device_count` desc */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_invoice_summary`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_invoice_summary`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_invoice_summary` AS select `i`.`invoice_id` AS `invoice_id`,`i`.`invoice_number` AS `invoice_number`,`i`.`status` AS `status`,`i`.`issue_date` AS `issue_date`,`i`.`due_date` AS `due_date`,`i`.`total_amount` AS `total_amount`,`i`.`paid_amount` AS `paid_amount`,`i`.`balance_due` AS `balance_due`,`c`.`customerID` AS `customer_id`,coalesce(`c`.`companyname`,concat(`c`.`firstname`,' ',`c`.`lastname`)) AS `customer_name`,`j`.`jobID` AS `job_id`,`j`.`description` AS `job_description`,(to_days(curdate()) - to_days(`i`.`due_date`)) AS `days_overdue`,count(`ili`.`line_item_id`) AS `item_count` from (((`invoices` `i` left join `customers` `c` on((`i`.`customer_id` = `c`.`customerID`))) left join `jobs` `j` on((`i`.`job_id` = `j`.`jobID`))) left join `invoice_line_items` `ili` on((`i`.`invoice_id` = `ili`.`invoice_id`))) group by `i`.`invoice_id`,`i`.`invoice_number`,`i`.`status`,`i`.`issue_date`,`i`.`due_date`,`i`.`total_amount`,`i`.`paid_amount`,`i`.`balance_due`,`c`.`customerID`,`c`.`companyname`,`c`.`firstname`,`c`.`lastname`,`j`.`jobID`,`j`.`description` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_job_accessories_detail`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_job_accessories_detail`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_general_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`tsweb`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_job_accessories_detail` AS select `ja`.`job_accessory_id` AS `job_accessory_id`,`ja`.`job_id` AS `job_id`,`j`.`description` AS `job_description`,`ja`.`parent_device_id` AS `parent_device_id`,`d`.`productID` AS `parent_product_id`,`p`.`name` AS `parent_product_name`,`ja`.`accessory_product_id` AS `accessory_product_id`,`ap`.`name` AS `accessory_name`,`ja`.`quantity_assigned` AS `quantity_assigned`,`ja`.`quantity_scanned_out` AS `quantity_scanned_out`,`ja`.`quantity_scanned_in` AS `quantity_scanned_in`,(`ja`.`quantity_assigned` - `ja`.`quantity_scanned_out`) AS `quantity_pending_out`,(`ja`.`quantity_scanned_out` - `ja`.`quantity_scanned_in`) AS `quantity_pending_in`,`ja`.`price_per_unit` AS `price_per_unit`,(`ja`.`quantity_assigned` * coalesce(`ja`.`price_per_unit`,`ap`.`price_per_unit`,0)) AS `total_price`,`ct`.`name` AS `count_type`,`ct`.`abbreviation` AS `count_type_abbr`,`ap`.`generic_barcode` AS `generic_barcode`,`ja`.`notes` AS `notes`,`ja`.`created_at` AS `created_at`,`ja`.`updated_at` AS `updated_at` from (((((`job_accessories` `ja` join `jobs` `j` on((`ja`.`job_id` = `j`.`jobID`))) left join `devices` `d` on((`ja`.`parent_device_id` = `d`.`deviceID`))) left join `products` `p` on((`d`.`productID` = `p`.`productID`))) join `products` `ap` on((`ja`.`accessory_product_id` = `ap`.`productID`))) left join `count_types` `ct` on((`ap`.`count_type_id` = `ct`.`count_type_id`))) order by `ja`.`job_id`,`ja`.`job_accessory_id` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_job_consumables_detail`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_job_consumables_detail`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_general_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`tsweb`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_job_consumables_detail` AS select `jc`.`job_consumable_id` AS `job_consumable_id`,`jc`.`job_id` AS `job_id`,`j`.`description` AS `job_description`,`jc`.`parent_device_id` AS `parent_device_id`,`d`.`productID` AS `parent_product_id`,`p`.`name` AS `parent_product_name`,`jc`.`consumable_product_id` AS `consumable_product_id`,`cp`.`name` AS `consumable_name`,`jc`.`quantity_assigned` AS `quantity_assigned`,`jc`.`quantity_scanned_out` AS `quantity_scanned_out`,`jc`.`quantity_scanned_in` AS `quantity_scanned_in`,(`jc`.`quantity_assigned` - `jc`.`quantity_scanned_out`) AS `quantity_pending_out`,(`jc`.`quantity_scanned_out` - `jc`.`quantity_scanned_in`) AS `quantity_pending_in`,`jc`.`price_per_unit` AS `price_per_unit`,(`jc`.`quantity_assigned` * coalesce(`jc`.`price_per_unit`,`cp`.`price_per_unit`,0)) AS `total_price`,`ct`.`name` AS `count_type`,`ct`.`abbreviation` AS `count_type_abbr`,`cp`.`generic_barcode` AS `generic_barcode`,`jc`.`notes` AS `notes`,`jc`.`created_at` AS `created_at`,`jc`.`updated_at` AS `updated_at` from (((((`job_consumables` `jc` join `jobs` `j` on((`jc`.`job_id` = `j`.`jobID`))) left join `devices` `d` on((`jc`.`parent_device_id` = `d`.`deviceID`))) left join `products` `p` on((`d`.`productID` = `p`.`productID`))) join `products` `cp` on((`jc`.`consumable_product_id` = `cp`.`productID`))) left join `count_types` `ct` on((`cp`.`count_type_id` = `ct`.`count_type_id`))) order by `jc`.`job_id`,`jc`.`job_consumable_id` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_job_count_current_year`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_job_count_current_year`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_job_count_current_year` AS select year(`j`.`startDate`) AS `jobYear`,count(`j`.`jobID`) AS `jobCount` from `jobs` `j` where (year(`j`.`startDate`) = year(curdate())) group by `jobYear` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_low_stock_alert`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_low_stock_alert`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_general_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`tsweb`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_low_stock_alert` AS select `p`.`productID` AS `productID`,`p`.`name` AS `name`,`p`.`stock_quantity` AS `stock_quantity`,`p`.`min_stock_level` AS `min_stock_level`,(`p`.`min_stock_level` - `p`.`stock_quantity`) AS `quantity_below_min`,`ct`.`name` AS `count_type`,`ct`.`abbreviation` AS `count_type_abbr`,`p`.`generic_barcode` AS `generic_barcode`,(case when (`p`.`is_accessory` = 1) then 'Accessory' when (`p`.`is_consumable` = 1) then 'Consumable' else 'Unknown' end) AS `item_type` from (`products` `p` left join `count_types` `ct` on((`p`.`count_type_id` = `ct`.`count_type_id`))) where (((`p`.`is_accessory` = 1) or (`p`.`is_consumable` = 1)) and (`p`.`stock_quantity` <= coalesce(`p`.`min_stock_level`,0))) order by (`p`.`min_stock_level` - `p`.`stock_quantity`) desc */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_package_devices_detail`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_package_devices_detail`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_package_devices_detail` AS select `pd`.`packageID` AS `packageID`,`ep`.`name` AS `packageName`,`pd`.`deviceID` AS `deviceID`,`d`.`serialnumber` AS `serialNumber`,`d`.`status` AS `deviceStatus`,`p`.`name` AS `productName`,concat(`sc`.`name`,' > ',`sbc`.`name`) AS `productCategory`,`p`.`itemcostperday` AS `defaultPrice`,`pd`.`custom_price` AS `custom_price`,coalesce(`pd`.`custom_price`,`p`.`itemcostperday`) AS `effectivePrice`,`pd`.`quantity` AS `quantity`,`pd`.`is_required` AS `is_required`,`pd`.`notes` AS `notes`,`pd`.`sort_order` AS `sort_order`,(coalesce(`pd`.`custom_price`,`p`.`itemcostperday`) * `pd`.`quantity`) AS `lineTotal` from (((((`package_devices` `pd` join `equipment_packages` `ep` on((`pd`.`packageID` = `ep`.`packageID`))) join `devices` `d` on((`pd`.`deviceID` = `d`.`deviceID`))) left join `products` `p` on((`d`.`productID` = `p`.`productID`))) left join `subcategories` `sc` on((`p`.`subcategoryID` = `sc`.`subcategoryID`))) left join `subbiercategories` `sbc` on((`p`.`subbiercategoryID` = `sbc`.`subbiercategoryID`))) order by `pd`.`packageID`,`pd`.`sort_order`,`pd`.`deviceID` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_package_summary`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_package_summary`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_package_summary` AS select `ep`.`packageID` AS `packageID`,`ep`.`name` AS `packageName`,`ep`.`description` AS `description`,`ep`.`package_price` AS `packagePrice`,`ep`.`discount_percent` AS `discountPercent`,`ep`.`min_rental_days` AS `minRentalDays`,`ep`.`is_active` AS `isActive`,`ep`.`usage_count` AS `usageCount`,`pc`.`name` AS `categoryName`,`pc`.`color` AS `categoryColor`,count(`pd`.`deviceID`) AS `deviceCount`,sum(`pd`.`quantity`) AS `totalDevices`,sum((case when (`pd`.`is_required` = 1) then `pd`.`quantity` else 0 end)) AS `requiredDevices`,sum((case when (`pd`.`is_required` = 0) then `pd`.`quantity` else 0 end)) AS `optionalDevices`,`ep`.`created_at` AS `createdAt`,`ep`.`updated_at` AS `updatedAt` from ((`equipment_packages` `ep` left join `package_categories` `pc` on((`ep`.`categoryID` = `pc`.`categoryID`))) left join `package_devices` `pd` on((`ep`.`packageID` = `pd`.`packageID`))) group by `ep`.`packageID`,`ep`.`name`,`ep`.`description`,`ep`.`package_price`,`ep`.`discount_percent`,`ep`.`min_rental_days`,`ep`.`is_active`,`ep`.`usage_count`,`pc`.`name`,`pc`.`color`,`ep`.`created_at`,`ep`.`updated_at` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_product_accessories`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_product_accessories`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_general_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`tsweb`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_product_accessories` AS select `pa`.`product_id` AS `product_id`,`p`.`name` AS `product_name`,`pa`.`accessory_product_id` AS `accessory_product_id`,`ap`.`name` AS `accessory_name`,`ap`.`stock_quantity` AS `accessory_stock`,`ap`.`price_per_unit` AS `accessory_price`,`ct`.`name` AS `count_type`,`ct`.`abbreviation` AS `count_type_abbr`,`pa`.`is_optional` AS `is_optional`,`pa`.`default_quantity` AS `default_quantity`,`pa`.`sort_order` AS `sort_order`,`ap`.`generic_barcode` AS `generic_barcode` from (((`product_accessories` `pa` join `products` `p` on((`pa`.`product_id` = `p`.`productID`))) join `products` `ap` on((`pa`.`accessory_product_id` = `ap`.`productID`))) left join `count_types` `ct` on((`ap`.`count_type_id` = `ct`.`count_type_id`))) where (`ap`.`is_accessory` = 1) order by `pa`.`product_id`,`pa`.`sort_order`,`ap`.`name` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_product_consumables`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_product_consumables`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_general_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`tsweb`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_product_consumables` AS select `pc`.`product_id` AS `product_id`,`p`.`name` AS `product_name`,`pc`.`consumable_product_id` AS `consumable_product_id`,`cp`.`name` AS `consumable_name`,`cp`.`stock_quantity` AS `consumable_stock`,`cp`.`price_per_unit` AS `consumable_price`,`ct`.`name` AS `count_type`,`ct`.`abbreviation` AS `count_type_abbr`,`pc`.`default_quantity` AS `default_quantity`,`pc`.`sort_order` AS `sort_order`,`cp`.`generic_barcode` AS `generic_barcode` from (((`product_consumables` `pc` join `products` `p` on((`pc`.`product_id` = `p`.`productID`))) join `products` `cp` on((`pc`.`consumable_product_id` = `cp`.`productID`))) left join `count_types` `ct` on((`cp`.`count_type_id` = `ct`.`count_type_id`))) where (`cp`.`is_consumable` = 1) order by `pc`.`product_id`,`pc`.`sort_order`,`cp`.`name` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `vw_product_earnings_summary`
+--
+
+/*!50001 DROP VIEW IF EXISTS `vw_product_earnings_summary`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `vw_product_earnings_summary` AS select `v`.`productName` AS `productName`,count(distinct `v`.`deviceID`) AS `deviceCount`,sum(`v`.`totalEarnings`) AS `totalEarnings` from `vw_device_earnings_paid` `v` group by `v`.`productName` order by `totalEarnings` desc */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2025-12-07  6:30:39
