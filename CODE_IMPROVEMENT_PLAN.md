@@ -250,6 +250,165 @@ This plan addresses technical debt in two Go microservices (RentalCore and Wareh
 
 ---
 
+## 8. Database Migration Plan: MySQL → Embedded Database
+
+**Created:** 12. December 2025  
+**Priority:** HIGH  
+**Status:** Planning
+
+### 8.1 Current Database Analysis
+
+| Metric | Value |
+|--------|-------|
+| Total Tables | 102 |
+| Foreign Key Constraints | 113 |
+| Triggers | 8 |
+| JSON Columns | 31 |
+| ENUM Columns | 36 |
+| FULLTEXT Indexes | 2 |
+| AUTO_INCREMENT Columns | 144 |
+| Schema File Size | 3,692 lines |
+
+### 8.2 Database Candidates Comparison
+
+| Feature | SQLite | PostgreSQL | MariaDB (Embedded) | TiKV/TiDB |
+|---------|--------|------------|-------------------|-----------|
+| **Embedded Support** | ✅ Native | ❌ Server-based | ❌ Server-based | ❌ Cluster |
+| **Go Driver Quality** | ✅ Excellent (modernc.org/sqlite) | ✅ Excellent (pgx) | ✅ Same as MySQL | ⚠️ Limited |
+| **GORM Support** | ✅ Native | ✅ Native | ✅ Native | ⚠️ Community |
+| **JSON Support** | ✅ Yes (json1) | ✅ Native JSONB | ✅ Yes | ✅ Yes |
+| **Foreign Keys** | ✅ Yes (pragma) | ✅ Native | ✅ Native | ✅ Yes |
+| **Triggers** | ✅ Yes | ✅ Yes | ✅ Yes | ⚠️ Limited |
+| **FULLTEXT Search** | ✅ FTS5 | ✅ tsvector | ✅ Yes | ⚠️ Limited |
+| **ENUM Types** | ❌ CHECK constraint | ✅ Native | ✅ Native | ✅ Yes |
+| **Performance (1 User)** | ✅ Excellent | ⚠️ Overhead | ⚠️ Overhead | ❌ Overkill |
+| **Memory Footprint** | ✅ <10MB | ❌ ~100MB+ | ❌ ~100MB+ | ❌ ~500MB+ |
+| **Backup Simplicity** | ✅ Copy file | ⚠️ pg_dump | ⚠️ mysqldump | ❌ Complex |
+| **Docker Complexity** | ✅ None (embedded) | ⚠️ Extra container | ⚠️ Extra container | ❌ Multiple containers |
+
+### 8.3 Recommendation: **SQLite with CGO-free driver**
+
+**Why SQLite:**
+1. **Zero external dependencies** - No database container needed
+2. **Performance** - Faster than MySQL for single-user read-heavy workloads
+3. **Simplicity** - Single file database, trivial backup/restore
+4. **GORM compatible** - Drop-in replacement with minimal code changes
+5. **Production proven** - Used by billions of devices worldwide
+6. **Pure Go driver available** - `modernc.org/sqlite` (no CGO required)
+
+**Challenges to Address:**
+- ENUM columns → CHECK constraints or string columns
+- MySQL-specific SQL syntax → Standard SQL
+- Triggers → May need reimplementation
+- FULLTEXT → FTS5 extension
+
+### 8.4 Migration Tasks
+
+#### Phase M1: Research & Preparation (Agent: "Günther")
+- [ ] M1.1 Analyze all MySQL-specific SQL in codebase
+- [ ] M1.2 Document ENUM columns and their values
+- [ ] M1.3 List all triggers and their logic
+- [ ] M1.4 Identify MySQL functions used (NOW(), UUID(), etc.)
+- [ ] M1.5 Test SQLite GORM driver with simple queries
+
+#### Phase M2: Schema Conversion (Agent: "Horst")
+- [ ] M2.1 Convert RentalCore.sql to SQLite-compatible schema
+- [ ] M2.2 Convert ENUM to CHECK constraints
+- [ ] M2.3 Convert triggers to SQLite syntax
+- [ ] M2.4 Convert FULLTEXT to FTS5 virtual tables
+- [ ] M2.5 Validate all foreign key relationships
+
+#### Phase M3: Code Adaptation (Agent: "Siegfried")
+- [ ] M3.1 Replace MySQL driver with SQLite driver in go.mod
+- [ ] M3.2 Update database connection code
+- [ ] M3.3 Fix MySQL-specific queries (LIMIT syntax, JSON functions)
+- [ ] M3.4 Update raw SQL queries for SQLite compatibility
+- [ ] M3.5 Adapt GORM model definitions if needed
+
+#### Phase M4: Data Migration Tool (Agent: "Wolfgang")
+- [ ] M4.1 Create data export script from MySQL
+- [ ] M4.2 Create data import script for SQLite
+- [ ] M4.3 Handle AUTO_INCREMENT to INTEGER PRIMARY KEY
+- [ ] M4.4 Validate data integrity after migration
+- [ ] M4.5 Create rollback procedure
+
+#### Phase M5: Docker & Deployment (Agent: "Dieter")
+- [ ] M5.1 Update docker-compose.yml (remove MySQL service)
+- [ ] M5.2 Add volume for SQLite database file
+- [ ] M5.3 Update environment variables
+- [ ] M5.4 Update health check endpoints
+- [ ] M5.5 Update documentation
+
+#### Phase M6: Testing (Agent: "Klaus")
+- [ ] M6.1 Create migration test suite
+- [ ] M6.2 Test all CRUD operations
+- [ ] M6.3 Test complex queries and joins
+- [ ] M6.4 Performance benchmarks
+- [ ] M6.5 Backup/restore validation
+
+### 8.5 Test Catalogue
+
+| Test ID | Category | Description | Expected Result | Status |
+|---------|----------|-------------|-----------------|--------|
+| T-DB-001 | Connection | SQLite database opens successfully | Connection established | ⏳ |
+| T-DB-002 | Connection | Database file created with correct permissions | File exists, writable | ⏳ |
+| T-DB-003 | Schema | All 102 tables created | PRAGMA table_list returns 102 | ⏳ |
+| T-DB-004 | Schema | Foreign keys enabled | PRAGMA foreign_keys = ON | ⏳ |
+| T-DB-005 | Schema | All indexes created | Indexes match specification | ⏳ |
+| T-AUTH-001 | Auth | User login works | JWT returned | ⏳ |
+| T-AUTH-002 | Auth | Session persists after restart | Session valid | ⏳ |
+| T-AUTH-003 | Auth | RBAC permissions enforced | Unauthorized returns 403 | ⏳ |
+| T-JOB-001 | Jobs | Create job | Job ID returned | ⏳ |
+| T-JOB-002 | Jobs | List jobs with pagination | Correct page returned | ⏳ |
+| T-JOB-003 | Jobs | Update job | Changes persisted | ⏳ |
+| T-JOB-004 | Jobs | Delete job | Cascade deletes work | ⏳ |
+| T-JOB-005 | Jobs | Job search (FULLTEXT) | Results found | ⏳ |
+| T-DEV-001 | Devices | Create device | Device ID generated | ⏳ |
+| T-DEV-002 | Devices | Scan device barcode | Device found | ⏳ |
+| T-DEV-003 | Devices | Update device status | Status changed | ⏳ |
+| T-DEV-004 | Devices | Device movement tracking | Movement logged | ⏳ |
+| T-PROD-001 | Products | List products | Products returned | ⏳ |
+| T-PROD-002 | Products | Product with JSON metadata | JSON parsed correctly | ⏳ |
+| T-PROD-003 | Products | Product categories | FK relationship works | ⏳ |
+| T-INV-001 | Invoice | Create invoice | Invoice number generated | ⏳ |
+| T-INV-002 | Invoice | Invoice line items | Items linked to invoice | ⏳ |
+| T-INV-003 | Invoice | Invoice PDF generation | PDF renders correctly | ⏳ |
+| T-ZONE-001 | Zones | Create storage zone | Zone created | ⏳ |
+| T-ZONE-002 | Zones | Zone LED mapping | LED config stored | ⏳ |
+| T-ZONE-003 | Zones | Device in zone | Relationship works | ⏳ |
+| T-PERF-001 | Performance | 1000 products query | < 100ms | ⏳ |
+| T-PERF-002 | Performance | Complex job report | < 500ms | ⏳ |
+| T-PERF-003 | Performance | Concurrent reads | No locking issues | ⏳ |
+| T-PERF-004 | Performance | Concurrent writes | WAL mode handles correctly | ⏳ |
+| T-BACKUP-001 | Backup | Database file copy | Backup created | ⏳ |
+| T-BACKUP-002 | Backup | Restore from backup | Data intact | ⏳ |
+| T-DOCKER-001 | Docker | Container starts | Health check passes | ⏳ |
+| T-DOCKER-002 | Docker | Volume persistence | Data survives restart | ⏳ |
+| T-DOCKER-003 | Docker | No MySQL dependency | Only app containers needed | ⏳ |
+| T-E2E-001 | End-to-End | Full job workflow | Job created → devices assigned → completed | ⏳ |
+| T-E2E-002 | End-to-End | Full invoice workflow | Invoice created → sent → paid | ⏳ |
+| T-E2E-003 | End-to-End | Warehouse scan workflow | Device scanned → location updated | ⏳ |
+
+### 8.6 Risk Assessment
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| SQLite write locking | Medium | Medium | Use WAL mode, optimize transactions |
+| ENUM migration issues | Low | Low | Map to CHECK constraints |
+| Trigger incompatibility | Medium | Medium | Rewrite in Go code if needed |
+| FULLTEXT behavior differs | Low | Medium | Test FTS5 thoroughly |
+| Large result sets | Low | Medium | Add pagination limits |
+| Concurrent write conflicts | Medium | High | Implement proper locking strategy |
+
+### 8.7 Rollback Plan
+
+1. Backup branches created: `backup-pre-db-migration-20251212`
+2. Keep MySQL docker-compose.yml variant
+3. Data export available for reimport
+4. Feature flags for database backend selection (optional)
+
+---
+
 ## Notes
 
 - Prioritize changes that improve developer productivity and reduce bugs

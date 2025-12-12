@@ -1,49 +1,68 @@
 name: lager_weidelbach
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
-      MYSQL_DATABASE: "${DB_NAME}"
-      MYSQL_USER: "${DB_USER}"
-      MYSQL_PASSWORD: "${DB_PASSWORD}"
+  # ============================================================================
+  # SQLite Database Migration - Runs only if databases don't exist
+  # ============================================================================
+  db-init:
+    image: alpine:latest
+    container_name: db-init
     volumes:
-      - mysql-data:/var/lib/mysql
-      - ./RentalCore.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "3306:3306"
+      - sqlite-data:/data
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        echo "🗄️  Checking SQLite databases..."
+        mkdir -p /data/backups
+        
+        # Create empty databases if they don't exist
+        if [ ! -f /data/rentalcore.db ]; then
+          echo "📦 Creating empty RentalCore database..."
+          touch /data/rentalcore.db
+          chmod 666 /data/rentalcore.db
+          echo "✅ RentalCore database created"
+        else
+          echo "✅ RentalCore database exists"
+        fi
+        
+        if [ ! -f /data/warehousecore.db ]; then
+          echo "📦 Creating empty WarehouseCore database..."
+          touch /data/warehousecore.db
+          chmod 666 /data/warehousecore.db
+          echo "✅ WarehouseCore database created"
+        else
+          echo "✅ WarehouseCore database exists"
+        fi
+        
+        # Set permissions
+        chmod -R 777 /data
+        echo "🎉 Database initialization complete!"
     networks:
       - weidelbach
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 90s
 
+  # ============================================================================
+  # RentalCore - Rental Management System (SQLite)
+  # ============================================================================
   rentalcore:
     image: nobentie/rentalcore:latest
     container_name: rentalcore
     restart: unless-stopped
     depends_on:
-      mysql:
-        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     environment:
       # Domain configuration for cross-navigation (without protocol or port)
-      # Example: rent.example.com or rental.example.com
-      # Leave empty for auto-detection based on current hostname
       RENTALCORE_DOMAIN: "${RENTALCORE_DOMAIN:-}"
       WAREHOUSECORE_DOMAIN: "${WAREHOUSECORE_DOMAIN:-}"
       # Cookie domain for SSO (e.g., .example.com for subdomains, leave empty for localhost)
       COOKIE_DOMAIN: "${COOKIE_DOMAIN:-}"
-      # Database (shared schema) - RentalCore uses these env var names
-      DB_HOST: "mysql"
-      DB_PORT: "3306"
-      DB_USERNAME: "${DB_USER}"
-      DB_PASSWORD: "${DB_PASSWORD}"
-      DB_NAME: "${DB_NAME}"
+      # SQLite Database Configuration
+      DB_PATH: "/data/rentalcore.db"
+      DB_JOURNAL_MODE: "WAL"
+      DB_SYNCHRONOUS: "NORMAL"
+      DB_CACHE_SIZE: "-64000"
+      DB_BUSY_TIMEOUT: "5000"
       # Nextcloud File Pool (WebDAV)
       NEXTCLOUD_WEBDAV_URL: "${NEXTCLOUD_WEBDAV_URL:-}"
       NEXTCLOUD_WEBDAV_USER: "${NEXTCLOUD_WEBDAV_USER:-}"
@@ -57,6 +76,8 @@ services:
       OCR_USE_PYTHON: "${OCR_USE_PYTHON:-true}"
     ports:
       - "8081:8081"
+    volumes:
+      - sqlite-data:/data
     networks:
       - weidelbach
     healthcheck:
@@ -64,38 +85,40 @@ services:
       interval: 15s
       timeout: 10s
       retries: 10
-      start_period: 120s
+      start_period: 60s
 
+  # ============================================================================
+  # WarehouseCore - Warehouse Management System (SQLite)
+  # ============================================================================
   warehousecore:
     image: nobentie/warehousecore:latest
     container_name: warehousecore
     restart: unless-stopped
     depends_on:
-      mysql:
-        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
       mosquitto:
         condition: service_started
     environment:
       # Domain configuration for cross-navigation (without protocol or port)
-      # Example: rent.example.com or rental.example.com
-      # Leave empty for auto-detection based on current hostname
       RENTALCORE_DOMAIN: "${RENTALCORE_DOMAIN:-}"
       WAREHOUSECORE_DOMAIN: "${WAREHOUSECORE_DOMAIN:-}"
       # Cookie domain for SSO (e.g., .example.com for subdomains, leave empty for localhost)
       COOKIE_DOMAIN: "${COOKIE_DOMAIN:-}"
-      # Database (shared schema)
-      DB_HOST: "mysql"
-      DB_USER: "${DB_USER}"
-      DB_PASS: "${DB_PASSWORD}"
-      DB_NAME: "${DB_NAME}"
-      # App port (adjust if the app expects a different env var)
+      # SQLite Database Configuration
+      DB_PATH: "/data/warehousecore.db"
+      DB_JOURNAL_MODE: "WAL"
+      DB_SYNCHRONOUS: "NORMAL"
+      DB_CACHE_SIZE: "-64000"
+      DB_BUSY_TIMEOUT: "5000"
+      # App port
       PORT: "8082"
       # Nextcloud File Pool (shared with RentalCore) for product pictures
       NEXTCLOUD_WEBDAV_URL: "${NEXTCLOUD_WEBDAV_URL:-}"
       NEXTCLOUD_WEBDAV_USER: "${NEXTCLOUD_WEBDAV_USER:-}"
       NEXTCLOUD_WEBDAV_PASSWORD: "${NEXTCLOUD_WEBDAV_PASSWORD:-}"
       NEXTCLOUD_WEBDAV_BASE_PATH: "${NEXTCLOUD_WEBDAV_BASE_PATH:-rentalcore-filepool}"
-    # LED MQTT Configuration
+      # LED MQTT Configuration
       LED_MQTT_HOST: "${LED_MQTT_HOST:-mosquitto}"
       LED_MQTT_PORT: "${LED_MQTT_PORT:-1883}"
       LED_MQTT_TLS: "${LED_MQTT_TLS:-false}"
@@ -110,6 +133,7 @@ services:
     ports:
       - "8082:8082"
     volumes:
+      - sqlite-data:/data
       - led-mapping:/var/lib/warehousecore/led
     networks:
       - weidelbach
@@ -118,7 +142,67 @@ services:
       interval: 15s
       timeout: 10s
       retries: 10
-      start_period: 120s
+      start_period: 60s
+
+  # ============================================================================
+  # SQLite Backup Service - Daily automatic backups
+  # ============================================================================
+  db-backup:
+    image: alpine:latest
+    container_name: db-backup
+    restart: unless-stopped
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    volumes:
+      - sqlite-data:/data
+      - sqlite-backups:/backups
+    environment:
+      BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-7}"
+      BACKUP_INTERVAL_HOURS: "${BACKUP_INTERVAL_HOURS:-24}"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        apk add --no-cache sqlite
+        
+        backup_databases() {
+          TIMESTAMP=$$(date +%Y%m%d_%H%M%S)
+          echo "🔄 Starting backup at $$(date)"
+          
+          # Backup RentalCore
+          if [ -f /data/rentalcore.db ]; then
+            sqlite3 /data/rentalcore.db ".backup '/backups/rentalcore_$${TIMESTAMP}.db'"
+            echo "✅ RentalCore backed up"
+          fi
+          
+          # Backup WarehouseCore
+          if [ -f /data/warehousecore.db ]; then
+            sqlite3 /data/warehousecore.db ".backup '/backups/warehousecore_$${TIMESTAMP}.db'"
+            echo "✅ WarehouseCore backed up"
+          fi
+          
+          # Cleanup old backups
+          find /backups -name "*.db" -mtime +$${BACKUP_RETENTION_DAYS:-7} -delete
+          echo "🧹 Old backups cleaned up"
+          
+          # List current backups
+          echo "📂 Current backups:"
+          ls -lah /backups/*.db 2>/dev/null || echo "No backups found"
+        }
+        
+        # Initial backup
+        sleep 60  # Wait for databases to be ready
+        backup_databases
+        
+        # Schedule regular backups
+        while true; do
+          sleep $${BACKUP_INTERVAL_HOURS:-24}h
+          backup_databases
+        done
+    networks:
+      - weidelbach
 
   mosquitto:
     image: eclipse-mosquitto:2.0
@@ -175,8 +259,16 @@ networks:
     driver: bridge
 
 volumes:
-  mysql-data:
+  # SQLite database files (shared between services)
+  sqlite-data:
+    driver: local
+  # SQLite backup storage
+  sqlite-backups:
+    driver: local
+  # LED mapping configuration
   led-mapping:
+    driver: local
+  # Mosquitto MQTT broker
   mosquitto-config:
   mosquitto-data:
   mosquitto-log:

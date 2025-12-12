@@ -1,0 +1,197 @@
+{
+  "migration_order": [
+    {
+      "stage": 0,
+      "stage_name": "Basis-Tabellen (keine Abhängigkeiten)",
+      "tables": [
+        {"order": 1, "name": "status", "dependencies": []},
+        {"order": 2, "name": "roles", "dependencies": []},
+        {"order": 3, "name": "count_types", "dependencies": []},
+        {"order": 4, "name": "cable_types", "dependencies": []},
+        {"order": 5, "name": "cable_connectors", "dependencies": []},
+        {"order": 6, "name": "manufacturer", "dependencies": []},
+        {"order": 7, "name": "insuranceprovider", "dependencies": []},
+        {"order": 8, "name": "categories", "dependencies": []},
+        {"order": 9, "name": "subcategories", "dependencies": ["categories"]},
+        {"order": 10, "name": "subbiercategories", "dependencies": ["subcategories"]},
+        {"order": 11, "name": "package_categories", "dependencies": []},
+        {"order": 12, "name": "zone_types", "dependencies": []},
+        {"order": 13, "name": "storage_zones", "dependencies": []},
+        {"order": 14, "name": "jobCategory", "dependencies": []},
+        {"order": 15, "name": "retention_policies", "dependencies": []},
+        {"order": 16, "name": "email_templates", "dependencies": []},
+        {"order": 17, "name": "label_templates", "dependencies": []},
+        {"order": 18, "name": "company_settings", "dependencies": []},
+        {"order": 19, "name": "app_settings", "dependencies": []},
+        {"order": 20, "name": "invoice_settings", "dependencies": ["users"]}
+      ]
+    },
+    {
+      "stage": 1,
+      "stage_name": "Benutzer und Kunden",
+      "tables": [
+        {"order": 21, "name": "users", "dependencies": []},
+        {"order": 22, "name": "customers", "dependencies": []},
+        {"order": 23, "name": "employee", "dependencies": []}
+      ]
+    },
+    {
+      "stage": 2,
+      "stage_name": "Benutzer-abhängige Tabellen",
+      "tables": [
+        {"order": 24, "name": "user_profiles", "dependencies": ["users"]},
+        {"order": 25, "name": "user_preferences", "dependencies": ["users"]},
+        {"order": 26, "name": "user_dashboard_widgets", "dependencies": ["users"]},
+        {"order": 27, "name": "user_2fa", "dependencies": ["users"]},
+        {"order": 28, "name": "user_passkeys", "dependencies": ["users"]},
+        {"order": 29, "name": "user_roles", "dependencies": ["users", "roles"]},
+        {"order": 30, "name": "user_roles_wh", "dependencies": ["users", "roles"]},
+        {"order": 31, "name": "sessions", "dependencies": ["users"]},
+        {"order": 32, "name": "user_sessions", "dependencies": ["users"]},
+        {"order": 33, "name": "webauthn_sessions", "dependencies": ["users"]},
+        {"order": 34, "name": "push_subscriptions", "dependencies": ["users"]},
+        {"order": 35, "name": "saved_searches", "dependencies": ["users"]},
+        {"order": 36, "name": "search_history", "dependencies": ["users"]},
+        {"order": 37, "name": "offline_sync_queue", "dependencies": ["users"]},
+        {"order": 38, "name": "authentication_attempts", "dependencies": ["users"]}
+      ]
+    },
+    {
+      "stage": 3,
+      "stage_name": "Produkte und Versicherungen",
+      "tables": [
+        {"order": 39, "name": "insurances", "dependencies": ["insuranceprovider"]},
+        {"order": 40, "name": "brands", "dependencies": ["manufacturer"]},
+        {"order": 41, "name": "products", "dependencies": ["categories", "subcategories", "manufacturer", "brands"]}
+      ]
+    },
+    {
+      "stage": 4,
+      "stage_name": "Produkt-abhängige Tabellen",
+      "tables": [
+        {"order": 42, "name": "product_images", "dependencies": ["products"]},
+        {"order": 43, "name": "product_locations", "dependencies": ["products", "storage_zones"]},
+        {"order": 44, "name": "product_accessories", "dependencies": ["products"]},
+        {"order": 45, "name": "product_consumables", "dependencies": ["products"]},
+        {"order": 46, "name": "product_dependencies", "dependencies": ["products"]},
+        {"order": 47, "name": "product_packages", "dependencies": ["products", "package_categories"]},
+        {"order": 48, "name": "product_package_items", "dependencies": ["product_packages", "products"]},
+        {"order": 49, "name": "product_package_aliases", "dependencies": ["product_packages"]},
+        {"order": 50, "name": "cables", "dependencies": ["cable_types", "cable_connectors"]},
+        {"order": 51, "name": "rental_equipment", "dependencies": ["products"]}
+      ]
+    },
+    {
+      "stage": 5,
+      "stage_name": "Geräte",
+      "tables": [
+        {"order": 52, "name": "devices", "dependencies": ["products", "insurances"]},
+        {"order": 53, "name": "cases", "dependencies": ["products"]}
+      ]
+    },
+    {
+      "stage": 6,
+      "stage_name": "Geräte-abhängige Tabellen",
+      "tables": [
+        {"order": 54, "name": "devicescases", "dependencies": ["devices", "cases"]},
+        {"order": 55, "name": "devicestatushistory", "dependencies": ["devices"]},
+        {"order": 56, "name": "device_movements", "dependencies": ["devices"]},
+        {"order": 57, "name": "maintenanceLogs", "dependencies": ["devices", "employee"]},
+        {"order": 58, "name": "defect_reports", "dependencies": ["devices"]},
+        {"order": 59, "name": "equipment_packages", "dependencies": ["users", "package_categories"]},
+        {"order": 60, "name": "package_devices", "dependencies": ["equipment_packages", "devices"]},
+        {"order": 61, "name": "led_controllers", "dependencies": []},
+        {"order": 62, "name": "led_controller_zone_types", "dependencies": ["led_controllers", "zone_types"]},
+        {"order": 63, "name": "inventory_transactions", "dependencies": ["products", "users"]}
+      ]
+    },
+    {
+      "stage": 7,
+      "stage_name": "Dokumente",
+      "tables": [
+        {"order": 64, "name": "documents", "dependencies": ["users"]},
+        {"order": 65, "name": "digital_signatures", "dependencies": ["documents"]},
+        {"order": 66, "name": "document_signatures", "dependencies": ["documents"]},
+        {"order": 67, "name": "invoice_templates", "dependencies": ["users"]}
+      ]
+    },
+    {
+      "stage": 8,
+      "stage_name": "Jobs",
+      "tables": [
+        {"order": 68, "name": "jobs", "dependencies": ["customers", "jobCategory", "status", "users", "documents"]}
+      ]
+    },
+    {
+      "stage": 9,
+      "stage_name": "Job-abhängige Tabellen",
+      "tables": [
+        {"order": 69, "name": "jobdevices", "dependencies": ["jobs", "devices"]},
+        {"order": 70, "name": "employeejob", "dependencies": ["employee", "jobs"]},
+        {"order": 71, "name": "job_history", "dependencies": ["jobs", "users"]},
+        {"order": 72, "name": "job_attachments", "dependencies": ["jobs", "users"]},
+        {"order": 73, "name": "job_device_events", "dependencies": ["jobs", "devices"]},
+        {"order": 74, "name": "job_edit_sessions", "dependencies": ["jobs", "users"]},
+        {"order": 75, "name": "job_packages", "dependencies": ["jobs", "product_packages"]},
+        {"order": 76, "name": "job_package_reservations", "dependencies": ["job_packages"]},
+        {"order": 77, "name": "job_accessories", "dependencies": ["jobs", "devices", "products"]},
+        {"order": 78, "name": "job_consumables", "dependencies": ["jobs", "devices", "products"]},
+        {"order": 79, "name": "job_rental_equipment", "dependencies": ["jobs", "rental_equipment"]},
+        {"order": 80, "name": "equipment_usage_logs", "dependencies": ["devices", "jobs"]}
+      ]
+    },
+    {
+      "stage": 10,
+      "stage_name": "Rechnungen",
+      "tables": [
+        {"order": 81, "name": "invoices", "dependencies": ["customers", "jobs", "users", "invoice_templates"]},
+        {"order": 82, "name": "invoice_line_items", "dependencies": ["invoices", "devices", "equipment_packages"]},
+        {"order": 83, "name": "invoice_payments", "dependencies": ["invoices", "users"]},
+        {"order": 84, "name": "financial_transactions", "dependencies": ["jobs", "customers", "users"]}
+      ]
+    },
+    {
+      "stage": 11,
+      "stage_name": "PDF-Verarbeitung",
+      "tables": [
+        {"order": 85, "name": "pdf_uploads", "dependencies": ["documents", "jobs", "users"]},
+        {"order": 86, "name": "pdf_extractions", "dependencies": ["pdf_uploads", "customers"]},
+        {"order": 87, "name": "pdf_extraction_items", "dependencies": ["pdf_extractions", "products", "product_packages"]},
+        {"order": 88, "name": "pdf_product_mappings", "dependencies": ["products", "users"]},
+        {"order": 89, "name": "pdf_package_mappings", "dependencies": ["product_packages", "users"]},
+        {"order": 90, "name": "pdf_mapping_events", "dependencies": ["pdf_extractions"]}
+      ]
+    },
+    {
+      "stage": 12,
+      "stage_name": "Audit und Compliance",
+      "tables": [
+        {"order": 91, "name": "audit_log", "dependencies": ["users"]},
+        {"order": 92, "name": "audit_logs", "dependencies": ["users"]},
+        {"order": 93, "name": "audit_events", "dependencies": ["users"]},
+        {"order": 94, "name": "gobd_records", "dependencies": []},
+        {"order": 95, "name": "consent_records", "dependencies": []},
+        {"order": 96, "name": "data_processing_records", "dependencies": []},
+        {"order": 97, "name": "data_subject_requests", "dependencies": []},
+        {"order": 98, "name": "encrypted_personal_data", "dependencies": []},
+        {"order": 99, "name": "archived_documents", "dependencies": []}
+      ]
+    },
+    {
+      "stage": 13,
+      "stage_name": "Analytics und Sonstiges",
+      "tables": [
+        {"order": 100, "name": "analytics_cache", "dependencies": []},
+        {"order": 101, "name": "scan_events", "dependencies": []},
+        {"order": 102, "name": "inspection_schedules", "dependencies": []}
+      ]
+    }
+  ],
+  "metadata": {
+    "total_tables": 102,
+    "total_stages": 14,
+    "created_by": "Wolfgang (Daten-Migrations-Experte)",
+    "created_at": "2025-12-12",
+    "project": "RentalCore/WarehouseCore"
+  }
+}
