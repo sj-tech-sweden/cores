@@ -1,0 +1,62 @@
+# Kern-Geschäftsdaten
+devices
+cables
+products
+customers
+jobs
+jobdevices
+categories
+subcategories
+subbiercategories
+brands
+manufacturer
+cases
+devicescases
+cable_connectors
+cable_types
+status
+
+# Benutzer & Rollen
+users
+roles
+user_roles
+user_profiles
+employee
+employeejob
+
+# Warehouse/LED
+storage_zones
+zone_types
+led_controllers
+led_controller_zone_types
+product_packages
+product_package_items
+package_devices
+package_categories
+
+# Jobs & Aufträge
+job_attachments
+job_history
+job_packages
+jobCategory
+device_movements
+
+# Konfiguration
+app_settings
+company_settings
+invoice_settings
+invoice_templates
+email_templates
+label_templates
+retention_policies
+count_types
+
+# Sonstiges wichtig
+documents
+insuranceprovider
+insurances
+rental_equipment
+equipment_packages
+api_keys
+invoices
+invoice_line_items

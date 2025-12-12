@@ -1,13 +1,14 @@
 name: lager_weidelbach
 services:
   # ============================================================================
-  # SQLite Database Migration - Runs only if databases don't exist
+  # SQLite Database Migration - Imports data from MySQL migration
   # ============================================================================
   db-init:
     image: alpine:latest
     container_name: db-init
     volumes:
       - sqlite-data:/data
+      - ./migrations:/migrations:ro
     entrypoint:
       - /bin/sh
       - -c
@@ -16,16 +17,26 @@ services:
         echo "🗄️  Checking SQLite databases..."
         mkdir -p /data/backups
         
-        # Create empty databases if they don't exist
+        # Install sqlite if not present
+        apk add --no-cache sqlite >/dev/null 2>&1 || true
+        
+        # Initialize RentalCore database with migrated data
         if [ ! -f /data/rentalcore.db ]; then
-          echo "📦 Creating empty RentalCore database..."
-          touch /data/rentalcore.db
-          chmod 666 /data/rentalcore.db
-          echo "✅ RentalCore database created"
+          if [ -f /migrations/rentalcore_init.sql ]; then
+            echo "📦 Importing migrated RentalCore database..."
+            sqlite3 /data/rentalcore.db < /migrations/rentalcore_init.sql
+            chmod 666 /data/rentalcore.db
+            echo "✅ RentalCore database imported (935 records)"
+          else
+            echo "📦 Creating empty RentalCore database..."
+            touch /data/rentalcore.db
+            chmod 666 /data/rentalcore.db
+          fi
         else
           echo "✅ RentalCore database exists"
         fi
         
+        # Initialize WarehouseCore database
         if [ ! -f /data/warehousecore.db ]; then
           echo "📦 Creating empty WarehouseCore database..."
           touch /data/warehousecore.db
