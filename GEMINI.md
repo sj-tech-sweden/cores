@@ -2,12 +2,12 @@
 
 ## Project Overview
 
-This project contains the deployment configuration for the Tsunami Events core management systems, an integrated equipment rental and warehouse management solution. The system is composed of two main Go applications, **RentalCore** and **WarehouseCore**, which share a single **MySQL** database. The stack also includes a **Mosquitto MQTT broker** for real-time LED bin highlighting in the warehouse. The entire system is containerized and managed using `docker-compose`.
+This project contains the deployment configuration for the Tsunami Events core management systems, an integrated equipment rental and warehouse management solution. The system is composed of two main Go applications, **RentalCore** and **WarehouseCore**, which share a single **PostgreSQL** database. The stack also includes a **Mosquitto MQTT broker** for real-time LED bin highlighting in the warehouse. The entire system is containerized and managed using `docker-compose`.
 
 - **RentalCore**: Handles job management, customer data, and invoicing.
 - **WarehouseCore**: Manages physical warehouse inventory, device tracking, and location mapping.
 
-The project is currently undergoing a refactoring to migrate all warehouse-related funtionality from `RentalCore` to `WarehouseCore`, as detailed in `plan.md`.
+The project has completed the migration from MySQL to PostgreSQL as detailed in the migration documentation.
 
 ## Building and Running
 

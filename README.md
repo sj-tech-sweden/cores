@@ -48,15 +48,15 @@ This repository contains the **deployment configuration** for the Tsunami Events
 **Docker Image:** `nobentie/warehousecore:2.51` (`latest`)
 **Port:** 8082
 
-### **MySQL Database** - Shared Data Layer
-- MySQL 8.0 containerized database
+### **PostgreSQL Database** - Shared Data Layer
+- PostgreSQL 17 containerized database
 - Automatic schema initialization from `RentalCore.sql`
 - Shared between both applications
 - Persistent data storage with Docker volumes
 - Health checks and automatic recovery
 
-**Docker Image:** `mysql:8.0`
-**Port:** 3306
+**Docker Image:** `postgres:17`
+**Port:** 5432
 
 ### **Mosquitto MQTT Broker** - LED Control
 - Self-hosted MQTT broker for LED warehouse bin highlighting
@@ -89,8 +89,8 @@ This repository contains the **deployment configuration** for the Tsunami Events
          └────────┬────────────────┘
                   │
          ┌────────▼─────────┐
-         │  MySQL 8.0       │
-         │  (Port 3306)     │
+         │  PostgreSQL 17   │
+         │  (Port 5432)     │
          │                  │
          │  Containerized   │
          │  Auto-Init DB    │
@@ -102,9 +102,9 @@ This repository contains the **deployment configuration** for the Tsunami Events
 ```
 
 **Key Features:**
-- **Complete Stack**: Includes MySQL database, MQTT broker, and both applications
+- **Complete Stack**: Includes PostgreSQL database, MQTT broker, and both applications
 - **Automatic Database Setup**: Schema automatically initialized on first start
-- **Shared Database Schema**: Both systems use the same MySQL database
+- **Shared Database Schema**: Both systems use the same PostgreSQL database
 - **Single Sign-On (SSO)**: Seamless authentication across both applications
 - **Cross-Navigation**: Click to switch between RentalCore and WarehouseCore
 - **MQTT Integration**: Real-time LED control for physical warehouse bins
@@ -120,7 +120,7 @@ This repository contains the **deployment configuration** for the Tsunami Events
 - Docker Engine 20.10+
 - Docker Compose 2.0+
 
-**That's all you need!** The stack includes everything: MySQL database, MQTT broker, and both applications.
+**That's all you need!** The stack includes everything: PostgreSQL database, MQTT broker, and both applications.
 
 ### Installation
 
@@ -143,7 +143,7 @@ docker compose up -d
 
 The first start will:
 - Download all Docker images
-- Create and initialize the MySQL database with the schema
+- Create and initialize the PostgreSQL database with the schema
 - Start all services with health checks
 - This may take 1-2 minutes
 
@@ -188,19 +188,22 @@ The `.env` file controls database credentials, cross-navigation domains, SSO, an
 
 #### **Database Configuration**
 
-The included MySQL container is configured via these variables:
+The included PostgreSQL container is configured via these variables:
 
 ```env
-DB_ROOT_PASSWORD=change_me_root_password_123
+POSTGRES_PASSWORD=change_me_root_password_123
+DB_HOST=postgres
+DB_PORT=5432
 DB_NAME=RentalCore
 DB_USER=rentalcore_user
 DB_PASSWORD=change_me_user_password_456
+DB_SSLMODE=disable
 ```
 
 **Important:**
 - Change these passwords in production!
 - The database schema (`RentalCore.sql`) is automatically imported on first start
-- Data is persisted in Docker volume `mysql-data`
+- Data is persisted in Docker volume `postgres-data`
 
 #### **Cross-Navigation Domains**
 
@@ -445,9 +448,9 @@ docker compose up -d --force-recreate
 ### Backup Volumes
 
 ```bash
-# MySQL database backup (IMPORTANT!)
-docker run --rm -v lager_weidelbach_mysql-data:/data -v $(pwd):/backup alpine \
-  tar czf /backup/mysql-backup-$(date +%Y%m%d).tar.gz /data
+# PostgreSQL database backup (IMPORTANT!)
+docker run --rm -v lager_weidelbach_postgres-data:/data -v $(pwd):/backup alpine \
+  tar czf /backup/postgres-backup-$(date +%Y%m%d).tar.gz /data
 
 # LED mapping backup
 docker run --rm -v lager_weidelbach_led-mapping:/data -v $(pwd):/backup alpine \
@@ -458,9 +461,9 @@ docker run --rm -v lager_weidelbach_mosquitto-data:/data -v $(pwd):/backup alpin
   tar czf /backup/mosquitto-backup.tar.gz /data
 ```
 
-**Alternative: MySQL dump**
+**Alternative: PostgreSQL dump**
 ```bash
-docker compose exec mysql mysqldump -u root -p${DB_ROOT_PASSWORD} RentalCore > backup-$(date +%Y%m%d).sql
+docker compose exec postgres pg_dump -U ${DB_USER} RentalCore > backup-$(date +%Y%m%d).sql
 ```
 
 ---
@@ -471,34 +474,34 @@ docker compose exec mysql mysqldump -u root -p${DB_ROOT_PASSWORD} RentalCore > b
 
 **1. Services in Restart Loop (First Start)**
 
-This is **NORMAL** during first deployment! MySQL needs 60-90 seconds to import the database.
+This is **NORMAL** during first deployment! PostgreSQL needs 30-60 seconds to import the database.
 
 ```bash
-# Monitor MySQL initialization
-docker compose logs -f mysql
+# Monitor PostgreSQL initialization
+docker compose logs -f postgres
 
 # Wait for this message:
-# "MySQL init process done. Ready for start up."
-# "mysqld: ready for connections"
+# "PostgreSQL init process complete; ready for start up."
+# "database system is ready to accept connections"
 ```
 
-**Solution:** Wait 2-3 minutes. Services will start automatically once MySQL is healthy.
+**Solution:** Wait 1-2 minutes. Services will start automatically once PostgreSQL is healthy.
 
 **2. Cannot Login with admin/admin**
 
-This happens when you have an existing MySQL volume from a previous install.
+This happens when you have an existing PostgreSQL volume from a previous install.
 
 ```bash
 # Check if admin user exists
-docker compose exec mysql mysql -u root -p${DB_ROOT_PASSWORD} ${DB_NAME} \
-  -e "SELECT username FROM users WHERE username='admin';"
+docker compose exec postgres psql -U ${DB_USER} -d ${DB_NAME} \
+  -c "SELECT username FROM users WHERE username='admin';"
 
 # If empty, reset the database:
 docker compose down -v  # ⚠️ DELETES ALL DATA!
 docker compose up -d    # Triggers fresh database init
 ```
 
-**Wait 2-3 minutes** after the reset for complete initialization.
+**Wait 1-2 minutes** after the reset for complete initialization.
 
 **3. Services Start But Still Restart**
 
@@ -513,7 +516,7 @@ docker compose logs warehousecore
 ```
 
 Common causes:
-- Database connection refused (wait for MySQL to be fully ready)
+- Database connection refused (wait for PostgreSQL to be fully ready)
 - Wrong database credentials in `.env`
 - Network issues between containers
 
@@ -569,15 +572,15 @@ docker compose up -d --force-recreate
 
 ### Database Connection Issues
 
-**1. Check if MySQL container is healthy:**
+**1. Check if PostgreSQL container is healthy:**
 ```bash
-docker compose ps mysql
-docker compose logs mysql
+docker compose ps postgres
+docker compose logs postgres
 ```
 
 **2. Test database connection:**
 ```bash
-docker compose exec mysql mysql -u root -p${DB_ROOT_PASSWORD} -e "SHOW DATABASES;"
+docker compose exec postgres psql -U ${DB_USER} -d postgres -c "\l"
 ```
 
 **3. Verify applications can connect:**
@@ -677,7 +680,7 @@ docker compose restart warehousecore
 - **Disk**: 20GB minimum for images, database, and volumes
 - **Network**: Internet connection to pull Docker images
 
-**Note:** MySQL database is included in the stack - no external database required!
+**Note:** PostgreSQL database is included in the stack - no external database required!
 
 ---
 

@@ -30,10 +30,13 @@ cd cores
 # Create .env file from example
 cat > .env << 'EOF'
 # Database Configuration
-DB_ROOT_PASSWORD=secure_root_password_change_me
+POSTGRES_PASSWORD=secure_root_password_change_me
+DB_HOST=postgres
+DB_PORT=5432
 DB_NAME=RentalCore
 DB_USER=tsweb
 DB_PASSWORD=your_secure_password_here
+DB_SSLMODE=disable
 
 # Domain Configuration (optional, leave empty for localhost)
 RENTALCORE_DOMAIN=
@@ -66,22 +69,22 @@ nano .env
 docker-compose up -d
 
 # This will:
-# 1. Pull MySQL, RentalCore, WarehouseCore, and Mosquitto images
+# 1. Pull PostgreSQL, RentalCore, WarehouseCore, and Mosquitto images
 # 2. Create the database and automatically import RentalCore.sql
 # 3. Start all services with proper healthchecks
 ```
 
 ### 4. Wait for Initialization
 
-**IMPORTANT:** First startup takes 2-3 minutes for database initialization!
+**IMPORTANT:** First startup takes 1-2 minutes for database initialization!
 
 ```bash
-# Monitor MySQL initialization (most important)
-docker-compose logs -f mysql
+# Monitor PostgreSQL initialization (most important)
+docker-compose logs -f postgres
 
 # Look for this message:
-# "MySQL init process done. Ready for start up."
-# "mysqld: ready for connections"
+# "PostgreSQL init process complete; ready for start up."
+# "database system is ready to accept connections"
 
 # Monitor RentalCore startup
 docker-compose logs -f rentalcore
@@ -98,7 +101,7 @@ docker-compose ps
 
 # Expected output:
 # NAME             STATUS
-# mysql            Up (healthy)
+# postgres         Up (healthy)
 # rentalcore       Up (healthy)
 # warehousecore    Up (healthy)
 # mosquitto        Up (healthy)
@@ -130,19 +133,19 @@ docker-compose ps
 # Shows containers restarting continuously
 ```
 
-**Cause:** MySQL initialization takes longer than expected.
+**Cause:** PostgreSQL initialization takes longer than expected.
 
 **Solution:**
 ```bash
-# Wait 2-3 minutes for MySQL to fully initialize
-docker-compose logs -f mysql
+# Wait 1-2 minutes for PostgreSQL to fully initialize
+docker-compose logs -f postgres
 
-# Once you see "ready for connections", restart the apps
+# Once you see "ready to accept connections", restart the apps
 docker-compose restart rentalcore warehousecore
 ```
 
 **Prevention:** The healthcheck settings have been optimized:
-- MySQL `start_period: 90s` - gives time for SQL import
+- PostgreSQL `start_period: 60s` - gives time for SQL import
 - Apps `start_period: 120s` - wait for DB connection
 - Increased retries to handle longer init times
 
@@ -156,7 +159,7 @@ docker-compose restart rentalcore warehousecore
 
 #### A) Existing Volume from Previous Install
 
-If you previously started the stack, the MySQL volume exists and **won't be re-initialized**.
+If you previously started the stack, the PostgreSQL volume exists and **won't be re-initialized**.
 
 **Solution:**
 ```bash
@@ -166,8 +169,8 @@ docker-compose down -v
 # Start fresh (triggers database initialization)
 docker-compose up -d
 
-# Wait 2-3 minutes for initialization
-docker-compose logs -f mysql
+# Wait 1-2 minutes for initialization
+docker-compose logs -f postgres
 ```
 
 #### B) Database Import Failed
@@ -175,19 +178,18 @@ docker-compose logs -f mysql
 Check if the SQL import completed successfully:
 
 ```bash
-# Check MySQL logs for errors
-docker-compose logs mysql | grep -i error
+# Check PostgreSQL logs for errors
+docker-compose logs postgres | grep -i error
 
 # Verify admin user exists
-docker-compose exec mysql mysql -u root -p${DB_ROOT_PASSWORD} ${DB_NAME} \
-  -e "SELECT username, email FROM users WHERE username='admin';"
+docker-compose exec postgres psql -U ${DB_USER} -d ${DB_NAME} \
+  -c "SELECT username, email FROM users WHERE username='admin';"
 
 # Expected output:
-# +----------+-----------------+
-# | username | email           |
-# +----------+-----------------+
-# | admin    | admin@localhost |
-# +----------+-----------------+
+#  username |      email
+# ----------+-----------------
+#  admin    | admin@localhost
+# (1 row)
 ```
 
 #### C) Wrong Database Credentials in App
@@ -212,7 +214,7 @@ Error: bind: address already in use
 ```bash
 # Find what's using the port
 sudo lsof -i :8081
-sudo lsof -i :3306
+sudo lsof -i :5432
 
 # Either stop the conflicting service or change ports in docker-compose.yml
 ```
@@ -236,7 +238,7 @@ sudo lsof -i :3306
 # Monitor container resources
 docker stats
 
-# If MySQL uses too much memory, tune my.cnf
+# If PostgreSQL uses too much memory, tune postgresql.conf
 ```
 
 ### Problem 5: Services Won't Start
@@ -252,7 +254,7 @@ docker stats
 docker-compose logs --tail=100
 
 # Check if images pulled correctly
-docker images | grep -E "rentalcore|warehousecore|mysql"
+docker images | grep -E "rentalcore|warehousecore|postgres"
 
 # Try pulling images manually
 docker-compose pull
@@ -288,17 +290,17 @@ docker-compose up -d
 
 ```bash
 # Export database
-docker-compose exec mysql mysqldump -u root -p${DB_ROOT_PASSWORD} ${DB_NAME} > backup.sql
+docker-compose exec postgres pg_dump -U ${DB_USER} ${DB_NAME} > backup.sql
 
 # Or export specific tables
-docker-compose exec mysql mysqldump -u root -p${DB_ROOT_PASSWORD} ${DB_NAME} users jobs devices > backup.sql
+docker-compose exec postgres pg_dump -U ${DB_USER} -t users -t jobs -t devices ${DB_NAME} > backup.sql
 ```
 
 ### Restore Database
 
 ```bash
 # Import backup
-docker-compose exec -T mysql mysql -u root -p${DB_ROOT_PASSWORD} ${DB_NAME} < backup.sql
+docker-compose exec -T postgres psql -U ${DB_USER} ${DB_NAME} < backup.sql
 ```
 
 ### View Real-Time Logs
@@ -311,18 +313,18 @@ docker-compose logs -f
 docker-compose logs -f rentalcore
 
 # Last 100 lines
-docker-compose logs --tail=100 mysql
+docker-compose logs --tail=100 postgres
 ```
 
 ### Access Database Directly
 
 ```bash
-# MySQL shell
-docker-compose exec mysql mysql -u root -p${DB_ROOT_PASSWORD} ${DB_NAME}
+# PostgreSQL shell
+docker-compose exec postgres psql -U ${DB_USER} ${DB_NAME}
 
 # Run single query
-docker-compose exec mysql mysql -u root -p${DB_ROOT_PASSWORD} ${DB_NAME} \
-  -e "SELECT * FROM users;"
+docker-compose exec postgres psql -U ${DB_USER} ${DB_NAME} \
+  -c "SELECT * FROM users;"
 ```
 
 ---
@@ -333,26 +335,26 @@ Understanding startup timing helps diagnose issues:
 
 ```
 0s    - docker-compose up -d
-      ├─ MySQL starts
+      ├─ PostgreSQL starts
       ├─ Mosquitto starts
       └─ Apps wait (depends_on: service_healthy)
 
-10s   - MySQL first healthcheck attempt
-20s   - MySQL importing RentalCore.sql...
-30s   - Still importing...
-60s   - Import complete, MySQL starts
-90s   - MySQL healthcheck succeeds (start_period ends)
+5s    - PostgreSQL first healthcheck attempt
+10s   - PostgreSQL importing RentalCore.sql...
+20s   - Still importing...
+40s   - Import complete, PostgreSQL starts
+60s   - PostgreSQL healthcheck succeeds (start_period ends)
       └─ RentalCore & WarehouseCore can now start
 
-100s  - Apps connecting to database
-120s  - Apps healthcheck start_period ends
-130s  - All services healthy ✅
+70s   - Apps connecting to database
+90s   - Apps healthcheck start_period ends
+100s  - All services healthy ✅
 ```
 
 **Key Points:**
-- First 90s: MySQL initialization
+- First 60s: PostgreSQL initialization
 - Next 30s: Apps startup
-- Total: ~2 minutes for fresh deployment
+- Total: ~90 seconds for fresh deployment
 
 ---
 
@@ -362,10 +364,10 @@ After deployment, complete these security steps:
 
 - [ ] Change default admin password
 - [ ] Update `.env` with strong passwords
-- [ ] Set proper `DB_ROOT_PASSWORD`
+- [ ] Set proper `POSTGRES_PASSWORD`
 - [ ] Configure domain names for production
 - [ ] Enable HTTPS/TLS (use reverse proxy)
-- [ ] Restrict MySQL port 3306 (firewall)
+- [ ] Restrict PostgreSQL port 5432 (firewall)
 - [ ] Review user permissions
 - [ ] Enable 2FA for admin accounts
 - [ ] Regular database backups
@@ -383,7 +385,7 @@ After deployment, complete these security steps:
 
 ## 💡 Tips
 
-1. **First Time?** Wait 3 minutes after `docker-compose up -d` before checking
+1. **First Time?** Wait 90 seconds after `docker-compose up -d` before checking
 2. **Already Running?** Use `docker-compose down -v` to reset database
 3. **Check Logs!** Always monitor logs during first startup
 4. **Passwords!** Change defaults immediately in production
