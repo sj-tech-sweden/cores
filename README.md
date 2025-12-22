@@ -50,10 +50,12 @@ This repository contains the **deployment configuration** for the Tsunami Events
 
 ### **PostgreSQL Database** - Shared Data Layer
 - PostgreSQL 17 containerized database
-- Automatic schema initialization from `RentalCore.sql`
+- Automatic schema initialization from `/migrations/postgresql/` directory
 - Shared between both applications
 - Persistent data storage with Docker volumes
 - Health checks and automatic recovery
+- Default admin user created on first start: `admin` / `admin`
+- Admin user forced to change password on first login
 
 **Docker Image:** `postgres:17`
 **Port:** 5432
@@ -202,8 +204,9 @@ DB_SSLMODE=disable
 
 **Important:**
 - Change these passwords in production!
-- The database schema (`RentalCore.sql`) is automatically imported on first start
+- The database schema (in `/migrations/postgresql/`) is automatically imported on first start
 - Data is persisted in Docker volume `postgres-data`
+- Default admin user: `admin` / `admin` (forced to change password on first login)
 
 #### **Cross-Navigation Domains**
 
@@ -463,7 +466,7 @@ docker run --rm -v lager_weidelbach_mosquitto-data:/data -v $(pwd):/backup alpin
 
 **Alternative: PostgreSQL dump**
 ```bash
-docker compose exec postgres pg_dump -U ${DB_USER} RentalCore > backup-$(date +%Y%m%d).sql
+docker compose exec postgres pg_dump -U ${DB_USER} ${DB_NAME:-RentalCore} > backup-$(date +%Y%m%d).sql
 ```
 
 ---
@@ -494,11 +497,11 @@ This happens when you have an existing PostgreSQL volume from a previous install
 ```bash
 # Check if admin user exists
 docker compose exec postgres psql -U ${DB_USER} -d ${DB_NAME} \
-  -c "SELECT username FROM users WHERE username='admin';"
+  -c "SELECT username, email FROM users WHERE username='admin';"
 
 # If empty, reset the database:
 docker compose down -v  # ⚠️ DELETES ALL DATA!
-docker compose up -d    # Triggers fresh database init
+docker compose up -d    # Triggers fresh database init from /migrations/postgresql/
 ```
 
 **Wait 1-2 minutes** after the reset for complete initialization.
@@ -656,13 +659,13 @@ docker compose restart warehousecore
 - **RentalCore README**: See rentalcore repository
 - **WarehouseCore README**: See warehousecore repository
 - **Development Guide**: See `CLAUDE.md` in this repository
-- **Database Schema**: `RentalCore.sql`
+- **Database Schema**: `/migrations/postgresql/` directory
 
 ---
 
 ## 🔐 Security Notes
 
-- **Default Admin User**: A default admin account (username: `admin`, password: `admin`) is created automatically on first startup. **Change this password immediately!**
+- **Default Admin User**: A default admin account (username: `admin`, password: `admin`) is created automatically on first startup. **The user is forced to change the password on the first login.**
 - The `.env` file contains **no database credentials** (safe to commit)
 - Database credentials are in `docker-compose.yml` (for demo/testing only)
 - **For production**: Use Docker Secrets or external secret management

@@ -16,6 +16,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./migrations/postgresql:/docker-entrypoint-initdb.d
     networks:
       - weidelbach
     healthcheck:
@@ -23,7 +24,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
   # ============================================================================
   # RentalCore - Rental Management System (PostgreSQL)

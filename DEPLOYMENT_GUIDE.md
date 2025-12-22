@@ -70,7 +70,7 @@ docker-compose up -d
 
 # This will:
 # 1. Pull PostgreSQL, RentalCore, WarehouseCore, and Mosquitto images
-# 2. Create the database and automatically import RentalCore.sql
+# 2. Create the database and automatically import schema from /migrations/postgresql/
 # 3. Start all services with proper healthchecks
 ```
 
@@ -119,7 +119,7 @@ docker-compose ps
 - URL: `http://localhost:8082`
 - Uses same credentials (shared database)
 
-**⚠️ IMPORTANT:** Change the default password immediately after first login!
+**⚠️ IMPORTANT:** The `admin` user is forced to change their password on the very first login before accessing the system.
 
 ---
 
@@ -188,7 +188,7 @@ docker-compose exec postgres psql -U ${DB_USER} -d ${DB_NAME} \
 # Expected output:
 #  username |      email
 # ----------+-----------------
-#  admin    | admin@localhost
+#  admin    | admin@example.com
 # (1 row)
 ```
 
@@ -340,7 +340,7 @@ Understanding startup timing helps diagnose issues:
       └─ Apps wait (depends_on: service_healthy)
 
 5s    - PostgreSQL first healthcheck attempt
-10s   - PostgreSQL importing RentalCore.sql...
+10s   - PostgreSQL importing schema from /migrations/postgresql/...
 20s   - Still importing...
 40s   - Import complete, PostgreSQL starts
 60s   - PostgreSQL healthcheck succeeds (start_period ends)

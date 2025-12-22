@@ -221,3 +221,6 @@ Based on the improvement plan:
 3. Unify web frameworks or extract common abstractions
 4. Enhance security features
 5. Improve observability with metrics and tracing
+
+## Qwen Added Memories
+- ALWAYS BUILD AND PUSH TO DOCKERHUB AND GITLAB AFTER CHANGES
