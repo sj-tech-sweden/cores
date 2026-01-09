@@ -15,9 +15,10 @@
 CREATE TABLE IF NOT EXISTS roles (
     roleid SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
+    display_name VARCHAR(150),
     description TEXT,
     scope VARCHAR(50) DEFAULT 'global',  -- 'global', 'rentalcore', 'warehousecore'
-    is_system BOOLEAN DEFAULT FALSE,
+    is_system_role BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
     permissions TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -50,6 +51,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
     roleid INT NOT NULL REFERENCES roles(roleid) ON DELETE CASCADE,
     assigned_by INT REFERENCES users(userid) ON DELETE SET NULL,
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL,
     is_active BOOLEAN DEFAULT TRUE,
     UNIQUE(userid, roleid)
 );
@@ -633,19 +635,19 @@ INSERT INTO status (status, description, color, sort_order) VALUES
 ON CONFLICT (status) DO NOTHING;
 
 -- Default RBAC roles
-INSERT INTO roles (name, description, scope, is_system, permissions) VALUES
+INSERT INTO roles (name, display_name, description, scope, is_system_role, permissions) VALUES
 -- Global roles
-('super_admin', 'Full access across all systems', 'global', TRUE, '["*"]'),
+('super_admin', 'Super Administrator', 'Full access across all systems', 'global', TRUE, '["*"]'),
 -- RentalCore roles
-('admin', 'RentalCore full administration', 'rentalcore', TRUE, '["rentalcore.*"]'),
-('manager', 'Jobs, customers, devices management', 'rentalcore', TRUE, '["rentalcore.jobs.*", "rentalcore.customers.*", "rentalcore.devices.read"]'),
-('operator', 'Operational flows including scanning', 'rentalcore', TRUE, '["rentalcore.jobs.read", "rentalcore.jobs.scan", "rentalcore.devices.read"]'),
-('viewer', 'Read-only access to RentalCore', 'rentalcore', TRUE, '["rentalcore.*.read"]'),
+('admin', 'Rental Key User', 'RentalCore full administration', 'rentalcore', TRUE, '["rentalcore.*"]'),
+('manager', 'Rental Manager', 'Jobs, customers, devices management', 'rentalcore', TRUE, '["rentalcore.jobs.*", "rentalcore.customers.*", "rentalcore.devices.read"]'),
+('operator', 'Rental Operator', 'Operational flows including scanning', 'rentalcore', TRUE, '["rentalcore.jobs.read", "rentalcore.jobs.scan", "rentalcore.devices.read"]'),
+('viewer', 'Rental See-Only', 'Read-only access to RentalCore', 'rentalcore', TRUE, '["rentalcore.*.read"]'),
 -- WarehouseCore roles
-('warehouse_admin', 'WarehouseCore full administration', 'warehousecore', TRUE, '["warehousecore.*"]'),
-('warehouse_manager', 'Warehouse operations and reporting', 'warehousecore', TRUE, '["warehousecore.zones.*", "warehousecore.devices.*", "warehousecore.reports.*"]'),
-('warehouse_worker', 'Daily warehouse tasks and scans', 'warehousecore', TRUE, '["warehousecore.devices.read", "warehousecore.devices.scan", "warehousecore.zones.read"]'),
-('warehouse_viewer', 'Read-only warehouse access', 'warehousecore', TRUE, '["warehousecore.*.read"]')
+('warehouse_admin', 'Warehouse Admin', 'WarehouseCore full administration', 'warehousecore', TRUE, '["warehousecore.*"]'),
+('warehouse_manager', 'Warehouse Manager', 'Warehouse operations and reporting', 'warehousecore', TRUE, '["warehousecore.zones.*", "warehousecore.devices.*", "warehousecore.reports.*"]'),
+('warehouse_worker', 'Warehouse Worker', 'Daily warehouse tasks and scans', 'warehousecore', TRUE, '["warehousecore.devices.read", "warehousecore.devices.scan", "warehousecore.zones.read"]'),
+('warehouse_viewer', 'Warehouse Viewer', 'Read-only warehouse access', 'warehousecore', TRUE, '["warehousecore.*.read"]')
 ON CONFLICT (name) DO NOTHING;
 
 -- Default admin user
