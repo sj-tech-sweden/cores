@@ -6,7 +6,7 @@
 
 ---
 
-## 📊 Gesamtfortschritt: 95% ✅
+## 📊 Gesamtfortschritt: 100% ✅
 
 ---
 
@@ -20,6 +20,7 @@
   - [x] WarehouseCore: ForcePasswordChange Feld hinzugefügt, ChangePassword Endpoint erstellt
   - [x] WarehouseCore Frontend: ChangePassword-Seite, AuthContext, ProtectedRoute aktualisiert
 - [x] 1.4 Admin-Rollen erweitern für beide Systeme (super_admin, admin, warehouse_admin)
+- [x] 1.5 **FIX**: Spaltennamen `userid`, `roleid` in DB korrigiert, Passwort-Hash korrigiert
 
 ### Phase 2: Admin-Seiten für System-Konfiguration ⏳ VERSCHOBEN
 - [ ] 2.1 RentalCore Admin-Seite erstellen
