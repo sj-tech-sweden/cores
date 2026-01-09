@@ -53,6 +53,14 @@
 - [x] WarehouseCore Änderungen committed
 - [ ] Git Push läuft (Server sehr langsam)
 
+### Phase 9: API Bug Fixes (WarehouseCore) ✅ KOMPLETT
+- [x] 9.1 Schema mismatch `device_movements` (missing `from_job_id`, `to_job_id`) corrected in SQL.
+- [x] 9.2 Struct mismatch `DeviceMovement` (Go) corrected to matching DB columns.
+- [x] 9.3 Missing `user_profiles` table created in SQL.
+- [x] 9.4 Role struct (Go) aligned with new `is_system_role` and `jsonb` schema.
+- [x] 9.5 Verified API endpoints: Login, Profile, Movements, Admin-Write.
+- [x] 9.6 Images rebuilt and pushed.
+
 ---
 
 ## 🔧 Durchgeführte Änderungen

@@ -409,6 +409,18 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- User Profiles table
+CREATE TABLE IF NOT EXISTS user_profiles (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL UNIQUE REFERENCES users(userid) ON DELETE CASCADE,
+    display_name VARCHAR(150),
+    avatar_url VARCHAR(512),
+    prefs JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_user ON user_profiles(user_id);
+
 -- User Dashboard Widgets table
 CREATE TABLE IF NOT EXISTS user_dashboard_widgets (
     id SERIAL PRIMARY KEY,
@@ -467,6 +479,8 @@ CREATE TABLE IF NOT EXISTS device_movements (
     to_zone_id INT NULL REFERENCES storage_zones(zone_id) ON DELETE SET NULL,
     from_case_id INT NULL REFERENCES cases(caseid) ON DELETE SET NULL,
     to_case_id INT NULL REFERENCES cases(caseid) ON DELETE SET NULL,
+    from_job_id INT NULL REFERENCES jobs(jobid) ON DELETE SET NULL,
+    to_job_id INT NULL REFERENCES jobs(jobid) ON DELETE SET NULL,
     moved_by INT NULL REFERENCES users(userid) ON DELETE SET NULL,
     movement_type VARCHAR(50) NOT NULL DEFAULT 'transfer',
     reason TEXT,
