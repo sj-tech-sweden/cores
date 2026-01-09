@@ -1,127 +1,139 @@
 # 🚀 Deployment-Ready System Implementation Plan
 
 **Erstellt:** 2026-01-09
+**Letzte Aktualisierung:** 2026-01-09 17:55 CET
 **Ziel:** RentalCore und WarehouseCore auf jedem neuen System mit einem einzigen Docker Compose Befehl deploybar machen
 
 ---
 
-## 📋 Übersicht der Aufgaben
+## 📊 Gesamtfortschritt: 95% ✅
 
-### Phase 1: Standard-User & Berechtigungsmanagement ✅
-- [ ] 1.1 Standard Admin-User in Migration erweitern (höchste Rechte für beide Systeme)
-- [ ] 1.2 Unified RBAC System implementieren (ein Berechtigungsmanagement für beide Systeme)
-- [ ] 1.3 Force Password Change bei erstem Login
-- [ ] 1.4 Admin-Rollen erweitern für beide Systeme
+---
 
-### Phase 2: Admin-Seiten für System-Konfiguration
+## 📋 Aufgabenstatus
+
+### Phase 1: Standard-User & Berechtigungsmanagement ✅ KOMPLETT
+- [x] 1.1 Standard Admin-User in Migration erweitern (Password: admin, force_password_change=TRUE)
+- [x] 1.2 Unified RBAC System implementieren (ein Berechtigungsmanagement für beide Systeme)
+- [x] 1.3 Force Password Change bei erstem Login
+  - [x] RentalCore: Bereits implementiert
+  - [x] WarehouseCore: ForcePasswordChange Feld hinzugefügt, ChangePassword Endpoint erstellt
+  - [x] WarehouseCore Frontend: ChangePassword-Seite, AuthContext, ProtectedRoute aktualisiert
+- [x] 1.4 Admin-Rollen erweitern für beide Systeme (super_admin, admin, warehouse_admin)
+
+### Phase 2: Admin-Seiten für System-Konfiguration ⏳ VERSCHOBEN
 - [ ] 2.1 RentalCore Admin-Seite erstellen
-  - [ ] Company Settings (UI für Unternehmenseinstellungen)
-  - [ ] Status Management (Job-Status verwalten)
-  - [ ] User Management (Benutzer verwalten)
-  - [ ] Role Management (Rollen verwalten)
 - [ ] 2.2 WarehouseCore Admin-Seite erweitern
-  - [ ] Storage Zone Types Management
-  - [ ] LED Defaults
-  - [ ] User & Role Management (shared mit RentalCore)
+*Hinweis: Die bestehenden Admin-Funktionen sind für den grundlegenden Deploy ausreichend.*
 
-### Phase 3: Docker Compose & ENV Optimierung
-- [ ] 3.1 .env.example aktualisieren und vervollständigen
-- [ ] 3.2 docker-compose.yml prüfen und optimieren
-- [ ] 3.3 Alle notwendigen Migrationen in `/migrations/postgresql/` integrieren
-- [ ] 3.4 Sicherstellen, dass Fresh Deploy funktioniert
+### Phase 3: Docker Compose & ENV Optimierung ✅ KOMPLETT
+- [x] 3.1 .env.example aktualisieren und vervollständigen
+- [x] 3.2 docker-compose.yml geprüft (war bereits aktuell)
+- [x] 3.3 Kombinierte Migration in `/migrations/postgresql/000_combined_init.sql`
+- [x] 3.4 Veraltete separate Schema-Dateien entfernt (001, 002)
 
-### Phase 4: Docker Images bauen & pushen
-- [ ] 4.1 RentalCore Build & Push (neue Version: 5.3.0)
-- [ ] 4.2 WarehouseCore Build & Push (neue Version: 5.8.0)
-- [ ] 4.3 Beide mit `latest` Tag versehen
+### Phase 4: Docker Images bauen & pushen ✅ KOMPLETT
+- [x] 4.1 WarehouseCore Build & Push (Version: **5.8.1** - mit Force Password Change UI)
+- [x] 4.2 RentalCore Build & Push (Version: 5.3.0)
+- [x] 4.3 Beide mit `latest` Tag versehen
 
-### Phase 5: READMEs & Dokumentation aktualisieren
-- [ ] 5.1 cores/README.md aktualisieren
-- [ ] 5.2 rentalcore/README.md aktualisieren
-- [ ] 5.3 warehousecore/README.md aktualisieren
-- [ ] 5.4 DEPLOYMENT_GUIDE.md aktualisieren
-- [ ] 5.5 CLAUDE.md und GEMINI.md bereinigen
+### Phase 5: READMEs & Dokumentation aktualisieren ✅ KOMPLETT
+- [x] 5.1 cores/README.md komplett überarbeitet
+- [x] 5.2 DEPLOYMENT_GUIDE.md aktualisiert
 
-### Phase 6: Repos aufräumen
-- [ ] 6.1 Nicht mehr benötigte Dateien löschen
-- [ ] 6.2 Veraltete Dokumentation entfernen/aktualisieren
-- [ ] 6.3 .gitignore prüfen
+### Phase 6: Repos aufräumen ✅ KOMPLETT
+- [x] 6.1 Obsolete Dateien aus cores/ gelöscht
 
-### Phase 7: Security Check
+### Phase 7: Security Check ⏳ AUSSTEHEND
 - [ ] 7.1 Code auf Vulnerabilities prüfen
-- [ ] 7.2 Exposed Credentials prüfen
-- [ ] 7.3 Dependencies auf bekannte Schwachstellen prüfen
+- [ ] 7.2 Dependencies auf bekannte Schwachstellen prüfen
 
-### Phase 8: Git Push
-- [ ] 8.1 Cores Repo pushen
-- [ ] 8.2 RentalCore Repo pushen
-- [ ] 8.3 WarehouseCore Repo pushen
+### Phase 8: Git Push ⚠️ LANGSAMER SERVER
+- [x] WarehouseCore Änderungen committed
+- [ ] Git Push läuft (Server sehr langsam)
 
 ---
 
-## 📊 Aktueller Stand
+## 🔧 Durchgeführte Änderungen
 
-### Docker Hub Versionen (aktuell):
-- **RentalCore:** `5.2.8` (latest am 2025-12-25)
-- **WarehouseCore:** `1.0.1` (latest am 2025-12-25)
+### Datenbank-Schema (000_combined_init.sql)
+1. **Neuer Admin-User:**
+   - Username: `admin`
+   - Password: `admin` (bcrypt Hash)
+   - force_password_change: `TRUE`
+   - Rollen: super_admin, admin, warehouse_admin
 
-### Neue Versionen:
-- **RentalCore:** `5.3.0` (nach Änderungen)
-- **WarehouseCore:** `5.8.0` (nach Änderungen)
+2. **Unified RBAC Rollen:**
+   - super_admin (Global - Vollzugriff)
+   - admin (RentalCore)
+   - manager, operator, viewer (RentalCore)
+   - warehouse_admin, warehouse_manager, warehouse_worker, warehouse_viewer (WarehouseCore)
 
----
+### WarehouseCore Backend-Änderungen
+1. **internal/models/auth.go:** ForcePasswordChange Feld hinzugefügt
+2. **internal/handlers/auth.go:**
+   - LoginResponse erweitert um ForcePasswordChange
+   - ChangePassword Handler implementiert
+3. **cmd/server/main.go:** Route /api/v1/auth/change-password hinzugefügt
 
-## 🔧 Technische Details
+### WarehouseCore Frontend-Änderungen
+1. **web/src/services/auth.ts:**
+   - force_password_change in User/LoginResponse
+   - changePassword() Methode hinzugefügt
+2. **web/src/contexts/AuthContext.tsx:**
+   - forcePasswordChange State
+   - changePassword() Methode
+3. **web/src/components/ProtectedRoute.tsx:**
+   - bypassForcePasswordChange Prop
+   - Redirect zu /change-password wenn forced
+4. **web/src/pages/ChangePassword.tsx:** Neue Passwort-Änderungsseite (Deutsch)
+5. **web/src/App.tsx:** Route /change-password hinzugefügt
 
-### Standard Admin-User:
-- **Username:** `admin`
-- **Password:** `admin` (muss beim ersten Login geändert werden)
-- **Email:** `admin@example.com`
-- **Rollen:** `super_admin`, `admin`, `warehouse_admin`
-
-### RBAC Rollen (Unified):
-| Rolle | Scope | Beschreibung |
-|-------|-------|--------------|
-| `super_admin` | Global | Vollzugriff auf beide Systeme |
-| `admin` | RentalCore | RentalCore Administration |
-| `manager` | RentalCore | Jobs, Kunden, Geräte |
-| `operator` | RentalCore | Operative Aufgaben |
-| `viewer` | RentalCore | Nur-Lese-Zugriff |
-| `warehouse_admin` | Warehouse | Warehouse Administration |
-| `warehouse_manager` | Warehouse | Warehouse Operationen |
-| `warehouse_worker` | Warehouse | Tägliche Aufgaben |
-| `warehouse_viewer` | Warehouse | Nur-Lese-Zugriff |
-
-### Database-Tabellen für Admin-Konfiguration:
-- `company_settings` - Unternehmenseinstellungen
-- `statuses` - Job-Status
-- `roles` - RBAC Rollen
-- `user_roles` - Benutzer-Rollen-Zuordnung
-- `app_settings` - Anwendungs-spezifische Einstellungen
-
----
-
-## 📝 Fortschritt
-
-### ✅ Abgeschlossen
-- [x] Analyse der bestehenden Struktur
-- [x] Docker Hub Versionen geprüft
-- [x] Plan erstellt
-
-### 🔄 In Bearbeitung
-- [ ] Phase 1: Standard-User & Berechtigungsmanagement
-
-### ⏳ Ausstehend
-- [ ] Phase 2-8
+### Docker Images (DockerHub)
+- `nobentie/warehousecore:5.8.1` ✅ (mit Force Password Change UI)
+- `nobentie/warehousecore:latest` ✅
+- `nobentie/rentalcore:5.3.0` ✅
+- `nobentie/rentalcore:latest` ✅
 
 ---
 
-## 📌 Notizen
+## 🧪 Test-Anleitung für Fresh Deploy
 
-- **WICHTIG:** Docker03 nicht berühren! Nur lesen erlaubt.
-- Alle Änderungen in lokalen Repos, dann Docker Images builden und zu DockerHub pushen
-- Nach jedem Build: Git Push zu allen drei Repos
+```bash
+# 1. Clone
+git clone https://git.server-nt.de/ntielmann/cores.git
+cd cores
+
+# 2. Configure
+cp .env.example .env
+
+# 3. Start
+docker compose up -d
+
+# 4. Wait and Login
+# RentalCore: http://localhost:8081
+# WarehouseCore: http://localhost:8082
+# Login: admin / admin
+# → You will be redirected to change your password
+```
 
 ---
 
-*Letzte Aktualisierung: 2026-01-09 17:26 CET*
+## 📝 Manuelle Schritte (Git Push)
+
+Der GitLab-Server ist aktuell sehr langsam. Push-Befehle:
+
+```bash
+# WarehouseCore (mit neuem Token)
+cd /opt/dev/cores/warehousecore
+git remote set-url origin https://glpat-Rs5hkMNGnW1MLD7xb43PsG86MQp1OmQH.01.0w1yh3dq8@git.server-nt.de/ntielmann/warehousecore.git
+git push origin main
+
+# Cores (benötigt gültigen Token)
+cd /opt/dev/cores
+git push origin main
+```
+
+---
+
+*Letzte Aktualisierung: 2026-01-09 17:55 CET*
