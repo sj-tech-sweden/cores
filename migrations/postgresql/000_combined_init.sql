@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS roles (
     scope VARCHAR(50) DEFAULT 'global',  -- 'global', 'rentalcore', 'warehousecore'
     is_system_role BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
-    permissions TEXT,
+    permissions JSONB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -88,9 +88,9 @@ CREATE TABLE IF NOT EXISTS audit_log (
     user_id INT REFERENCES users(userid) ON DELETE SET NULL,
     action VARCHAR(100) NOT NULL,
     entity_type VARCHAR(100),
-    entity_id INT,
-    old_value TEXT,
-    new_value TEXT,
+    entity_id VARCHAR(255),
+    old_values JSONB,
+    new_values JSONB,
     ip_address VARCHAR(45),
     user_agent TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -608,7 +608,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
     key_hash VARCHAR(255) NOT NULL UNIQUE,
     key_prefix VARCHAR(20) NOT NULL,
     user_id INT REFERENCES users(userid) ON DELETE CASCADE,
-    permissions TEXT DEFAULT '[]',
+    permissions JSONB DEFAULT '[]',
     is_active BOOLEAN DEFAULT TRUE,
     expires_at TIMESTAMP,
     last_used_at TIMESTAMP,
