@@ -4,7 +4,7 @@ services:
   # PostgreSQL Database - Shared between RentalCore and WarehouseCore
   # ============================================================================
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: postgres
     restart: unless-stopped
     environment:
@@ -132,7 +132,7 @@ services:
   # PostgreSQL Backup Service - Daily automatic backups
   # ============================================================================
   db-backup:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     container_name: db-backup
     restart: unless-stopped
     depends_on:
