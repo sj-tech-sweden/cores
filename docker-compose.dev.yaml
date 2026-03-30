@@ -1,0 +1,181 @@
+name: tscores-dev
+services:
+  # PostgreSQL Database - Development (lighter image)
+  postgres:
+    image: postgres:18-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-rentalcore}"
+      POSTGRES_USER: "${POSTGRES_USER:-rentalcore}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-rentalcore123}"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./migrations/unified:/docker-entrypoint-initdb.d
+    networks:
+      - weidelbach
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rentalcore} -d ${POSTGRES_DB:-rentalcore}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  # RentalCore - build from local source for development
+  rentalcore:
+    build:
+      context: ../rentalcore
+    image: rentalcore:dev
+    container_name: rentalcore
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      RENTALCORE_DOMAIN: "${RENTALCORE_DOMAIN:-}"
+      WAREHOUSECORE_DOMAIN: "${WAREHOUSECORE_DOMAIN:-}"
+      COOKIE_DOMAIN: "${COOKIE_DOMAIN:-}"
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+      DB_NAME: "${POSTGRES_DB:-rentalcore}"
+      DB_USER: "${POSTGRES_USER:-rentalcore}"
+      DB_PASSWORD: "${POSTGRES_PASSWORD:-rentalcore123}"
+      DB_SSLMODE: "disable"
+      NEXTCLOUD_WEBDAV_URL: "${NEXTCLOUD_WEBDAV_URL:-}"
+      NEXTCLOUD_WEBDAV_USER: "${NEXTCLOUD_WEBDAV_USER:-}"
+      NEXTCLOUD_WEBDAV_PASSWORD: "${NEXTCLOUD_WEBDAV_PASSWORD:-}"
+      NEXTCLOUD_WEBDAV_BASE_PATH: "${NEXTCLOUD_WEBDAV_BASE_PATH:-rentalcore-filepool}"
+      NEXTCLOUD_BACKFILL_ON_START: "${NEXTCLOUD_BACKFILL_ON_START:-true}"
+      SERVER_HOST: "0.0.0.0"
+      SERVER_PORT: "8081"
+      OCR_USE_PYTHON: "${OCR_USE_PYTHON:-true}"
+    ports:
+      - "8081:8081"
+    volumes:
+      - ../rentalcore/migrations:/app/migrations:ro
+    networks:
+      - weidelbach
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # WarehouseCore - build from local source for development
+  warehousecore:
+    build:
+      context: ../warehousecore
+    image: warehousecore:dev
+    container_name: warehousecore
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    environment:
+      RENTALCORE_DOMAIN: "${RENTALCORE_DOMAIN:-}"
+      WAREHOUSECORE_DOMAIN: "${WAREHOUSECORE_DOMAIN:-}"
+      COOKIE_DOMAIN: "${COOKIE_DOMAIN:-}"
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+      DB_NAME: "${POSTGRES_DB:-rentalcore}"
+      DB_USER: "${POSTGRES_USER:-rentalcore}"
+      DB_PASSWORD: "${POSTGRES_PASSWORD:-rentalcore123}"
+      DB_SSLMODE: "disable"
+      PORT: "8082"
+      NEXTCLOUD_WEBDAV_URL: "${NEXTCLOUD_WEBDAV_URL:-}"
+      NEXTCLOUD_WEBDAV_USER: "${NEXTCLOUD_WEBDAV_USER:-}"
+      NEXTCLOUD_WEBDAV_PASSWORD: "${NEXTCLOUD_WEBDAV_PASSWORD:-}"
+      NEXTCLOUD_WEBDAV_BASE_PATH: "${NEXTCLOUD_WEBDAV_BASE_PATH:-rentalcore-filepool}"
+      LED_MQTT_HOST: "${LED_MQTT_HOST:-mosquitto}"
+      LED_MQTT_PORT: "${LED_MQTT_PORT:-1883}"
+      LED_MQTT_TLS: "${LED_MQTT_TLS:-false}"
+      LED_MQTT_USER: "${LED_MQTT_USER:-leduser}"
+      LED_MQTT_PASS: "${LED_MQTT_PASS:-ledpassword123}"
+      LED_MQTT_TOPIC_PREFIX: "${LED_MQTT_TOPIC_PREFIX:-weidelbach}"
+      LED_WAREHOUSE_ID: "${LED_WAREHOUSE_ID:-weidelbach}"
+      LED_MAPPING_FILE: "${LED_MAPPING_FILE:-/var/lib/warehousecore/led/led_mapping.json}"
+      LED_MQTT_CONNECT_RETRIES: "${LED_MQTT_CONNECT_RETRIES:-10}"
+      LED_MQTT_CONNECT_RETRY_DELAY_MS: "${LED_MQTT_CONNECT_RETRY_DELAY_MS:-2000}"
+      ADMIN_NAME_MATCH: "${ADMIN_NAME_MATCH:-Noah Tielmann}"
+    ports:
+      - "8082:8082"
+    volumes:
+      - ../warehousecore/migrations:/app/migrations:ro
+      - led-mapping:/var/lib/warehousecore/led
+    networks:
+      - weidelbach
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+      - "9001:9001"
+    volumes:
+      - mosquitto-config:/mosquitto/config
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+    environment:
+      LED_MQTT_USER: "${LED_MQTT_USER:-leduser}"
+      LED_MQTT_PASS: "${LED_MQTT_PASS:-ledpassword123}"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        mkdir -p /mosquitto/config
+        if [ ! -f /mosquitto/config/mosquitto.conf ] || ! grep -q '^listener 1883' /mosquitto/config/mosquitto.conf 2>/dev/null; then
+          cat <<'EOF' > /mosquitto/config/mosquitto.conf
+        listener 1883 0.0.0.0
+        allow_anonymous false
+        password_file /mosquitto/config/passwd
+        persistence true
+        persistence_location /mosquitto/data/
+        log_dest stdout
+        listener 9001 0.0.0.0
+        protocol websockets
+        EOF
+        fi
+        if [ -n "$LED_MQTT_USER" ]; then
+          if [ ! -f /mosquitto/config/passwd ]; then
+            mosquitto_passwd -c -b /mosquitto/config/passwd "$LED_MQTT_USER" "$LED_MQTT_PASS"
+          elif ! grep -q "^$LED_MQTT_USER:" /mosquitto/config/passwd 2>/dev/null; then
+            mosquitto_passwd -b /mosquitto/config/passwd "$LED_MQTT_USER" "$LED_MQTT_PASS"
+          fi
+        fi
+        exec /docker-entrypoint.sh /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf
+    networks:
+      - weidelbach
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -t '$$SYS/#' -C 1 -i healthcheck -u \"$LED_MQTT_USER\" -P \"$LED_MQTT_PASS\" -W 3"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+networks:
+  weidelbach:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
+  led-mapping:
+    driver: local
+  mosquitto-config:
+  mosquitto-data:
+  mosquitto-log:

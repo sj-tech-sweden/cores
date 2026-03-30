@@ -1,0 +1,35 @@
+{
+  "rentalcore/web/templates/navbar.html": [
+    "Toggle sidebar",
+    "Toggle menu",
+    "Rental",
+    "Core",
+    "WarehouseCore",
+    "Dashboard",
+    "Jobs",
+    "Customers",
+    "Tools",
+    "Analytics",
+    "Financial",
+    "File Pool",
+    "Profile Settings",
+    "Company Settings",
+    "User Management",
+    "Security & Audit",
+    "Logout",
+    "Login",
+    "Close menu",
+    "Toggle sidebar"
+  ],
+  "rentalcore/web/templates/login.html": [
+    "RentalCore",
+    "The future of rental management",
+    "Username",
+    "Password",
+    "Sign In",
+    "Secure login with encrypted passwords & passkeys",
+    "Signing in...",
+    "Passkeys are not supported in this browser",
+    "Authentication failed: "
+  ]
+}

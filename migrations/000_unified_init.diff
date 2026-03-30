@@ -1,0 +1,728 @@
+--- /Users/samsjo02/Documents/script/rentalcore/cores/migrations/postgresql/000_combined_init.sql	2026-03-26 15:22:48
++++ /Users/samsjo02/Documents/script/rentalcore/cores/migrations/unified/000_unified_init.sql	2026-03-26 15:25:43
+@@ -1,3 +1,6 @@
++/* Unified migrations file generated: Thu Mar 26 14:25:42 UTC 2026 */
++-- Source: /Users/samsjo02/Documents/script/rentalcore/cores/migrations/postgresql/000_combined_init.sql
++
+ -- =============================================================================
+ -- RentalCore & WarehouseCore - Combined PostgreSQL Schema
+ -- =============================================================================
+@@ -1008,3 +1011,718 @@
+ -- Default login: admin / admin
+ -- User will be forced to change password on first login
+ -- =============================================================================
++\n-- ===== Begin migrations from: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations =====\n
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/001_initial_schema.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/002_enhancement_features.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/003_package_device_enhancement.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/005_invoice_system.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/006_performance_indexes.sql ----
++
++-- Performance optimization indexes
++-- Add indexes for commonly searched fields and join operations
++
++-- Jobs table indexes
++CREATE INDEX IF NOT EXISTS idx_jobs_description ON jobs(description);
++CREATE INDEX IF NOT EXISTS idx_jobs_end_date ON jobs(endDate);
++CREATE INDEX IF NOT EXISTS idx_jobs_customer_id ON jobs(customerID);
++CREATE INDEX IF NOT EXISTS idx_jobs_status_id ON jobs(statusID);
++
++-- Customers table indexes  
++CREATE INDEX IF NOT EXISTS idx_customers_search ON customers(companyname, firstname, lastname);
++CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
++
++-- Devices table indexes
++CREATE INDEX IF NOT EXISTS idx_devices_search ON devices(deviceID, serialnumber);
++CREATE INDEX IF NOT EXISTS idx_devices_product_id ON devices(productID);
++CREATE INDEX IF NOT EXISTS idx_devices_status ON devices(status);
++
++-- Job devices junction table
++CREATE INDEX IF NOT EXISTS idx_job_devices_job_id ON jobdevices(jobID);
++CREATE INDEX IF NOT EXISTS idx_job_devices_device_id ON jobdevices(deviceID);
++CREATE INDEX IF NOT EXISTS idx_job_devices_composite ON jobdevices(jobID, deviceID);
++
++-- Financial transactions indexes
++CREATE INDEX IF NOT EXISTS idx_financial_transactions_status_type ON financial_transactions(status, type);
++CREATE INDEX IF NOT EXISTS idx_financial_transactions_date ON financial_transactions(transaction_date);
++CREATE INDEX IF NOT EXISTS idx_financial_transactions_due_date ON financial_transactions(due_date);
++CREATE INDEX IF NOT EXISTS idx_financial_transactions_customer ON financial_transactions(customerID);
++
++-- Invoices table indexes
++CREATE INDEX IF NOT EXISTS idx_invoices_customer_id ON invoices(customerID);
++CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
++CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices(invoice_date);
++
++-- Sessions table cleanup index
++CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
++
++-- Composite indexes for common queries
++CREATE INDEX IF NOT EXISTS idx_jobs_customer_status ON jobs(customerID, statusID);
++CREATE INDEX IF NOT EXISTS idx_devices_product_status ON devices(productID, status);
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/006_performance_indexes.sql ----\n
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/007_equipment_packages.sql ----
++
++-- Enhanced Equipment Packages Migration (MySQL Compatible)
++-- Add new fields for production-ready equipment packages
++
++-- Add new columns to equipment_packages table
++-- Note: Run each ALTER TABLE separately if you get syntax errors
++
++-- Add max_rental_days column
++ALTER TABLE equipment_packages ADD COLUMN max_rental_days INT NULL;
++
++-- Add category column  
++ALTER TABLE equipment_packages ADD COLUMN category VARCHAR(50) NULL;
++
++-- Add tags column
++ALTER TABLE equipment_packages ADD COLUMN tags TEXT NULL;
++
++-- Add last_used_at column
++ALTER TABLE equipment_packages ADD COLUMN last_used_at TIMESTAMP NULL;
++
++-- Add total_revenue column
++ALTER TABLE equipment_packages ADD COLUMN total_revenue DECIMAL(12,2) DEFAULT 0.00;
++
++-- Add indexes for better performance
++CREATE INDEX idx_equipment_packages_category ON equipment_packages(category);
++CREATE INDEX idx_equipment_packages_active ON equipment_packages(is_active);
++CREATE INDEX idx_equipment_packages_usage ON equipment_packages(usage_count);
++
++-- Add indexes for package_devices table
++CREATE INDEX idx_package_devices_package_id ON package_devices(package_id);
++CREATE INDEX idx_package_devices_device_id ON package_devices(device_id);
++
++-- Update existing package_items to be valid JSON if NULL
++UPDATE equipment_packages 
++SET package_items = '[]' 
++WHERE package_items IS NULL OR package_items = '';
++
++-- Sample equipment packages removed for production use
++-- Create packages through the application interface as needed
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/007_equipment_packages.sql ----\n
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/008_company_settings.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/009_company_settings_german_fields.sql ----
++
++-- Migration: Add German Business Fields to Company Settings
++-- Description: Adds banking, legal, and invoice text fields for German compliance (GoBD)
++-- Date: 2025-06-20
++
++-- Add German banking fields
++ALTER TABLE `company_settings` 
++ADD COLUMN `bank_name` VARCHAR(255) NULL COMMENT 'Name der Bank für Rechnungen',
++ADD COLUMN `iban` VARCHAR(34) NULL COMMENT 'IBAN für Zahlungen',
++ADD COLUMN `bic` VARCHAR(11) NULL COMMENT 'BIC/SWIFT Code',
++ADD COLUMN `account_holder` VARCHAR(255) NULL COMMENT 'Kontoinhaber falls abweichend';
++
++-- Add German legal fields
++ALTER TABLE `company_settings` 
++ADD COLUMN `ceo_name` VARCHAR(255) NULL COMMENT 'Name des Geschäftsführers',
++ADD COLUMN `register_court` VARCHAR(255) NULL COMMENT 'Registergericht',
++ADD COLUMN `register_number` VARCHAR(100) NULL COMMENT 'Handelsregisternummer';
++
++-- Add invoice text fields
++ALTER TABLE `company_settings` 
++ADD COLUMN `footer_text` TEXT NULL COMMENT 'Footer-Text für Rechnungen',
++ADD COLUMN `payment_terms_text` TEXT NULL COMMENT 'Zahlungsbedingungen Text';
++
++-- Update existing record with German defaults if it exists
++UPDATE `company_settings` 
++SET 
++    `country` = 'Deutschland',
++    `footer_text` = 'Vielen Dank für Ihr Vertrauen!\n\nBei Fragen zu dieser Rechnung stehen wir Ihnen gerne zur Verfügung.',
++    `payment_terms_text` = 'Zahlbar innerhalb von 30 Tagen ohne Abzug.\n\nBei Zahlungsverzug behalten wir uns vor, Verzugszinsen in Höhe von 9 Prozentpunkten über dem Basiszinssatz zu berechnen.'
++WHERE `id` = 1;
++
++-- Add indexes for better performance
++CREATE INDEX IF NOT EXISTS `idx_company_settings_iban` ON `company_settings` (`iban`);
++CREATE INDEX IF NOT EXISTS `idx_company_settings_register_number` ON `company_settings` (`register_number`);
++
++-- Show completion status
++SELECT 'German business fields migration completed successfully!' as status;
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/009_company_settings_german_fields.sql ----\n
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/010_fix_sessions_foreign_key.sql ----
++
++-- Drop the procedure if it exists to ensure a clean run
++DROP PROCEDURE IF EXISTS fix_sessions_and_users;
++
++DELIMITER $$
++
++-- Create a procedure to encapsulate the migration logic
++CREATE PROCEDURE fix_sessions_and_users()
++BEGIN
++    -- Check if a primary key already exists on the sessions table.
++    SET @pk_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'sessions' AND CONSTRAINT_TYPE = 'PRIMARY KEY');
++
++    -- Conditionally add the primary key to the sessions table on session_id.
++    SET @sql_pk = IF(@pk_exists = 0, 'ALTER TABLE `sessions` ADD PRIMARY KEY (`session_id`)', 'SELECT "Primary key already exists on sessions table, skipping."');
++    PREPARE stmt_pk FROM @sql_pk;
++    EXECUTE stmt_pk;
++    DEALLOCATE PREPARE stmt_pk;
++
++    -- The user_id in the sessions table is not unique, so a foreign key from users to sessions is not possible.
++    -- This appears to be a logic error in a previous migration.
++    -- We will attempt to drop this constraint if it exists.
++    SET @fk_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND CONSTRAINT_NAME = 'fk_sessions_user');
++
++    -- Conditionally drop the foreign key
++    SET @sql_fk = IF(@fk_exists > 0, 'ALTER TABLE `users` DROP FOREIGN KEY `fk_sessions_user`', 'SELECT "Foreign key fk_sessions_user does not exist, skipping."');
++    PREPARE stmt_fk FROM @sql_fk;
++    EXECUTE stmt_fk;
++    DEALLOCATE PREPARE stmt_fk;
++END$$
++
++DELIMITER ;
++
++-- Execute the stored procedure to apply the fixes
++CALL fix_sessions_and_users();
++
++-- Clean up by dropping the procedure
++DROP PROCEDURE fix_sessions_and_users;
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/010_fix_sessions_foreign_key.sql ----\n
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/011_add_email_settings.sql ----
++
++-- Add email configuration fields to company_settings table
++ALTER TABLE company_settings 
++ADD COLUMN smtp_host VARCHAR(255),
++ADD COLUMN smtp_port INT,
++ADD COLUMN smtp_username VARCHAR(255),
++ADD COLUMN smtp_password VARCHAR(255),
++ADD COLUMN smtp_from_email VARCHAR(255),
++ADD COLUMN smtp_from_name VARCHAR(255),
++ADD COLUMN smtp_use_tls BOOLEAN DEFAULT TRUE;
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/011_add_email_settings.sql ----\n
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/012_fix_user_preferences_fk.sql ----
++
++-- Fix Foreign Key Constraint for User Preferences
++-- The constraint was backwards - users should not reference user_preferences
++-- Instead, user_preferences should reference users
++
++-- First, drop the incorrect foreign key constraint
++ALTER TABLE `users` DROP FOREIGN KEY `fk_user_preferences_user`;
++
++-- Then, add the correct foreign key constraint on the user_preferences table
++-- This ensures user_preferences.user_id references users.userID (correct direction)
++ALTER TABLE `user_preferences` 
++  ADD CONSTRAINT `fk_user_preferences_user` 
++  FOREIGN KEY (`user_id`) REFERENCES `users` (`userID`) 
++  ON DELETE CASCADE ON UPDATE CASCADE;
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/012_fix_user_preferences_fk.sql ----\n
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/013_add_2fa_and_passkey_tables.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/013_add_job_code.sql ----
++
++ALTER TABLE `jobs`
++  ADD COLUMN `job_code` VARCHAR(16) NULL;
++
++UPDATE `jobs`
++SET `job_code` = CONCAT('JOB', LPAD(`jobID`, 6, '0'))
++WHERE `job_code` IS NULL OR `job_code` = '';
++
++ALTER TABLE `jobs`
++  MODIFY COLUMN `job_code` VARCHAR(16) NOT NULL,
++  ADD UNIQUE KEY `ux_jobs_job_code` (`job_code`);
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/013_add_job_code.sql ----\n
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/014_add_missing_webauthn_table.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/021_add_pdf_package_mapping.sql ----
++
++-- Migration 021: Add package mapping support for OCR extraction items
++
++ALTER TABLE pdf_extraction_items
++    ADD COLUMN mapped_package_id INT NULL AFTER mapped_product_id,
++    ADD KEY idx_pdf_items_package (mapped_package_id);
++
++ALTER TABLE pdf_extraction_items
++    ADD CONSTRAINT fk_pdf_items_package
++        FOREIGN KEY (mapped_package_id)
++        REFERENCES product_packages(package_id)
++        ON DELETE SET NULL;
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/021_add_pdf_package_mapping.sql ----\n
++-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/021_create_rental_equipment_tables_corrected.down.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/021_create_rental_equipment_tables_corrected.up.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/022_fix_company_settings_datetime.sql ----
++
++-- Fix corrupted datetime values in company_settings table
++UPDATE company_settings
++SET created_at = CURRENT_TIMESTAMP,
++    updated_at = CURRENT_TIMESTAMP
++WHERE created_at = '0000-00-00 00:00:00'
++   OR updated_at = '0000-00-00 00:00:00'
++   OR created_at IS NULL
++   OR updated_at IS NULL;
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/022_fix_company_settings_datetime.sql ----\n
++-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/023_create_job_attachments_table.down.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/023_create_job_attachments_table.up.sql ----
++-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/024_add_pack_workflow.down.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/024_add_pack_workflow.up.sql ----
++-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/025_create_user_dashboard_widgets.down.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/025_create_user_dashboard_widgets.up.sql ----
++-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/026_add_job_edit_sessions.down.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/026_add_job_edit_sessions.up.sql ----
++-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/027_add_pdf_totals.down.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/027_add_pdf_totals.up.sql ----
++
++-- Add total fields to pdf_extractions table
++ALTER TABLE pdf_extractions
++    ADD COLUMN parsed_total DECIMAL(10, 2) NULL COMMENT 'Subtotal before discount',
++    ADD COLUMN discount_percent DECIMAL(5, 2) NULL COMMENT 'Discount percentage';
++
++-- Note: discount_amount and total_amount columns already exist
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/027_add_pdf_totals.up.sql ----\n
++-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/028_add_job_history.down.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/028_add_job_history.up.sql ----
++-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/029_fix_sequences.down.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/029_fix_sequences.up.sql ----
++
++-- Migration: Fix PostgreSQL sequences to match current max IDs
++-- This prevents "duplicate key value violates unique constraint" errors
++-- when inserting new records into tables with auto-increment primary keys
++
++DO $$
++DECLARE
++    r RECORD;
++    max_val BIGINT;
++    table_name TEXT;
++    column_name TEXT;
++BEGIN
++    -- Loop through all sequences in the public schema
++    FOR r IN
++        SELECT
++            s.schemaname,
++            s.sequencename,
++            -- Extract table name from sequence name (e.g., "products_productID_seq" -> "products")
++            SPLIT_PART(s.sequencename, '_', 1) as base_table
++        FROM pg_sequences s
++        WHERE s.schemaname = 'public'
++    LOOP
++        BEGIN
++            -- Try to find the actual column name that uses this sequence
++            SELECT
++                t.table_name,
++                c.column_name
++            INTO table_name, column_name
++            FROM information_schema.columns c
++            JOIN information_schema.tables t ON c.table_name = t.table_name
++            WHERE t.table_schema = 'public'
++            AND c.table_schema = 'public'
++            AND pg_get_serial_sequence(t.table_name, c.column_name) = r.schemaname || '."' || r.sequencename || '"';
++
++            IF table_name IS NOT NULL AND column_name IS NOT NULL THEN
++                -- Get the current max value from the table
++                EXECUTE format(
++                    'SELECT COALESCE(MAX(%I), 0) FROM %I',
++                    column_name,
++                    table_name
++                ) INTO max_val;
++
++                IF max_val > 0 THEN
++                    -- Update the sequence to start from max + 1
++                    EXECUTE format('SELECT setval(%L, %s)', r.schemaname || '."' || r.sequencename || '"', max_val);
++                    RAISE NOTICE 'Fixed sequence %.% to % (table: %, column: %)',
++                        r.schemaname, r.sequencename, max_val, table_name, column_name;
++                END IF;
++            END IF;
++
++            -- Reset variables for next iteration
++            table_name := NULL;
++            column_name := NULL;
++
++        EXCEPTION
++            WHEN OTHERS THEN
++                -- Skip if there's any error (table doesn't exist, column doesn't exist, etc.)
++                RAISE NOTICE 'Skipping sequence % due to error: %', r.sequencename, SQLERRM;
++        END;
++    END LOOP;
++
++    RAISE NOTICE 'Sequence synchronization completed successfully';
++END$$;
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/029_fix_sequences.up.sql ----\n
++-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/030_fix_job_edit_sessions_postgres.down.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/030_fix_job_edit_sessions_postgres.up.sql ----
++
++-- PostgreSQL-specific fix for job_edit_sessions table
++-- Adds UNIQUE constraint on (job_id, user_id) required for ON CONFLICT
++
++-- Add UNIQUE constraint if it doesn't exist
++ALTER TABLE job_edit_sessions
++  DROP CONSTRAINT IF EXISTS job_edit_sessions_job_user_unique;
++
++ALTER TABLE job_edit_sessions
++  ADD CONSTRAINT job_edit_sessions_job_user_unique
++  UNIQUE (job_id, user_id);
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/030_fix_job_edit_sessions_postgres.up.sql ----\n
++-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/031_add_file_history_types.down.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/031_add_file_history_types.up.sql ----
++
++-- Add file_added and file_removed to job_history change_type enum
++-- This allows tracking who uploaded/removed files from jobs
++
++-- For SQLite (which the app uses at runtime), ENUM is stored as TEXT with CHECK
++-- For PostgreSQL, we need to modify the enum type
++
++-- SQLite compatible version (TEXT column, no enum modification needed)
++-- The application model already accepts the new values
++
++-- For MySQL, modify the ENUM:
++-- Note: This is a no-op if using SQLite since SQLite doesn't have ENUM
++ALTER TABLE job_history 
++MODIFY COLUMN change_type ENUM(
++    'created', 
++    'updated', 
++    'status_changed', 
++    'device_added', 
++    'device_removed', 
++    'deleted',
++    'file_added',
++    'file_removed'
++) NOT NULL;
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/031_add_file_history_types.up.sql ----\n
++-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/032_seed_job_statuses.down.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/032_seed_job_statuses.up.sql ----
++
++INSERT INTO status (statusid, status) VALUES 
++(1, 'Draft'),
++(2, 'Confirmed'),
++(3, 'Active'),
++(4, 'Completed'),
++(5, 'Cancelled')
++ON CONFLICT (statusid) DO NOTHING;
++
++-- Update sequence to ensure next insert works
++SELECT setval('status_statusid_seq', (SELECT MAX(statusid) FROM status));
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/032_seed_job_statuses.up.sql ----\n
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/037_accessories_consumables_part2.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/037_accessories_consumables_part3.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/037_accessories_consumables.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/20251115_add_job_packages.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/compliance_tables.sql ----
++\n-- ===== Begin migrations from: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations =====\n
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/001_storage_zones.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/002_device_movements.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/003_scan_events.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/004_defect_reports.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/005_update_zone_types.sql ----
++
++-- Update zone types to support only Lager, Regal, and Gitterbox
++-- Version 1.7 - 2025-10-14
++
++ALTER TABLE storage_zones
++MODIFY type ENUM('warehouse', 'rack', 'gitterbox', 'shelf', 'vehicle', 'stage', 'case', 'other')
++NOT NULL DEFAULT 'other';
++
++-- Note: 'warehouse' = Lager, 'rack' = Regal, 'gitterbox' = Gitterbox
++-- Other types (shelf, vehicle, stage, case) kept for backward compatibility but should not be used
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/005_update_zone_types.sql ----\n
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/006_add_zone_barcode.sql ----
++
++-- Add barcode field to storage_zones for Fächer
++-- Version 1.8 - 2025-10-14
++
++ALTER TABLE storage_zones
++ADD COLUMN barcode VARCHAR(255) NULL AFTER code,
++ADD INDEX idx_zone_barcode (barcode);
++
++-- Generate barcodes for existing zones
++UPDATE storage_zones
++SET barcode = CONCAT('ZONE-', LPAD(zone_id, 8, '0'))
++WHERE barcode IS NULL AND type = 'shelf';
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/006_add_zone_barcode.sql ----\n
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/007_rbac_system_down.sql ----
++
++-- Rollback Migration 007: RBAC System and Admin Features
++
++-- Drop tables in reverse order (respecting foreign key constraints)
++DROP TABLE IF EXISTS `user_profiles`;
++DROP TABLE IF EXISTS `app_settings`;
++DROP TABLE IF EXISTS `zone_types`;
++DROP TABLE IF EXISTS `user_roles_wh`;
++
++-- Remove WarehouseCore roles from existing roles table
++DELETE FROM `roles` WHERE `name` IN ('warehouse_admin', 'warehouse_manager', 'warehouse_worker', 'warehouse_viewer');
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/007_rbac_system_down.sql ----\n
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/007_rbac_system.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/008_assign_auto_admin.sql ----
++
++-- Migration 008: Auto-assign Admin Role to N. Thielmann
++-- This migration automatically grants admin privileges to the user "N. Thielmann"
++
++-- Find user "N. Thielmann" and assign admin role
++-- Using CONCAT to build full name from first_name and last_name
++-- Also trying username and email fields as fallback
++
++SET @admin_role_id = (SELECT roleID FROM roles WHERE name = 'admin' LIMIT 1);
++SET @wh_admin_role_id = (SELECT roleID FROM roles WHERE name = 'warehouse_admin' LIMIT 1);
++SET @thielmann_user_id = (
++  SELECT userID FROM users
++  WHERE CONCAT(first_name, ' ', last_name) LIKE '%Thielmann%'
++     OR username LIKE '%thielmann%'
++     OR email LIKE '%thielmann%'
++  LIMIT 1
++);
++
++-- Assign both admin and warehouse_admin roles if user exists
++INSERT IGNORE INTO user_roles_wh (user_id, role_id)
++SELECT @thielmann_user_id, @admin_role_id
++WHERE @thielmann_user_id IS NOT NULL AND @admin_role_id IS NOT NULL;
++
++INSERT IGNORE INTO user_roles_wh (user_id, role_id)
++SELECT @thielmann_user_id, @wh_admin_role_id
++WHERE @thielmann_user_id IS NOT NULL AND @wh_admin_role_id IS NOT NULL;
++
++-- Log the result
++SELECT
++  CASE
++    WHEN @thielmann_user_id IS NULL THEN 'WARNING: User "N. Thielmann" not found. Admin role not assigned.'
++    WHEN @admin_role_id IS NULL THEN 'WARNING: Admin role not found in roles table.'
++    ELSE CONCAT('SUCCESS: Admin role assigned to user ID ', @thielmann_user_id)
++  END AS migration_status;
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/008_assign_auto_admin.sql ----\n
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/009_update_led_defaults_down.sql ----
++
++-- Rollback 009: Restore previous default LED values
++
++-- Restore prior app_settings value (best-effort)
++UPDATE app_settings
++SET v = JSON_OBJECT('color', '#FF4500', 'pattern', 'breathe', 'intensity', 255), updated_at = NOW()
++WHERE scope = 'warehousecore' AND k = 'led.single_bin.default';
++
++-- Restore previous defaults on zone_types
++ALTER TABLE zone_types
++  MODIFY COLUMN default_led_pattern ENUM('solid','breathe','blink') DEFAULT 'breathe',
++  MODIFY COLUMN default_led_color VARCHAR(9) DEFAULT '#FF4500',
++  MODIFY COLUMN default_intensity TINYINT UNSIGNED DEFAULT 255;
++
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/009_update_led_defaults_down.sql ----\n
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/009_update_led_defaults.sql ----
++
++-- Migration 009: Update LED defaults to warehouse standard (orange + breathe, intensity 180)
++
++-- Update existing app setting if present; otherwise insert
++INSERT INTO app_settings (scope, k, v)
++VALUES ('warehousecore', 'led.single_bin.default', JSON_OBJECT('color', '#FF7A00', 'pattern', 'breathe', 'intensity', 180))
++ON DUPLICATE KEY UPDATE v = VALUES(v), updated_at = NOW();
++
++-- Align zone_types default values for new rows
++ALTER TABLE zone_types
++  MODIFY COLUMN default_led_pattern ENUM('solid','breathe','blink') DEFAULT 'breathe',
++  MODIFY COLUMN default_led_color VARCHAR(9) DEFAULT '#FF7A00',
++  MODIFY COLUMN default_intensity TINYINT UNSIGNED DEFAULT 180;
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/009_update_led_defaults.sql ----\n
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/010_seed_core_roles.sql ----
++
++-- Migration 010: Ensure core roles exist (admin, manager, worker, viewer)
++
++INSERT INTO roles (name, display_name, description, permissions, is_system_role, is_active)
++SELECT * FROM (
++  SELECT 'admin'   AS name, 'Admin'   AS display_name, 'Full access',      JSON_ARRAY('admin.*')         AS permissions, 1 AS is_system_role, 1 AS is_active UNION ALL
++  SELECT 'manager' AS name, 'Manager' AS display_name, 'Manage operations', JSON_ARRAY('manage.*')        AS permissions, 1, 1 UNION ALL
++  SELECT 'worker'  AS name, 'Worker'  AS display_name, 'Operational tasks', JSON_ARRAY('warehouse.scan')  AS permissions, 1, 1 UNION ALL
++  SELECT 'viewer'  AS name, 'Viewer'  AS display_name, 'Read-only',         JSON_ARRAY('view.*')          AS permissions, 1, 1
++) AS r
++WHERE NOT EXISTS (SELECT 1 FROM roles WHERE roles.name = r.name);
++
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/010_seed_core_roles.sql ----\n
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/011_sync_user_roles_wh.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/012_seed_super_admin.sql ----
++
++-- Migration 012: Ensure super_admin role exists (shared roles table)
++
++INSERT INTO roles (name, display_name, description, permissions, is_system_role, is_active)
++SELECT * FROM (
++  SELECT 'super_admin' AS name,
++         'Super Admin' AS display_name,
++         'Global superuser with full access' AS description,
++         JSON_ARRAY('super_admin.*','admin.*') AS permissions,
++         1 AS is_system_role,
++         1 AS is_active
++) AS r
++WHERE NOT EXISTS (SELECT 1 FROM roles WHERE roles.name = r.name);
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/012_seed_super_admin.sql ----\n
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/013_add_job_code.sql ----
++
++ALTER TABLE `jobs`
++  ADD COLUMN `job_code` VARCHAR(16) NULL;
++
++UPDATE `jobs`
++SET `job_code` = CONCAT('JOB', LPAD(`jobID`, 6, '0'))
++WHERE `job_code` IS NULL OR `job_code` = '';
++
++ALTER TABLE `jobs`
++  MODIFY COLUMN `job_code` VARCHAR(16) NOT NULL,
++  ADD UNIQUE KEY `ux_jobs_job_code` (`job_code`);
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/013_add_job_code.sql ----\n
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/014_add_led_controllers.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/015_extend_led_controllers.sql ----
++
++-- Extend LED controller metadata with network and status fields
++
++ALTER TABLE led_controllers
++  ADD COLUMN ip_address VARCHAR(64) DEFAULT NULL AFTER last_seen,
++  ADD COLUMN hostname VARCHAR(255) DEFAULT NULL AFTER ip_address,
++  ADD COLUMN firmware_version VARCHAR(64) DEFAULT NULL AFTER hostname,
++  ADD COLUMN mac_address VARCHAR(64) DEFAULT NULL AFTER firmware_version,
++  ADD COLUMN status_data JSON DEFAULT NULL AFTER metadata,
++  ADD INDEX idx_led_controllers_last_seen (last_seen);
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/015_extend_led_controllers.sql ----\n
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/016_create_label_templates.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/017_add_device_label_path.sql ----
++
++-- Add label_path column to devices table
++ALTER TABLE devices ADD COLUMN label_path VARCHAR(512) DEFAULT NULL;
++
++-- Add index for faster lookups
++CREATE INDEX idx_devices_label_path ON devices(label_path);
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/017_add_device_label_path.sql ----\n
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/018_update_zone_type_labels_down.sql ----
++
++-- Revert zone type label adjustments
++UPDATE zone_types
++SET label = 'Regal', description = 'Standard warehouse shelf'
++WHERE `key` = 'shelf';
++
++UPDATE zone_types
++SET label = 'Rack', description = 'Equipment rack'
++WHERE `key` = 'rack';
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/018_update_zone_type_labels_down.sql ----\n
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/018_update_zone_type_labels.sql ----
++
++-- Adjust default zone type labels so that "shelf" corresponds to Fächer and "rack" to Regale
++UPDATE zone_types
++SET label = 'Fach', description = 'Einzele Fach / Lagerfach'
++WHERE `key` = 'shelf';
++
++UPDATE zone_types
++SET label = 'Regal', description = 'Regal oder Gestell'
++WHERE `key` = 'rack';
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/018_update_zone_type_labels.sql ----\n
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/019_create_product_packages.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/020_add_package_codes_and_aliases.sql ----
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/021_create_product_dependencies.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/022_add_website_fields.sql ----
++
++-- Add website visibility and image selection for products
++ALTER TABLE products
++  ADD COLUMN website_visible TINYINT(1) NOT NULL DEFAULT 0 AFTER price_per_unit,
++  ADD COLUMN website_thumbnail VARCHAR(255) NULL AFTER website_visible,
++  ADD COLUMN website_images_json JSON NULL AFTER website_thumbnail;
++
++-- Add website visibility for packages (product packages table)
++ALTER TABLE product_packages
++  ADD COLUMN website_visible TINYINT(1) NOT NULL DEFAULT 0 AFTER description;
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/022_add_website_fields.sql ----\n
++-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/023_api_keys.sql ----
++-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/030_device_id_trigger.sql ----
++
++-- Migration: 030_device_id_trigger.sql
++-- Description: Create PostgreSQL trigger function for automatic device ID generation
++-- Converts MySQL trigger to PostgreSQL compatible function
++-- Date: 2025-12-17
++
++-- Drop existing trigger and function if they exist
++DROP TRIGGER IF EXISTS devices_before_insert ON devices;
++DROP FUNCTION IF EXISTS generate_device_id();
++
++-- Create the trigger function
++CREATE OR REPLACE FUNCTION generate_device_id()
++RETURNS TRIGGER AS $$
++DECLARE
++    abkuerzung VARCHAR(50);
++    pos_cat INT;
++    next_counter INT;
++BEGIN
++    -- Skip auto-generation for virtual package devices (start with PKG_)
++    IF NEW.deviceID IS NOT NULL AND NEW.deviceID LIKE 'PKG_%' THEN
++        RETURN NEW;
++    END IF;
++
++    -- 1) Get abbreviation from subcategory
++    SELECT s.abbreviation
++      INTO abkuerzung
++      FROM subcategories s
++      JOIN products p ON s.subcategoryID = p.subcategoryID
++     WHERE p.productID = NEW.productID
++     LIMIT 1;
++
++    -- If no abbreviation found, raise error
++    IF abkuerzung IS NULL THEN
++        RAISE EXCEPTION 'No abbreviation found for productID %', NEW.productID;
++    END IF;
++
++    -- 2) Get pos_in_category from product
++    SELECT COALESCE(p.pos_in_category, 0)
++      INTO pos_cat
++      FROM products p
++     WHERE p.productID = NEW.productID;
++
++    -- 3) Calculate next counter (max of last 3 digits + 1)
++    -- PostgreSQL uses SUBSTRING instead of RIGHT
++    SELECT COALESCE(MAX(
++        CASE
++            WHEN SUBSTRING(d.deviceID FROM LENGTH(d.deviceID) - 2) ~ '^[0-9]+$'
++            THEN CAST(SUBSTRING(d.deviceID FROM LENGTH(d.deviceID) - 2) AS INTEGER)
++            ELSE 0
++        END
++    ), 0) + 1
++      INTO next_counter
++      FROM devices d
++     WHERE d.deviceID LIKE abkuerzung || pos_cat || '%';
++
++    -- 4) Build deviceID (without hyphen)
++    NEW.deviceID := abkuerzung || pos_cat || LPAD(next_counter::TEXT, 3, '0');
++
++    RETURN NEW;
++END;
++$$ LANGUAGE plpgsql;
++
++-- Create the trigger
++CREATE TRIGGER devices_before_insert
++    BEFORE INSERT ON devices
++    FOR EACH ROW
++    WHEN (NEW.deviceID IS NULL)
++    EXECUTE FUNCTION generate_device_id();
++
++-- Create an index to speed up device ID lookups
++CREATE INDEX IF NOT EXISTS idx_devices_deviceid_pattern ON devices(deviceID);
++
++-- Comment on the function
++COMMENT ON FUNCTION generate_device_id() IS 'Auto-generates device IDs in format: {abbreviation}{pos_in_category}{counter:003d}';
++
++-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/030_device_id_trigger.sql ----\n
++
++-- ===== Final safety seed: ensure admin user exists =====
++INSERT INTO users (username, email, password_hash, first_name, last_name, is_admin, is_active, force_password_change)
++VALUES ('admin', 'admin@example.com', '$2a$10$AlHJcEvCFEXXAoxQ/S4XXeVy3coR0yHtTv0Pn3bHEH/z3t3jdGVru', 'System', 'Administrator', TRUE, TRUE, TRUE)
++ON CONFLICT (username) DO NOTHING;
++
++DO $$
++DECLARE
++  admin_user_id INT;
++BEGIN
++  SELECT userid INTO admin_user_id FROM users WHERE username = 'admin';
++  IF admin_user_id IS NOT NULL THEN
++    INSERT INTO user_roles (userid, roleid)
++    SELECT admin_user_id, roleid FROM roles WHERE name IN ('super_admin', 'admin', 'warehouse_admin')
++    ON CONFLICT (userid, roleid) DO NOTHING;
++  END IF;
++END $$;
++
++/* End of unified migrations */

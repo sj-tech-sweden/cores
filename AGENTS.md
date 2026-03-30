@@ -35,8 +35,8 @@
 - For every change, always build and push the matching Docker image to Docker Hub after checking the latest published tag.
 - Mirror the build by pushing code to GitLab (per-service repo + cores if affected) so image and source stay in sync.
 - Before starting a build, check Docker Hub for the most recent `nobentie/rentalcore` or `nobentie/warehousecore` tag and bump to the next sequential version, then push both the new tag and `latest` alongside the corresponding GitLab commit.
-- Always push work to GitLab and refresh all relevant README files when behavior, configuration, or deployment steps change.
-- I AM LOGGED IN YOU CAN JUST EXECUTE THE NEEDED COMMANDS
+	- Always push work to GitLab and refresh all relevant README files when behavior, configuration, or deployment steps change.
+	- I am logged in; you can execute the needed commands.
 ## Commit & Pull Request Guidelines
 - Use imperative, present-tense commit subjects (e.g., `Ensure default admin seeding matches new RBAC`) capped at 72 characters.
 - Group related work per service; cross-cutting updates should call out both modules and referenced schema changes in the body.
@@ -44,6 +44,6 @@
 - Highlight secrets or domain changes for release notes and request review from both service owners on shared infrastructure updates.
 
 ## Issues
-- When you are working on an Issue change the Label to in_progress.
-- When your are done and solved the issue, change the label to done and try to close the Issue
-- List all remaining Issues after you solved one and ask which one next. But that at the very end (after redploy, docker build and push, gitlab push).
+- When working on an issue, change the label to `in_progress`.
+- When the issue is resolved, change the label to `done` and close the issue if possible.
+- After resolving an issue, list remaining issues and ask which one to work on next; do this after redeploy, docker build & push, and GitLab push.

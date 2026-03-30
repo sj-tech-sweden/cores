@@ -1,3 +1,6 @@
+/* Unified migrations file generated: Thu Mar 26 14:25:42 UTC 2026 */
+-- Source: /Users/samsjo02/Documents/script/rentalcore/cores/migrations/postgresql/000_combined_init.sql
+
 -- =============================================================================
 -- RentalCore & WarehouseCore - Combined PostgreSQL Schema
 -- =============================================================================
@@ -164,46 +167,6 @@ CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log(action);
 CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_log(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_log(timestamp);
-
--- Digital signatures table
-CREATE TABLE IF NOT EXISTS digital_signatures (
-    signature_id SERIAL PRIMARY KEY,
-    document_id INT,
-    signed_by INT REFERENCES users(userid) ON DELETE SET NULL,
-    signature_data TEXT,
-    signed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    is_valid BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS idx_digital_signatures_document ON digital_signatures(document_id);
-CREATE INDEX IF NOT EXISTS idx_digital_signatures_user ON digital_signatures(signed_by);
-
--- Documents table for file/attachment storage
-CREATE TABLE IF NOT EXISTS documents (
-    "documentID" SERIAL PRIMARY KEY,
-    "entityType" VARCHAR(50) NOT NULL CHECK ("entityType" IN ('job', 'device', 'customer', 'user', 'system')),
-    "entityID" VARCHAR(255) NOT NULL,
-    "filename" VARCHAR(255) NOT NULL,
-    "originalFilename" VARCHAR(255) NOT NULL,
-    "filePath" VARCHAR(512) NOT NULL,
-    "fileSize" BIGINT NOT NULL,
-    "mimeType" VARCHAR(100) NOT NULL,
-    "documentType" VARCHAR(50) NOT NULL CHECK ("documentType" IN ('contract', 'manual', 'photo', 'invoice', 'receipt', 'signature', 'other')),
-    "description" TEXT,
-    "uploadedBy" INT REFERENCES users(userid) ON DELETE SET NULL,
-    "uploadedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "isPublic" BOOLEAN DEFAULT FALSE,
-    "version" INT DEFAULT 1,
-    "parent_documentID" INT REFERENCES documents("documentID") ON DELETE SET NULL,
-    "checksum" VARCHAR(32),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS idx_documents_entity ON documents("entityType", "entityID");
-CREATE INDEX IF NOT EXISTS idx_documents_uploaded_by ON documents("uploadedBy");
-CREATE INDEX IF NOT EXISTS idx_documents_uploaded_at ON documents("uploadedAt");
-CREATE INDEX IF NOT EXISTS idx_documents_document_type ON documents("documentType");
-CREATE INDEX IF NOT EXISTS idx_documents_checksum ON documents("checksum");
 
 -- App Settings table (for system configuration)
 CREATE TABLE IF NOT EXISTS app_settings (
@@ -468,8 +431,6 @@ CREATE TABLE IF NOT EXISTS job_history (
     user_agent TEXT DEFAULT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_job_history_job ON job_history(job_id);
-CREATE INDEX IF NOT EXISTS idx_job_history_user ON job_history(user_id);
-CREATE INDEX IF NOT EXISTS idx_job_history_changed_at ON job_history(changed_at);
 
 -- Job editing sessions (track who is currently editing a job)
 CREATE TABLE IF NOT EXISTS job_edit_sessions (
@@ -496,7 +457,6 @@ CREATE TABLE IF NOT EXISTS job_packages (
     notes TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_job_packages_job ON job_packages(job_id);
-CREATE INDEX IF NOT EXISTS idx_job_packages_added_at ON job_packages(added_at);
 
 -- Job attachments
 CREATE TABLE IF NOT EXISTS job_attachments (
@@ -693,12 +653,14 @@ CREATE TABLE IF NOT EXISTS cases (
     depth DECIMAL(10,2),
     status VARCHAR(50) DEFAULT 'free',
     barcode VARCHAR(255),
+    label_path VARCHAR(512),
     zone_id INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_cases_status ON cases(status);
 CREATE INDEX IF NOT EXISTS idx_cases_barcode ON cases(barcode);
+CREATE INDEX IF NOT EXISTS idx_cases_label_path ON cases(label_path);
 
 -- Devices in Cases junction table
 CREATE TABLE IF NOT EXISTS devicescases (
@@ -916,13 +878,13 @@ CREATE TABLE IF NOT EXISTS zone_types (
 
 -- Seed basic zone types
 INSERT INTO zone_types (id, key, label, description, default_led_pattern, default_led_color, default_intensity, created_at, updated_at) VALUES
-    (1,'shelf','Shelf','Individual shelf / storage shelf','breathe','#FF4500',255,'2025-10-19 11:21:29','2025-12-01 17:29:10'),
-    (4,'gitterbox','Gitter box','Wire mesh container','solid','#0088FF',200,'2025-10-19 11:21:29','2025-10-19 11:21:29'),
-    (19,'rack','Rack','Rack or shelving unit','breathe','#FFAA00',240,'2025-12-01 17:29:10','2025-12-01 17:29:10'),
-    (20,'warehouse','Warehouse','Warehouse hall or storage room','breathe','#00AA00',200,'2025-12-01 17:35:27','2025-12-01 17:35:27'),
-    (21,'vehicle','Vehicle','Transport vehicle or trailer','breathe','#0088FF',220,'2025-12-01 17:35:35','2025-12-01 17:35:35'),
-    (23,'case','Case','Transport case or flight case','breathe','#FFAA00',200,'2025-12-01 17:35:35','2025-12-01 17:35:35'),
-    (24,'other','Other','Other storage types','breathe','#808080',180,'2025-12-01 17:35:35','2025-12-01 17:35:35')
+    (1,'shelf','Fach','Einzeles Fach / Lagerfach','breathe','#FF4500',255,'2025-10-19 11:21:29','2025-12-01 17:29:10'),
+    (4,'gitterbox','Gitterbox','Wire mesh container','solid','#0088FF',200,'2025-10-19 11:21:29','2025-10-19 11:21:29'),
+    (19,'rack','Regal','Regal oder Gestell','breathe','#FFAA00',240,'2025-12-01 17:29:10','2025-12-01 17:29:10'),
+    (20,'warehouse','Lager','Lagerhalle oder Lagerraum','breathe','#00AA00',200,'2025-12-01 17:35:27','2025-12-01 17:35:27'),
+    (21,'vehicle','Fahrzeug','Transporter oder Anhänger','breathe','#0088FF',220,'2025-12-01 17:35:35','2025-12-01 17:35:35'),
+    (23,'case','Case','Transport-Case oder Flightcase','breathe','#FFAA00',200,'2025-12-01 17:35:35','2025-12-01 17:35:35'),
+    (24,'other','Sonstiges','Andere Lagerarten','breathe','#808080',180,'2025-12-01 17:35:35','2025-12-01 17:35:35')
 ON CONFLICT (id) DO NOTHING;
 
 
@@ -955,36 +917,22 @@ CREATE INDEX IF NOT EXISTS idx_movement_created ON device_movements(created_at);
 -- Scan events table
 CREATE TABLE IF NOT EXISTS scan_events (
     scan_id SERIAL PRIMARY KEY,
-    scan_code VARCHAR(255) NOT NULL,
     device_id VARCHAR(50) NULL REFERENCES devices(deviceid) ON DELETE SET NULL,
-    action VARCHAR(50) NOT NULL DEFAULT 'identify',
-    job_id INT NULL,
     zone_id INT NULL REFERENCES storage_zones(zone_id) ON DELETE SET NULL,
-    user_id INT NULL REFERENCES users(userid) ON DELETE SET NULL,
-    success BOOLEAN NOT NULL DEFAULT TRUE,
-    error_message TEXT,
-    ip_address VARCHAR(100),
-    user_agent TEXT,
-    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    case_id INT NULL REFERENCES cases(caseid) ON DELETE SET NULL,
+    scanner_id VARCHAR(100),
+    scanned_by INT NULL REFERENCES users(userid) ON DELETE SET NULL,
+    scan_type VARCHAR(50) NOT NULL DEFAULT 'identify',
+    barcode_value VARCHAR(255) NOT NULL,
+    scan_result VARCHAR(50) NOT NULL DEFAULT 'success',
+    metadata JSONB NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_scan_device ON scan_events(device_id);
 CREATE INDEX IF NOT EXISTS idx_scan_zone ON scan_events(zone_id);
-CREATE INDEX IF NOT EXISTS idx_scan_action ON scan_events(action);
-CREATE INDEX IF NOT EXISTS idx_scan_timestamp ON scan_events(timestamp);
-CREATE INDEX IF NOT EXISTS idx_scan_code ON scan_events(scan_code);
-
--- Inspection schedules table (compatibility for background inspection counters)
-CREATE TABLE IF NOT EXISTS inspection_schedules (
-    id SERIAL PRIMARY KEY,
-    device_id VARCHAR(50) NULL REFERENCES devices(deviceid) ON DELETE SET NULL,
-    next_inspection TIMESTAMP NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    notes TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS idx_inspection_schedules_next_inspection ON inspection_schedules(next_inspection);
-CREATE INDEX IF NOT EXISTS idx_inspection_schedules_is_active ON inspection_schedules(is_active);
+CREATE INDEX IF NOT EXISTS idx_scan_type ON scan_events(scan_type);
+CREATE INDEX IF NOT EXISTS idx_scan_created ON scan_events(created_at);
+CREATE INDEX IF NOT EXISTS idx_scan_barcode ON scan_events(barcode_value);
 
 -- Defect reports table
 CREATE TABLE IF NOT EXISTS defect_reports (
@@ -1123,7 +1071,6 @@ BEGIN
         NEW.package_id := NEW.id;
     END IF;
 
-    -- Keep legacy product_id column aligned when available callers provide only one side.
     IF NEW.product_id IS NULL AND NEW.id IS NOT NULL THEN
         NEW.product_id := NEW.id;
     END IF;
@@ -1317,22 +1264,19 @@ ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT C
 ALTER TABLE audit_events ALTER COLUMN old_values TYPE TEXT USING old_values::text;
 ALTER TABLE audit_events ALTER COLUMN new_values TYPE TEXT USING new_values::text;
 ALTER TABLE audit_events ALTER COLUMN context TYPE TEXT USING context::text;
+ALTER TABLE audit_events DROP CONSTRAINT IF EXISTS audit_events_user_id_fkey;
 CREATE INDEX IF NOT EXISTS idx_audit_events_timestamp ON audit_events(timestamp);
 CREATE INDEX IF NOT EXISTS idx_audit_events_event_type ON audit_events(event_type);
 CREATE INDEX IF NOT EXISTS idx_audit_events_object ON audit_events(object_type, object_id);
-ALTER TABLE audit_events DROP CONSTRAINT IF EXISTS audit_events_user_id_fkey;
 
 -- Data retention policies used by compliance module
 CREATE TABLE IF NOT EXISTS retention_policies (
     id SERIAL PRIMARY KEY,
     document_type VARCHAR(100) NOT NULL UNIQUE,
-    retention_years INT,
-    retention_period_days INT,
+    retention_period_days INT NOT NULL,
     legal_basis TEXT NOT NULL,
-    description TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
+    retention_years INT,
     auto_delete BOOLEAN DEFAULT FALSE,
-    auto_delete_after TIMESTAMP,
     policy_description TEXT,
     effective_from TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     effective_until TIMESTAMP,
@@ -1350,15 +1294,15 @@ CREATE INDEX IF NOT EXISTS idx_retention_policies_doc_type ON retention_policies
 
 INSERT INTO retention_policies (id, document_type, retention_years, retention_period_days, legal_basis, description, is_active, auto_delete, policy_description)
 VALUES
-    (1, 'invoice_data', 10, 3650, 'HGB §257, AO §147', 'Retained for legal and tax purposes: invoice data - 10 years', TRUE, TRUE, 'Retained for legal and tax purposes: invoice data - 10 years'),
-    (2, 'customer_data', 10, 3650, 'HGB §257, AO §147', 'Business correspondence and trade books - 10 years', TRUE, FALSE, 'Business correspondence and trade books - 10 years'),
-    (3, 'payment_data', 6, 2190, 'HGB §257', 'Payment receipts and bank statements - 6 years', TRUE, TRUE, 'Payment receipts and bank statements - 6 years'),
-    (4, 'contract_data', 10, 3650, 'BGB §195ff', 'Contract documentation - 10 years (warranty period)', TRUE, FALSE, 'Contract documentation - 10 years (warranty period)'),
-    (5, 'tax_data', 10, 3650, 'AO §147', 'Tax-relevant documentation - 10 years', TRUE, TRUE, 'Tax-relevant documentation - 10 years'),
-    (6, 'employee_data', 3, 1095, 'GDPR Art. 5', 'Personnel records - 3 years after termination', TRUE, FALSE, 'Personnel records - 3 years after termination'),
-    (7, 'marketing_consent', 3, 1095, 'GDPR Art. 7', 'Marketing consent records - 3 years', TRUE, TRUE, 'Marketing consent records - 3 years'),
-    (8, 'access_logs', 6, 2190, 'GDPR Art. 32', 'Access logs and audit trails - 6 years', TRUE, TRUE, 'Access logs and audit trails - 6 years'),
-    (9, 'backup_data', 1, 365, 'GDPR Art. 32', 'Backup data - 1 year', TRUE, TRUE, 'Backup data - 1 year')
+    (1, 'invoice_data', 10, 3650, 'HGB §257, AO §147', 'Handelsrechtliche und steuerrechtliche Aufbewahrung von Rechnungsdaten - 10 Jahre', TRUE, TRUE, 'Handelsrechtliche und steuerrechtliche Aufbewahrung von Rechnungsdaten - 10 Jahre'),
+    (2, 'customer_data', 10, 3650, 'HGB §257, AO §147', 'Geschaeftsbriefe und Handelsbuecher - 10 Jahre', TRUE, FALSE, 'Geschaeftsbriefe und Handelsbuecher - 10 Jahre'),
+    (3, 'payment_data', 6, 2190, 'HGB §257', 'Zahlungsbelege und Kontoauszuege - 6 Jahre', TRUE, TRUE, 'Zahlungsbelege und Kontoauszuege - 6 Jahre'),
+    (4, 'contract_data', 10, 3650, 'BGB §195ff', 'Vertragsunterlagen - 10 Jahre (Gewaehrleistung)', TRUE, FALSE, 'Vertragsunterlagen - 10 Jahre (Gewaehrleistung)'),
+    (5, 'tax_data', 10, 3650, 'AO §147', 'Steuerrelevante Unterlagen - 10 Jahre', TRUE, TRUE, 'Steuerrelevante Unterlagen - 10 Jahre'),
+    (6, 'employee_data', 3, 1095, 'DSGVO Art. 5', 'Personalunterlagen - 3 Jahre nach Beendigung', TRUE, FALSE, 'Personalunterlagen - 3 Jahre nach Beendigung'),
+    (7, 'marketing_consent', 3, 1095, 'DSGVO Art. 7', 'Marketing-Einwilligungen - 3 Jahre', TRUE, TRUE, 'Marketing-Einwilligungen - 3 Jahre'),
+    (8, 'access_logs', 6, 2190, 'DSGVO Art. 32', 'Zugriffsprotokolle - 6 Jahre', TRUE, TRUE, 'Zugriffsprotokolle - 6 Jahre'),
+    (9, 'backup_data', 1, 365, 'DSGVO Art. 32', 'Backup-Daten - 1 Jahr', TRUE, TRUE, 'Backup-Daten - 1 Jahr')
 ON CONFLICT (id) DO NOTHING;
 
 -- Invoice template storage used by invoice rendering UI
@@ -1380,13 +1324,13 @@ CREATE INDEX IF NOT EXISTS idx_invoice_templates_name ON invoice_templates(name)
 
 -- Default job statuses
 INSERT INTO status (status, description, color, sort_order) VALUES
-('Planning', 'Job is in planning phase', '#6c757d', 1),
-('Preparation', 'Job is being prepared', '#17a2b8', 2),
-('Active', 'Job is currently active', '#28a745', 3),
-('Completed', 'Job has been completed', '#007bff', 4),
-('Invoiced', 'Job has been invoiced', '#6610f2', 5),
-('Cancelled', 'Job has been cancelled', '#dc3545', 6),
-('Paused', 'Job is temporarily paused', '#ffc107', 7)
+('Planung', 'Job ist in der Planungsphase', '#6c757d', 1),
+('Vorbereitung', 'Job wird vorbereitet', '#17a2b8', 2),
+('Aktiv', 'Job ist aktuell aktiv', '#28a745', 3),
+('Abgeschlossen', 'Job wurde abgeschlossen', '#007bff', 4),
+('Abgerechnet', 'Job wurde abgerechnet', '#6610f2', 5),
+('Storniert', 'Job wurde storniert', '#dc3545', 6),
+('Pausiert', 'Job ist temporär pausiert', '#ffc107', 7)
 ON CONFLICT (status) DO NOTHING;
 
 -- Default RBAC roles
@@ -1452,213 +1396,69 @@ END $$;
 
 -- Default storage zones
 INSERT INTO storage_zones (code, name, type, description, is_active) VALUES
-('MAIN-WH', 'Main warehouse', 'warehouse', 'Primary storage location', TRUE),
-('STAGE', 'Staging area', 'stage', 'Job preparation area', TRUE)
+('MAIN-WH', 'Hauptlager', 'warehouse', 'Primärer Lagerstandort', TRUE),
+('STAGE', 'Staging-Bereich', 'stage', 'Bereich für Job-Vorbereitung', TRUE)
 ON CONFLICT (code) DO NOTHING;
 
 -- Default label template
 INSERT INTO label_templates (name, description, template_type, width_mm, height_mm, is_default) VALUES
-('Standard Equipment Label', 'Standard Equipment Label 62x29mm', 'device', 62, 29, TRUE)
+('Standard Geräte-Label', 'Standard Geräteetikett 62x29mm', 'device', 62, 29, TRUE)
 ON CONFLICT (name) DO NOTHING;
 
 -- Default count types for accessories/consumables
 INSERT INTO count_types (name, abbreviation, is_decimal) VALUES
-('Piece', 'Pcs', FALSE),
-('Kilogram', 'kg', TRUE),
+('Stück', 'Stk', FALSE),
+('Kilogramm', 'kg', TRUE),
 ('Liter', 'L', TRUE),
 ('Meter', 'm', TRUE),
-('Square meter', 'm²', TRUE)
+('Quadratmeter', 'm²', TRUE)
 ON CONFLICT (name) DO NOTHING;
 
 -- Default cable connectors
 INSERT INTO cable_connectors (name, abbreviation, gender) VALUES
 ('Schuko', 'SCH', 'male'),
-('Schuko coupling', 'SCH', 'female'),
-('CEE 16A blue', 'CEE16', 'male'),
-('CEE 16A blue coupling', 'CEE16', 'female'),
-('CEE 32A red', 'CEE32', 'male'),
-('CEE 32A red coupling', 'CEE32', 'female'),
-('CEE 63A red', 'CEE63', 'male'),
-('CEE 63A red coupling', 'CEE63', 'female'),
-('CEE 125A red', 'CEE125', 'male'),
-('CEE 125A red coupling', 'CEE125', 'female'),
-('XLR 3-pin', 'XLR3', 'male'),
-('XLR 3-pin coupling', 'XLR3', 'female'),
-('XLR 5-pin', 'XLR5', 'male'),
-('XLR 5-pin coupling', 'XLR5', 'female'),
+('Schuko Kupplung', 'SCH', 'female'),
+('CEE 16A blau', 'CEE16', 'male'),
+('CEE 16A blau Kupplung', 'CEE16', 'female'),
+('CEE 32A rot', 'CEE32', 'male'),
+('CEE 32A rot Kupplung', 'CEE32', 'female'),
+('CEE 63A rot', 'CEE63', 'male'),
+('CEE 63A rot Kupplung', 'CEE63', 'female'),
+('CEE 125A rot', 'CEE125', 'male'),
+('CEE 125A rot Kupplung', 'CEE125', 'female'),
+('XLR 3-pol', 'XLR3', 'male'),
+('XLR 3-pol Kupplung', 'XLR3', 'female'),
+('XLR 5-pol', 'XLR5', 'male'),
+('XLR 5-pol Kupplung', 'XLR5', 'female'),
 ('Powercon', 'PWC', 'male'),
 ('Powercon TRUE1', 'PWC1', 'male'),
 ('Socapex', 'SOC', 'male'),
-('Socapex coupling', 'SOC', 'female'),
+('Socapex Kupplung', 'SOC', 'female'),
 ('HAN 16E', 'HAN16', 'male'),
-('HAN 16E coupling', 'HAN16', 'female'),
-('speakON 2-pin', 'NL2', 'male'),
-('speakON 4-pin', 'NL4', 'male'),
-('speakON 8-pin', 'NL8', 'male'),
-('Jack 6.3mm mono', 'TS', 'male'),
-('Jack 6.3mm stereo', 'TRS', 'male'),
+('HAN 16E Kupplung', 'HAN16', 'female'),
+('speakON 2-pol', 'NL2', 'male'),
+('speakON 4-pol', 'NL4', 'male'),
+('speakON 8-pol', 'NL8', 'male'),
+('Klinke 6.3mm mono', 'TS', 'male'),
+('Klinke 6.3mm stereo', 'TRS', 'male'),
 ('RJ45', 'RJ45', 'male'),
 ('etherCON', 'eCON', 'male')
 ON CONFLICT DO NOTHING;
 
 -- Default cable types
 INSERT INTO cable_types (name) VALUES
-('Power'),
+('Strom'),
 ('Audio'),
 ('DMX'),
-('Network'),
+('Netzwerk'),
 ('Video'),
 ('Multicore'),
 ('Hybrid')
 ON CONFLICT DO NOTHING;
 
--- Default product categories
-INSERT INTO categories (name, abbreviation) VALUES
-('Lighting', 'LT'),
-('Audio', 'AU'),
-('Video', 'VI'),
-('Power Distribution', 'PW'),
-('Cables & Connectors', 'CA'),
-('Rigging & Staging', 'RS'),
-('Backline', 'BL'),
-('Communication', 'CM'),
-('Accessories', 'AC'),
-('ICT & Network', 'ICT')
-ON CONFLICT DO NOTHING;
-
--- Default product subcategories
-INSERT INTO subcategories (subcategoryid, name, abbreviation, categoryid) VALUES
-('LT-MH',  'Moving Heads',           'MH',  (SELECT categoryid FROM categories WHERE abbreviation = 'LT')),
-('LT-PAR', 'LED Pars',               'PAR', (SELECT categoryid FROM categories WHERE abbreviation = 'LT')),
-('LT-BAR', 'LED Bars & Strips',      'BAR', (SELECT categoryid FROM categories WHERE abbreviation = 'LT')),
-('LT-FSP', 'Followspots',            'FSP', (SELECT categoryid FROM categories WHERE abbreviation = 'LT')),
-('LT-HAZ', 'Hazers & Fog Machines',  'HAZ', (SELECT categoryid FROM categories WHERE abbreviation = 'LT')),
-('LT-STB', 'Strobes',                'STB', (SELECT categoryid FROM categories WHERE abbreviation = 'LT')),
-('LT-CTL', 'Controllers & Dimmers', 'CTL', (SELECT categoryid FROM categories WHERE abbreviation = 'LT')),
-('AU-MIC', 'Microphones',            'MIC', (SELECT categoryid FROM categories WHERE abbreviation = 'AU')),
-('AU-SPA', 'PA Speakers',            'SPA', (SELECT categoryid FROM categories WHERE abbreviation = 'AU')),
-('AU-MON', 'Stage Monitors',         'MON', (SELECT categoryid FROM categories WHERE abbreviation = 'AU')),
-('AU-AMP', 'Amplifiers',             'AMP', (SELECT categoryid FROM categories WHERE abbreviation = 'AU')),
-('AU-MIX', 'Mixing Consoles',        'MIX', (SELECT categoryid FROM categories WHERE abbreviation = 'AU')),
-('AU-WRL', 'Wireless Systems',       'WRL', (SELECT categoryid FROM categories WHERE abbreviation = 'AU')),
-('AU-IEM', 'In-Ear Monitors',        'IEM', (SELECT categoryid FROM categories WHERE abbreviation = 'AU')),
-('AU-LAR', 'Line Arrays',            'LAR', (SELECT categoryid FROM categories WHERE abbreviation = 'AU')),
-('VI-PRJ', 'Projectors',             'PRJ', (SELECT categoryid FROM categories WHERE abbreviation = 'VI')),
-('VI-LED', 'LED Screens',            'LED', (SELECT categoryid FROM categories WHERE abbreviation = 'VI')),
-('VI-MNT', 'Monitors & Displays',    'MNT', (SELECT categoryid FROM categories WHERE abbreviation = 'VI')),
-('VI-SWT', 'Video Switchers',        'SWT', (SELECT categoryid FROM categories WHERE abbreviation = 'VI')),
-('VI-CAM', 'Cameras',                'CAM', (SELECT categoryid FROM categories WHERE abbreviation = 'VI')),
-('VI-MSV', 'Media Servers',          'MSV', (SELECT categoryid FROM categories WHERE abbreviation = 'VI')),
-('PW-DST', 'Distribution Boards',   'DST', (SELECT categoryid FROM categories WHERE abbreviation = 'PW')),
-('PW-GEN', 'Generators',             'GEN', (SELECT categoryid FROM categories WHERE abbreviation = 'PW')),
-('PW-UPS', 'UPS Systems',            'UPS', (SELECT categoryid FROM categories WHERE abbreviation = 'PW')),
-('PW-RLS', 'Cable Reels',            'RLS', (SELECT categoryid FROM categories WHERE abbreviation = 'PW')),
-('CA-PWC', 'Power Cables',           'PWC', (SELECT categoryid FROM categories WHERE abbreviation = 'CA')),
-('CA-AUC', 'Audio Cables',           'AUC', (SELECT categoryid FROM categories WHERE abbreviation = 'CA')),
-('CA-VIC', 'Video Cables',           'VIC', (SELECT categoryid FROM categories WHERE abbreviation = 'CA')),
-('CA-DMX', 'DMX Cables',             'DMX', (SELECT categoryid FROM categories WHERE abbreviation = 'CA')),
-('CA-NTC', 'Network Cables',         'NTC', (SELECT categoryid FROM categories WHERE abbreviation = 'CA')),
-('CA-MCC', 'Multicore',              'MCC', (SELECT categoryid FROM categories WHERE abbreviation = 'CA')),
-('RS-TRS', 'Trussing',               'TRS', (SELECT categoryid FROM categories WHERE abbreviation = 'RS')),
-('RS-CHH', 'Chain Hoists',           'CHH', (SELECT categoryid FROM categories WHERE abbreviation = 'RS')),
-('RS-STA', 'Stands & Tripods',       'STA', (SELECT categoryid FROM categories WHERE abbreviation = 'RS')),
-('RS-PLT', 'Staging Platforms',      'PLT', (SELECT categoryid FROM categories WHERE abbreviation = 'RS')),
-('RS-DRP', 'Drapes & Fabric',        'DRP', (SELECT categoryid FROM categories WHERE abbreviation = 'RS')),
-('BL-GTR', 'Guitars',                'GTR', (SELECT categoryid FROM categories WHERE abbreviation = 'BL')),
-('BL-KEY', 'Keyboards & Synths',     'KEY', (SELECT categoryid FROM categories WHERE abbreviation = 'BL')),
-('BL-DRM', 'Drums & Percussion',     'DRM', (SELECT categoryid FROM categories WHERE abbreviation = 'BL')),
-('BL-AMP', 'Guitar & Bass Amps',     'AMP', (SELECT categoryid FROM categories WHERE abbreviation = 'BL')),
-('CM-INT', 'Intercoms',              'INT', (SELECT categoryid FROM categories WHERE abbreviation = 'CM')),
-('CM-WLK', 'Walkie-Talkies',         'WLK', (SELECT categoryid FROM categories WHERE abbreviation = 'CM')),
-('AC-CAS', 'Cases & Flight Cases',   'CAS', (SELECT categoryid FROM categories WHERE abbreviation = 'AC')),
-('AC-HWT', 'Hardware & Tools',       'HWT', (SELECT categoryid FROM categories WHERE abbreviation = 'AC')),
-('AC-ADP', 'Adapters & Connectors',  'ADP', (SELECT categoryid FROM categories WHERE abbreviation = 'AC')),
-('ICT-NSW','Network Switches',       'NSW', (SELECT categoryid FROM categories WHERE abbreviation = 'ICT')),
-('ICT-RAP','Routers & Access Points','RAP', (SELECT categoryid FROM categories WHERE abbreviation = 'ICT')),
-('ICT-SRV','Servers & Compute',      'SRV', (SELECT categoryid FROM categories WHERE abbreviation = 'ICT'))
-ON CONFLICT (subcategoryid) DO NOTHING;
-
--- Default manufacturers
-INSERT INTO manufacturer (name, website) VALUES
-('Shure',                  'https://www.shure.com'),
-('Sennheiser',              'https://www.sennheiser.com'),
-('d&b audiotechnik',        'https://www.dbaudio.com'),
-('L-Acoustics',             'https://www.l-acoustics.com'),
-('JBL Professional',        'https://jblpro.com'),
-('Yamaha',                  'https://usa.yamaha.com'),
-('QSC',                     'https://www.qsc.com'),
-('Crown International',     'https://www.crownaudio.com'),
-('Martin by Harman',        'https://www.martin.com'),
-('Robe Lighting',           'https://www.robe.cz'),
-('Chauvet Professional',    'https://www.chauvetprofessional.com'),
-('ETC',                     'https://www.etcconnect.com'),
-('GLP',                     'https://www.glp.de'),
-('Ayrton',                  'https://www.ayrton.eu'),
-('Claypaky',                'https://www.claypaky.it'),
-('Elation Professional',    'https://www.elationlighting.com'),
-('DiGiCo',                  'https://www.digico.biz'),
-('Midas',                   'https://www.midasconsoles.com'),
-('Allen & Heath',           'https://www.allen-heath.com'),
-('Roland',                  'https://www.roland.com'),
-('Blackmagic Design',       'https://www.blackmagicdesign.com'),
-('Panasonic',               'https://www.panasonic.com'),
-('Sony',                    'https://pro.sony'),
-('Christie',                'https://www.christiedigital.com'),
-('Barco',                   'https://www.barco.com'),
-('Prolyte Group',           'https://www.prolyte.com'),
-('Global Truss',            'https://www.global-truss.com'),
-('Neutrik',                 'https://www.neutrik.com'),
-('Amphenol',                'https://www.amphenol.com'),
-('Obsidian Control Systems','https://www.obsidiancontrol.com'),
-('MA Lighting',             'https://www.malighting.com'),
-('Avolites',                'https://www.avolites.com')
-ON CONFLICT DO NOTHING;
-
--- Default brands
-INSERT INTO brands (name, manufacturerid) VALUES
-('Shure',              (SELECT manufacturerid FROM manufacturer WHERE name = 'Shure')),
-('Sennheiser',         (SELECT manufacturerid FROM manufacturer WHERE name = 'Sennheiser')),
-('Neumann',            (SELECT manufacturerid FROM manufacturer WHERE name = 'Sennheiser')),
-('d&b audiotechnik',   (SELECT manufacturerid FROM manufacturer WHERE name = 'd&b audiotechnik')),
-('L-Acoustics',        (SELECT manufacturerid FROM manufacturer WHERE name = 'L-Acoustics')),
-('JBL Professional',   (SELECT manufacturerid FROM manufacturer WHERE name = 'JBL Professional')),
-('JBL',                (SELECT manufacturerid FROM manufacturer WHERE name = 'JBL Professional')),
-('Yamaha',             (SELECT manufacturerid FROM manufacturer WHERE name = 'Yamaha')),
-('Nexo',               (SELECT manufacturerid FROM manufacturer WHERE name = 'Yamaha')),
-('QSC',                (SELECT manufacturerid FROM manufacturer WHERE name = 'QSC')),
-('Crown',              (SELECT manufacturerid FROM manufacturer WHERE name = 'Crown International')),
-('Martin',             (SELECT manufacturerid FROM manufacturer WHERE name = 'Martin by Harman')),
-('Robe',               (SELECT manufacturerid FROM manufacturer WHERE name = 'Robe Lighting')),
-('Chauvet Professional',(SELECT manufacturerid FROM manufacturer WHERE name = 'Chauvet Professional')),
-('Chauvet DJ',         (SELECT manufacturerid FROM manufacturer WHERE name = 'Chauvet Professional')),
-('ETC',                (SELECT manufacturerid FROM manufacturer WHERE name = 'ETC')),
-('GLP',                (SELECT manufacturerid FROM manufacturer WHERE name = 'GLP')),
-('Ayrton',             (SELECT manufacturerid FROM manufacturer WHERE name = 'Ayrton')),
-('Claypaky',           (SELECT manufacturerid FROM manufacturer WHERE name = 'Claypaky')),
-('Elation',            (SELECT manufacturerid FROM manufacturer WHERE name = 'Elation Professional')),
-('DiGiCo',             (SELECT manufacturerid FROM manufacturer WHERE name = 'DiGiCo')),
-('Midas',              (SELECT manufacturerid FROM manufacturer WHERE name = 'Midas')),
-('Allen & Heath',      (SELECT manufacturerid FROM manufacturer WHERE name = 'Allen & Heath')),
-('Roland',             (SELECT manufacturerid FROM manufacturer WHERE name = 'Roland')),
-('BOSS',               (SELECT manufacturerid FROM manufacturer WHERE name = 'Roland')),
-('Blackmagic Design',  (SELECT manufacturerid FROM manufacturer WHERE name = 'Blackmagic Design')),
-('ATEM',               (SELECT manufacturerid FROM manufacturer WHERE name = 'Blackmagic Design')),
-('Panasonic',          (SELECT manufacturerid FROM manufacturer WHERE name = 'Panasonic')),
-('Sony',               (SELECT manufacturerid FROM manufacturer WHERE name = 'Sony')),
-('Christie',           (SELECT manufacturerid FROM manufacturer WHERE name = 'Christie')),
-('Barco',              (SELECT manufacturerid FROM manufacturer WHERE name = 'Barco')),
-('Prolyte',            (SELECT manufacturerid FROM manufacturer WHERE name = 'Prolyte Group')),
-('Global Truss',       (SELECT manufacturerid FROM manufacturer WHERE name = 'Global Truss')),
-('Neutrik',            (SELECT manufacturerid FROM manufacturer WHERE name = 'Neutrik')),
-('Amphenol',           (SELECT manufacturerid FROM manufacturer WHERE name = 'Amphenol')),
-('Onyx',               (SELECT manufacturerid FROM manufacturer WHERE name = 'Obsidian Control Systems')),
-('grandMA',            (SELECT manufacturerid FROM manufacturer WHERE name = 'MA Lighting')),
-('Avolites',           (SELECT manufacturerid FROM manufacturer WHERE name = 'Avolites'))
-ON CONFLICT DO NOTHING;
-
 -- Default company settings (empty template)
 INSERT INTO company_settings (company_name, country, currency, default_tax_rate) 
-VALUES ('My Company', 'Germany', 'EUR', 19.00)
+VALUES ('Meine Firma', 'Deutschland', 'EUR', 19.00)
 ON CONFLICT DO NOTHING;
 
 -- Default LED settings
@@ -1691,3 +1491,650 @@ CREATE INDEX IF NOT EXISTS idx_devices_available ON devices(status) WHERE status
 -- Default login: admin / admin
 -- User will be forced to change password on first login
 -- =============================================================================
+-- Stop here: below this point is archival migration dump and not part of bootstrap.
+\quit
+
+-- ===== Begin migrations from: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations =====
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/001_initial_schema.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/002_enhancement_features.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/003_package_device_enhancement.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/005_invoice_system.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/006_performance_indexes.sql ----
+
+-- Performance optimization indexes
+-- Add indexes for commonly searched fields and join operations
+
+-- Jobs table indexes
+CREATE INDEX IF NOT EXISTS idx_jobs_description ON jobs(description);
+CREATE INDEX IF NOT EXISTS idx_jobs_end_date ON jobs(endDate);
+CREATE INDEX IF NOT EXISTS idx_jobs_customer_id ON jobs(customerID);
+CREATE INDEX IF NOT EXISTS idx_jobs_status_id ON jobs(statusID);
+
+-- Customers table indexes  
+CREATE INDEX IF NOT EXISTS idx_customers_search ON customers(companyname, firstname, lastname);
+CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
+
+-- Devices table indexes
+CREATE INDEX IF NOT EXISTS idx_devices_search ON devices(deviceID, serialnumber);
+CREATE INDEX IF NOT EXISTS idx_devices_product_id ON devices(productID);
+CREATE INDEX IF NOT EXISTS idx_devices_status ON devices(status);
+
+-- Job devices junction table
+CREATE INDEX IF NOT EXISTS idx_job_devices_job_id ON jobdevices(jobID);
+CREATE INDEX IF NOT EXISTS idx_job_devices_device_id ON jobdevices(deviceID);
+CREATE INDEX IF NOT EXISTS idx_job_devices_composite ON jobdevices(jobID, deviceID);
+
+-- Financial transactions indexes
+CREATE INDEX IF NOT EXISTS idx_financial_transactions_status_type ON financial_transactions(status, type);
+CREATE INDEX IF NOT EXISTS idx_financial_transactions_date ON financial_transactions(transaction_date);
+CREATE INDEX IF NOT EXISTS idx_financial_transactions_due_date ON financial_transactions(due_date);
+CREATE INDEX IF NOT EXISTS idx_financial_transactions_customer ON financial_transactions(customerID);
+
+-- Invoices table indexes
+CREATE INDEX IF NOT EXISTS idx_invoices_customer_id ON invoices(customerID);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices(invoice_date);
+
+-- Sessions table cleanup index
+CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
+
+-- Composite indexes for common queries
+CREATE INDEX IF NOT EXISTS idx_jobs_customer_status ON jobs(customerID, statusID);
+CREATE INDEX IF NOT EXISTS idx_devices_product_status ON devices(productID, status);
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/006_performance_indexes.sql ----\n
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/007_equipment_packages.sql ----
+
+-- Add new fields for production-ready equipment packages
+
+ALTER TABLE equipment_packages ADD COLUMN IF NOT EXISTS max_rental_days INT;
+ALTER TABLE equipment_packages ADD COLUMN IF NOT EXISTS category VARCHAR(50);
+ALTER TABLE equipment_packages ADD COLUMN IF NOT EXISTS tags TEXT;
+ALTER TABLE equipment_packages ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMP;
+ALTER TABLE equipment_packages ADD COLUMN IF NOT EXISTS total_revenue DECIMAL(12,2) DEFAULT 0.00;
+
+CREATE INDEX IF NOT EXISTS idx_equipment_packages_category ON equipment_packages(category);
+CREATE INDEX IF NOT EXISTS idx_equipment_packages_active ON equipment_packages(is_active);
+CREATE INDEX IF NOT EXISTS idx_equipment_packages_usage ON equipment_packages(usage_count);
+
+CREATE INDEX IF NOT EXISTS idx_package_devices_package_id ON package_devices(package_id);
+CREATE INDEX IF NOT EXISTS idx_package_devices_device_id ON package_devices(device_id);
+
+-- Update existing package_items to be valid JSON if NULL
+UPDATE equipment_packages 
+SET package_items = '[]' 
+WHERE package_items IS NULL OR package_items = '';
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/007_equipment_packages.sql ----\n
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/008_company_settings.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/009_company_settings_german_fields.sql ----
+
+-- Migration: Add German Business Fields to Company Settings
+-- Description: Adds banking, legal, and invoice text fields for German compliance (GoBD)
+-- Date: 2025-06-20
+
+-- Add German banking fields
+ALTER TABLE company_settings
+ADD COLUMN IF NOT EXISTS bank_name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS iban VARCHAR(34),
+ADD COLUMN IF NOT EXISTS bic VARCHAR(11),
+ADD COLUMN IF NOT EXISTS account_holder VARCHAR(255);
+
+-- Add German legal fields
+ALTER TABLE company_settings
+ADD COLUMN IF NOT EXISTS ceo_name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS register_court VARCHAR(255),
+ADD COLUMN IF NOT EXISTS register_number VARCHAR(100);
+
+-- Add invoice text fields
+ALTER TABLE company_settings
+ADD COLUMN IF NOT EXISTS footer_text TEXT,
+ADD COLUMN IF NOT EXISTS payment_terms_text TEXT;
+
+-- Update existing record with German defaults if it exists
+UPDATE company_settings
+SET
+    country = 'Deutschland',
+    footer_text = 'Vielen Dank für Ihr Vertrauen!\n\nBei Fragen zu dieser Rechnung stehen wir Ihnen gerne zur Verfügung.',
+    payment_terms_text = 'Zahlbar innerhalb von 30 Tagen ohne Abzug.\n\nBei Zahlungsverzug behalten wir uns vor, Verzugszinsen in Höhe von 9 Prozentpunkten über dem Basiszinssatz zu berechnen.'
+WHERE id = 1;
+
+CREATE INDEX IF NOT EXISTS idx_company_settings_iban ON company_settings(iban);
+CREATE INDEX IF NOT EXISTS idx_company_settings_register_number ON company_settings(register_number);
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/009_company_settings_german_fields.sql ----\n
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/010_fix_sessions_foreign_key.sql ----
+
+-- Fix sessions table: ensure primary key exists; drop stale FK from users if present.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE table_name = 'sessions' AND constraint_type = 'PRIMARY KEY'
+    ) THEN
+        ALTER TABLE sessions ADD PRIMARY KEY (session_id);
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE table_name = 'users' AND constraint_name = 'fk_sessions_user'
+    ) THEN
+        ALTER TABLE users DROP CONSTRAINT fk_sessions_user;
+    END IF;
+END $$;
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/010_fix_sessions_foreign_key.sql ----\n
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/011_add_email_settings.sql ----
+
+-- Add email configuration fields to company_settings table
+ALTER TABLE company_settings
+ADD COLUMN IF NOT EXISTS smtp_host VARCHAR(255),
+ADD COLUMN IF NOT EXISTS smtp_port INT,
+ADD COLUMN IF NOT EXISTS smtp_username VARCHAR(255),
+ADD COLUMN IF NOT EXISTS smtp_password VARCHAR(255),
+ADD COLUMN IF NOT EXISTS smtp_from_email VARCHAR(255),
+ADD COLUMN IF NOT EXISTS smtp_from_name VARCHAR(255),
+ADD COLUMN IF NOT EXISTS smtp_use_tls BOOLEAN DEFAULT TRUE;
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/011_add_email_settings.sql ----\n
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/012_fix_user_preferences_fk.sql ----
+
+-- Fix Foreign Key Constraint for User Preferences
+-- The constraint was backwards - users should not reference user_preferences
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS fk_user_preferences_user;
+
+ALTER TABLE user_preferences
+  ADD CONSTRAINT fk_user_preferences_user
+  FOREIGN KEY (user_id) REFERENCES users (userid)
+  ON DELETE CASCADE;
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/012_fix_user_preferences_fk.sql ----\n
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/013_add_2fa_and_passkey_tables.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/013_add_job_code.sql ----
+
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_code VARCHAR(16);
+
+UPDATE jobs
+SET job_code = 'JOB' || LPAD(jobid::text, 6, '0')
+WHERE job_code IS NULL OR job_code = '';
+
+DO $$
+BEGIN
+    BEGIN
+        ALTER TABLE jobs ALTER COLUMN job_code SET NOT NULL;
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END;
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE table_name = 'jobs' AND constraint_name = 'ux_jobs_job_code'
+    ) THEN
+        ALTER TABLE jobs ADD CONSTRAINT ux_jobs_job_code UNIQUE (job_code);
+    END IF;
+END $$;
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/013_add_job_code.sql ----\n
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/021_add_pdf_package_mapping.sql ----
+
+-- Migration 021: Add package mapping support for OCR extraction items
+
+ALTER TABLE IF EXISTS pdf_extraction_items
+    ADD COLUMN IF NOT EXISTS mapped_package_id INT;
+
+CREATE INDEX IF NOT EXISTS idx_pdf_items_package
+    ON pdf_extraction_items(mapped_package_id);
+
+DO $$
+BEGIN
+    IF to_regclass('public.pdf_extraction_items') IS NOT NULL
+       AND to_regclass('public.product_packages') IS NOT NULL THEN
+        BEGIN
+            ALTER TABLE pdf_extraction_items
+                ADD CONSTRAINT fk_pdf_items_package
+                FOREIGN KEY (mapped_package_id)
+                REFERENCES product_packages(id)
+                ON DELETE SET NULL;
+        EXCEPTION
+            WHEN duplicate_object THEN NULL;
+        END;
+    END IF;
+END $$;
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/021_add_pdf_package_mapping.sql ----\n
+-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/021_create_rental_equipment_tables_corrected.down.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/021_create_rental_equipment_tables_corrected.up.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/022_fix_company_settings_datetime.sql ----
+
+-- Fix corrupted datetime values in company_settings table
+UPDATE company_settings
+SET created_at = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE created_at = '0000-00-00 00:00:00'
+   OR updated_at = '0000-00-00 00:00:00'
+   OR created_at IS NULL
+   OR updated_at IS NULL;
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/022_fix_company_settings_datetime.sql ----\n
+-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/023_create_job_attachments_table.down.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/023_create_job_attachments_table.up.sql ----
+-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/024_add_pack_workflow.down.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/024_add_pack_workflow.up.sql ----
+-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/025_create_user_dashboard_widgets.down.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/025_create_user_dashboard_widgets.up.sql ----
+-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/026_add_job_edit_sessions.down.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/026_add_job_edit_sessions.up.sql ----
+-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/027_add_pdf_totals.down.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/027_add_pdf_totals.up.sql ----
+
+-- Add total fields to pdf_extractions table
+ALTER TABLE pdf_extractions
+    ADD COLUMN IF NOT EXISTS parsed_total DECIMAL(10, 2),
+    ADD COLUMN IF NOT EXISTS discount_percent DECIMAL(5, 2);
+
+-- Note: discount_amount and total_amount columns already exist
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/027_add_pdf_totals.up.sql ----\n
+-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/028_add_job_history.down.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/028_add_job_history.up.sql ----
+-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/029_fix_sequences.down.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/029_fix_sequences.up.sql ----
+
+-- Migration: Fix PostgreSQL sequences to match current max IDs
+-- This prevents "duplicate key value violates unique constraint" errors
+-- when inserting new records into tables with auto-increment primary keys
+
+DO $$
+DECLARE
+    r RECORD;
+    max_val BIGINT;
+    table_name TEXT;
+    column_name TEXT;
+BEGIN
+    -- Loop through all sequences in the public schema
+    FOR r IN
+        SELECT
+            s.schemaname,
+            s.sequencename,
+            -- Extract table name from sequence name (e.g., "products_productID_seq" -> "products")
+            SPLIT_PART(s.sequencename, '_', 1) as base_table
+        FROM pg_sequences s
+        WHERE s.schemaname = 'public'
+    LOOP
+        BEGIN
+            -- Try to find the actual column name that uses this sequence
+            SELECT
+                t.table_name,
+                c.column_name
+            INTO table_name, column_name
+            FROM information_schema.columns c
+            JOIN information_schema.tables t ON c.table_name = t.table_name
+            WHERE t.table_schema = 'public'
+            AND c.table_schema = 'public'
+            AND pg_get_serial_sequence(t.table_name, c.column_name) = r.schemaname || '."' || r.sequencename || '"';
+
+            IF table_name IS NOT NULL AND column_name IS NOT NULL THEN
+                -- Get the current max value from the table
+                EXECUTE format(
+                    'SELECT COALESCE(MAX(%I), 0) FROM %I',
+                    column_name,
+                    table_name
+                ) INTO max_val;
+
+                IF max_val > 0 THEN
+                    -- Update the sequence to start from max + 1
+                    EXECUTE format('SELECT setval(%L, %s)', r.schemaname || '."' || r.sequencename || '"', max_val);
+                    RAISE NOTICE 'Fixed sequence %.% to % (table: %, column: %)',
+                        r.schemaname, r.sequencename, max_val, table_name, column_name;
+                END IF;
+            END IF;
+
+            -- Reset variables for next iteration
+            table_name := NULL;
+            column_name := NULL;
+
+        EXCEPTION
+            WHEN OTHERS THEN
+                -- Skip if there's any error (table doesn't exist, column doesn't exist, etc.)
+                RAISE NOTICE 'Skipping sequence % due to error: %', r.sequencename, SQLERRM;
+        END;
+    END LOOP;
+
+    RAISE NOTICE 'Sequence synchronization completed successfully';
+END$$;
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/029_fix_sequences.up.sql ----\n
+-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/030_fix_job_edit_sessions_postgres.down.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/030_fix_job_edit_sessions_postgres.up.sql ----
+
+-- PostgreSQL-specific fix for job_edit_sessions table
+-- Adds UNIQUE constraint on (job_id, user_id) required for ON CONFLICT
+
+-- Add UNIQUE constraint if it doesn't exist
+ALTER TABLE job_edit_sessions
+  DROP CONSTRAINT IF EXISTS job_edit_sessions_job_user_unique;
+
+ALTER TABLE job_edit_sessions
+  ADD CONSTRAINT job_edit_sessions_job_user_unique
+  UNIQUE (job_id, user_id);
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/030_fix_job_edit_sessions_postgres.up.sql ----\n
+-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/031_add_file_history_types.down.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/031_add_file_history_types.up.sql ----
+
+-- Add file_added and file_removed to job_history change_type.
+-- In PostgreSQL, change_type is VARCHAR so the app already accepts the new values.
+-- If job_history uses a named enum type, extend it safely.
+DO $$
+BEGIN
+    BEGIN
+        ALTER TYPE change_type ADD VALUE IF NOT EXISTS 'file_added';
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END;
+    BEGIN
+        ALTER TYPE change_type ADD VALUE IF NOT EXISTS 'file_removed';
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END;
+END $$;
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/031_add_file_history_types.up.sql ----\n
+-- ---- SKIP (down migration): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/032_seed_job_statuses.down.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/032_seed_job_statuses.up.sql ----
+
+INSERT INTO status (statusid, status) VALUES 
+(1, 'Draft'),
+(2, 'Confirmed'),
+(3, 'Active'),
+(4, 'Completed'),
+(5, 'Cancelled')
+ON CONFLICT (statusid) DO NOTHING;
+
+-- Update sequence to ensure next insert works
+SELECT setval('status_statusid_seq', (SELECT MAX(statusid) FROM status));
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/032_seed_job_statuses.up.sql ----\n
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/037_accessories_consumables_part2.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/037_accessories_consumables_part3.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/037_accessories_consumables.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/20251115_add_job_packages.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../rentalcore/migrations/compliance_tables.sql ----
+-- ===== Begin migrations from: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations =====
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/001_storage_zones.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/002_device_movements.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/003_scan_events.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/004_defect_reports.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/005_update_zone_types.sql ----
+
+-- Add gitterbox to zone_type enum if not already present (PostgreSQL-safe)
+DO $$
+BEGIN
+    BEGIN
+        ALTER TYPE zone_type ADD VALUE IF NOT EXISTS 'gitterbox';
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END;
+END $$;
+-- Note: 'warehouse' = Lager, 'rack' = Regal, 'gitterbox' = Gitterbox
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/005_update_zone_types.sql ----\n
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/006_add_zone_barcode.sql ----
+
+-- Add barcode field to storage_zones for Fächer
+-- Version 1.8 - 2025-10-14
+
+ALTER TABLE storage_zones
+ADD COLUMN IF NOT EXISTS barcode VARCHAR(255);
+
+CREATE INDEX IF NOT EXISTS idx_zone_barcode ON storage_zones(barcode);
+
+-- Generate barcodes for existing zones
+UPDATE storage_zones
+SET barcode = 'ZONE-' || LPAD(zone_id::text, 8, '0')
+WHERE barcode IS NULL AND type = 'shelf';
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/006_add_zone_barcode.sql ----\n
+-- ---- SKIP (rollback/destructive - not for unified init): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/007_rbac_system_down.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/007_rbac_system.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/008_assign_auto_admin.sql ----
+
+-- Migration 008: Auto-assign Admin Role to N. Thielmann
+DO $$
+DECLARE
+    v_admin_role_id INT;
+    v_wh_admin_role_id INT;
+    v_thielmann_user_id INT;
+BEGIN
+    SELECT roleid INTO v_admin_role_id FROM roles WHERE name = 'admin' LIMIT 1;
+    SELECT roleid INTO v_wh_admin_role_id FROM roles WHERE name = 'warehouse_admin' LIMIT 1;
+    SELECT userid INTO v_thielmann_user_id FROM users
+    WHERE (first_name || ' ' || last_name) LIKE '%Thielmann%'
+       OR username ILIKE '%thielmann%'
+       OR email ILIKE '%thielmann%'
+    LIMIT 1;
+
+    IF v_thielmann_user_id IS NOT NULL AND v_admin_role_id IS NOT NULL THEN
+        INSERT INTO user_roles (userid, roleid)
+        VALUES (v_thielmann_user_id, v_admin_role_id)
+        ON CONFLICT DO NOTHING;
+    END IF;
+    IF v_thielmann_user_id IS NOT NULL AND v_wh_admin_role_id IS NOT NULL THEN
+        INSERT INTO user_roles (userid, roleid)
+        VALUES (v_thielmann_user_id, v_wh_admin_role_id)
+        ON CONFLICT DO NOTHING;
+    END IF;
+END $$;
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/008_assign_auto_admin.sql ----\n
+-- ---- SKIP (rollback/destructive - not for unified init): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/009_update_led_defaults_down.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/009_update_led_defaults.sql ----
+
+-- Migration 009: Update LED defaults to warehouse standard (orange + breathe, intensity 180)
+
+INSERT INTO app_settings (scope, key, value)
+VALUES ('warehousecore', 'led.single_bin.default', '{"color": "#FF7A00", "pattern": "breathe", "intensity": 180}')
+ON CONFLICT (scope, key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP;
+
+-- Align zone_types default values for new rows
+ALTER TABLE zone_types ALTER COLUMN default_led_pattern SET DEFAULT 'breathe';
+ALTER TABLE zone_types ALTER COLUMN default_led_color SET DEFAULT '#FF7A00';
+ALTER TABLE zone_types ALTER COLUMN default_intensity SET DEFAULT 180;
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/009_update_led_defaults.sql ----\n
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/010_seed_core_roles.sql ----
+
+-- Migration 010: Ensure core roles exist (admin, manager, worker, viewer)
+
+INSERT INTO roles (name, display_name, description, permissions, is_system_role, is_active) VALUES
+('admin',   'Admin',   'Full access',       '["admin.*"]',        TRUE, TRUE),
+('manager', 'Manager', 'Manage operations', '["manage.*"]',       TRUE, TRUE),
+('worker',  'Worker',  'Operational tasks', '["warehouse.scan"]', TRUE, TRUE),
+('viewer',  'Viewer',  'Read-only',         '["view.*"]',         TRUE, TRUE)
+ON CONFLICT (name) DO NOTHING;
+
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/010_seed_core_roles.sql ----\n
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/011_sync_user_roles_wh.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/012_seed_super_admin.sql ----
+
+-- Migration 012: Ensure super_admin role exists (shared roles table)
+
+INSERT INTO roles (name, display_name, description, permissions, is_system_role, is_active)
+VALUES (
+    'super_admin',
+    'Super Admin',
+    'Global superuser with full access',
+    '["super_admin.*","admin.*"]',
+    TRUE,
+    TRUE
+)
+ON CONFLICT (name) DO NOTHING;
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/012_seed_super_admin.sql ----\n
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/013_add_job_code.sql ----
+
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_code VARCHAR(16);
+
+UPDATE jobs
+SET job_code = 'JOB' || LPAD(jobid::text, 6, '0')
+WHERE job_code IS NULL OR job_code = '';
+
+DO $$
+BEGIN
+    BEGIN
+        ALTER TABLE jobs ALTER COLUMN job_code SET NOT NULL;
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END;
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE table_name = 'jobs' AND constraint_name = 'ux_jobs_job_code'
+    ) THEN
+        ALTER TABLE jobs ADD CONSTRAINT ux_jobs_job_code UNIQUE (job_code);
+    END IF;
+END $$;
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/013_add_job_code.sql ----\n
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/014_add_led_controllers.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/015_extend_led_controllers.sql ----
+
+-- Extend LED controller metadata with network and status fields
+
+ALTER TABLE led_controllers
+  ADD COLUMN IF NOT EXISTS ip_address VARCHAR(64) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS hostname VARCHAR(255) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS firmware_version VARCHAR(64) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS mac_address VARCHAR(64) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS status_data JSONB DEFAULT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_led_controllers_last_seen ON led_controllers(last_seen);
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/015_extend_led_controllers.sql ----\n
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/016_create_label_templates.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/017_add_device_label_path.sql ----
+
+-- Add label_path column to devices table
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS label_path VARCHAR(512) DEFAULT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_devices_label_path ON devices(label_path);
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/017_add_device_label_path.sql ----\n
+-- ---- SKIP (rollback/destructive - not for unified init): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/018_update_zone_type_labels_down.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/018_update_zone_type_labels.sql ----
+
+-- Adjust default zone type labels so that "shelf" corresponds to Fächer and "rack" to Regale
+UPDATE zone_types
+SET label = 'Fach', description = 'Einzele Fach / Lagerfach'
+WHERE key = 'shelf';
+
+UPDATE zone_types
+SET label = 'Regal', description = 'Regal oder Gestell'
+WHERE key = 'rack';
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/018_update_zone_type_labels.sql ----\n
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/019_create_product_packages.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/020_add_package_codes_and_aliases.sql ----
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/021_create_product_dependencies.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/022_add_website_fields.sql ----
+
+-- Add website visibility and image selection for products
+ALTER TABLE products
+  ADD COLUMN IF NOT EXISTS website_visible BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS website_thumbnail VARCHAR(255) NULL,
+  ADD COLUMN IF NOT EXISTS website_images_json JSONB NULL;
+
+-- Add website visibility for packages (product packages table)
+ALTER TABLE product_packages
+  ADD COLUMN IF NOT EXISTS website_visible BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/022_add_website_fields.sql ----\n
+-- ---- SKIP (non-postgres syntax): /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/023_api_keys.sql ----
+-- ---- BEGIN: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/030_device_id_trigger.sql ----
+
+-- Migration: 030_device_id_trigger.sql
+-- Description: Create PostgreSQL trigger function for automatic device ID generation
+-- Converts MySQL trigger to PostgreSQL compatible function
+-- Date: 2025-12-17
+
+-- Drop existing trigger and function if they exist
+DROP TRIGGER IF EXISTS devices_before_insert ON devices;
+DROP FUNCTION IF EXISTS generate_device_id();
+
+-- Create the trigger function
+CREATE OR REPLACE FUNCTION generate_device_id()
+RETURNS TRIGGER AS $$
+DECLARE
+    abkuerzung VARCHAR(50);
+    pos_cat INT;
+    next_counter INT;
+BEGIN
+    -- Skip auto-generation for virtual package devices (start with PKG_)
+    IF NEW.deviceID IS NOT NULL AND NEW.deviceID LIKE 'PKG_%' THEN
+        RETURN NEW;
+    END IF;
+
+    -- 1) Get abbreviation from subcategory
+    SELECT s.abbreviation
+      INTO abkuerzung
+      FROM subcategories s
+      JOIN products p ON s.subcategoryID = p.subcategoryID
+     WHERE p.productID = NEW.productID
+     LIMIT 1;
+
+    -- If no abbreviation found, raise error
+    IF abkuerzung IS NULL THEN
+        RAISE EXCEPTION 'No abbreviation found for productID %', NEW.productID;
+    END IF;
+
+    -- 2) Get pos_in_category from product
+    SELECT COALESCE(p.pos_in_category, 0)
+      INTO pos_cat
+      FROM products p
+     WHERE p.productID = NEW.productID;
+
+    -- 3) Calculate next counter (max of last 3 digits + 1)
+    -- PostgreSQL uses SUBSTRING instead of RIGHT
+    SELECT COALESCE(MAX(
+        CASE
+            WHEN SUBSTRING(d.deviceID FROM LENGTH(d.deviceID) - 2) ~ '^[0-9]+$'
+            THEN CAST(SUBSTRING(d.deviceID FROM LENGTH(d.deviceID) - 2) AS INTEGER)
+            ELSE 0
+        END
+    ), 0) + 1
+      INTO next_counter
+      FROM devices d
+     WHERE d.deviceID LIKE abkuerzung || pos_cat || '%';
+
+    -- 4) Build deviceID (without hyphen)
+    NEW.deviceID := abkuerzung || pos_cat || LPAD(next_counter::TEXT, 3, '0');
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create the trigger
+CREATE TRIGGER devices_before_insert
+    BEFORE INSERT ON devices
+    FOR EACH ROW
+    WHEN (NEW.deviceID IS NULL)
+    EXECUTE FUNCTION generate_device_id();
+
+-- Create an index to speed up device ID lookups
+CREATE INDEX IF NOT EXISTS idx_devices_deviceid_pattern ON devices(deviceID);
+
+-- Comment on the function
+COMMENT ON FUNCTION generate_device_id() IS 'Auto-generates device IDs in format: {abbreviation}{pos_in_category}{counter:003d}';
+
+-- ---- END: /Users/samsjo02/Documents/script/rentalcore/cores/../warehousecore/migrations/030_device_id_trigger.sql ----\n
+
+-- ===== Final safety seed: ensure admin user exists =====
+INSERT INTO users (username, email, password_hash, first_name, last_name, is_admin, is_active, force_password_change)
+VALUES ('admin', 'admin@example.com', '$2a$10$AlHJcEvCFEXXAoxQ/S4XXeVy3coR0yHtTv0Pn3bHEH/z3t3jdGVru', 'System', 'Administrator', TRUE, TRUE, TRUE)
+ON CONFLICT (username) DO NOTHING;
+
+-- System user for background processes and audit logging
+INSERT INTO users (userid, username, email, password_hash, first_name, last_name, is_admin, is_active)
+VALUES (0, 'system', 'system@rentalcore.local', 'N/A', 'System', 'Internal', FALSE, FALSE)
+ON CONFLICT (userid) DO NOTHING;
+
+DO $$
+DECLARE
+  admin_user_id INT;
+BEGIN
+  SELECT userid INTO admin_user_id FROM users WHERE username = 'admin';
+  IF admin_user_id IS NOT NULL THEN
+    INSERT INTO user_roles (userid, roleid)
+    SELECT admin_user_id, roleid FROM roles WHERE name IN ('super_admin', 'admin', 'warehouse_admin')
+    ON CONFLICT (userid, roleid) DO NOTHING;
+  END IF;
+END $$;
+
+/* End of unified migrations */

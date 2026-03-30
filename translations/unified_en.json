@@ -1,0 +1,52 @@
+{
+  "navbar": {
+    "toggle_sidebar": "Toggle sidebar",
+    "toggle_menu": "Toggle menu",
+    "brand_rental": "Rental",
+    "brand_core": "Core",
+    "crosslink_warehousecore": "WarehouseCore",
+    "file_pool": "File Pool",
+    "close_menu": "Close menu"
+  },
+  "login": {
+    "tagline": "The future of rental management",
+    "secure_footer": "Secure login with encrypted passwords & passkeys",
+    "signing_in": "Signing in...",
+    "passkey_not_supported": "Passkeys are not supported in this browser",
+    "auth_failed_prefix": "Authentication failed: "
+  },
+"about": {
+  "title": "About",
+  "description": "Learn about the RentalCore system and version info",
+  "version_label": "Version",
+  "license_label": "License"
+},
+"customers": {
+  "title": "Customers",
+  "search_placeholder": "Search customers by name or email",
+  "empty_state": "No customers found",
+  "add_button": "Add customer",
+  "table_header_name": "Name",
+  "table_header_email": "Email",
+  "table_header_actions": "Actions"
+},
+"invoices": {
+  "title": "Invoices",
+  "search_placeholder": "Search invoices by number or customer",
+  "empty_state": "No invoices available",
+  "create_button": "Create invoice",
+  "table_header_number": "Invoice #",
+  "table_header_customer": "Customer",
+  "table_header_amount": "Amount",
+  "table_header_status": "Status"
+},
+"devices": {
+  "title": "Devices",
+  "search_placeholder": "Search devices by name or serial",
+  "empty_state": "No devices registered",
+  "add_button": "Register device",
+  "table_header_name": "Device Name",
+  "table_header_serial": "Serial",
+  "table_header_status": "Status"
+}
+}

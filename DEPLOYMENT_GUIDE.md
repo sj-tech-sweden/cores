@@ -123,18 +123,18 @@ docker compose logs -f postgres
 
 ### Default Job Statuses
 
-- Planung (Planning)
-- Vorbereitung (Preparation)
-- Aktiv (Active)
-- Abgeschlossen (Completed)
-- Abgerechnet (Invoiced)
-- Storniert (Cancelled)
-- Pausiert (On Hold)
+- Planning
+- Preparation
+- Active
+- Completed
+- Invoiced
+- Cancelled
+- On Hold
 
 ### Default Storage Zones
 
-- `MAIN-WH` - Hauptlager (Main Warehouse)
-- `STAGE` - Staging-Bereich
+- `MAIN-WH` - Main Warehouse
+- `STAGE` - Staging Area
 
 ---
 

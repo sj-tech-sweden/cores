@@ -1,0 +1,52 @@
+{
+  "navbar": {
+    "toggle_sidebar": "Seitenleiste umschalten",
+    "toggle_menu": "Menü umschalten",
+    "brand_rental": "Rental",
+    "brand_core": "Core",
+    "crosslink_warehousecore": "WarehouseCore",
+    "file_pool": "Datei-Pool",
+    "close_menu": "Menü schließen"
+  },
+  "login": {
+    "tagline": "Die Zukunft der Vermietungsverwaltung",
+    "secure_footer": "Sichere Anmeldung mit verschlüsselten Passwörtern & Passkeys",
+    "signing_in": "Anmeldung...",
+    "passkey_not_supported": "Passkeys werden in diesem Browser nicht unterstützt",
+    "auth_failed_prefix": "Authentifizierung fehlgeschlagen: "
+  },
+"about": {
+  "title": "Über",
+  "description": "Informationen zum RentalCore System und Versionshinweise",
+  "version_label": "Version",
+  "license_label": "Lizenz"
+},
+"customers": {
+  "title": "Kunden",
+  "search_placeholder": "Kunden nach Name oder E-Mail suchen",
+  "empty_state": "Keine Kunden gefunden",
+  "add_button": "Kunden hinzufügen",
+  "table_header_name": "Name",
+  "table_header_email": "E-Mail",
+  "table_header_actions": "Aktionen"
+},
+"invoices": {
+  "title": "Rechnungen",
+  "search_placeholder": "Rechnungen nach Nummer oder Kunde suchen",
+  "empty_state": "Keine Rechnungen vorhanden",
+  "create_button": "Rechnung erstellen",
+  "table_header_number": "Rechnungs-Nr.",
+  "table_header_customer": "Kunde",
+  "table_header_amount": "Betrag",
+  "table_header_status": "Status"
+},
+"devices": {
+  "title": "Geräte",
+  "search_placeholder": "Geräte nach Name oder Seriennummer suchen",
+  "empty_state": "Keine Geräte registriert",
+  "add_button": "Gerät registrieren",
+  "table_header_name": "Gerätename",
+  "table_header_serial": "Seriennummer",
+  "table_header_status": "Status"
+}
+}
