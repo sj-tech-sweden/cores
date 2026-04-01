@@ -1,0 +1,10 @@
+FROM postgres:18-alpine
+
+WORKDIR /app
+
+COPY migrations/postgresql /migrations/postgresql
+COPY scripts/k8s/run_migrations.sh /usr/local/bin/run-migrations.sh
+
+RUN chmod +x /usr/local/bin/run-migrations.sh
+
+ENTRYPOINT ["/usr/local/bin/run-migrations.sh"]

@@ -220,6 +220,25 @@ docker compose exec rentalcore env | grep -E "DB_|POSTGRES"
 
 ## 🔄 Common Operations
 
+### Run Unified Migrations in Kubernetes
+
+Use the provided Job manifest:
+
+```bash
+kubectl apply -f k8s/examples/migrations-job.yaml
+kubectl logs -n rentalcore job/cores-db-migrate -f
+```
+
+What this does:
+- Pulls `ghcr.io/<owner>/cores-migrations:<tag or latest>`
+- Waits for PostgreSQL availability
+- Applies pending SQL files in `migrations/postgresql`
+- Records each applied file in `schema_migrations`
+- Uses a PostgreSQL advisory lock to prevent concurrent migration runs
+
+The example includes Helm hook annotations (`pre-install,pre-upgrade`) so it can
+be used as a pre-upgrade migration job in Helm-based deployments.
+
 ### Complete Reset (Fresh Install)
 
 ```bash

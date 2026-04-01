@@ -306,6 +306,46 @@ docker run --rm -v cores_postgres-backups:/backups alpine ls -la /backups
 docker compose exec -T postgres psql -U rentalcore rentalcore < backup.sql
 ```
 
+### Unified Migration Image (GHCR)
+
+This repository now ships a dedicated migration image that runs all SQL files in
+`migrations/postgresql` exactly once, tracked in `schema_migrations`.
+
+- Docker build file: `Dockerfile.migrations`
+- Runtime script: `scripts/k8s/run_migrations.sh`
+- Release workflow: `.github/workflows/release-migrations-on-merge-label.yml`
+- Label check workflow: `.github/workflows/require-release-label.yml`
+
+Release behavior:
+
+- Merged PR with label `patch`, `minor`, or `major` creates a new semantic tag.
+- A GitHub Release is created from that tag.
+- Migration image is pushed to GHCR as:
+   - `ghcr.io/<owner>/cores-migrations:<version>`
+   - `ghcr.io/<owner>/cores-migrations:latest`
+
+Manual local build example:
+
+```bash
+docker build -f Dockerfile.migrations -t ghcr.io/<owner>/cores-migrations:local .
+```
+
+Manual run example:
+
+```bash
+docker run --rm \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_NAME=rentalcore \
+   -e DB_USER=rentalcore \
+   -e DB_PASSWORD=rentalcore123 \
+   ghcr.io/<owner>/cores-migrations:local
+```
+
+Kubernetes example job:
+
+- `k8s/examples/migrations-job.yaml`
+
 ---
 
 ## 🛠️ Troubleshooting
