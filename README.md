@@ -51,7 +51,7 @@ Deploy both applications on any server with a single `docker compose up -d` comm
 **Port:** 8082
 
 ### **Shared Components**
-- **PostgreSQL 18** - Shared database (auto-initialized)
+- **PostgreSQL** - Shared database (auto-initialized)
 - **Mosquitto MQTT** - LED control broker (included)
 - **Automatic Backups** - Daily database backups with retention
 
