@@ -1,6 +1,6 @@
 # 🎯 Tsunami Events - Core Management Systems
 
-Fork from [https://git.server-nt.de/ntielmann/cores](https://git.server-nt.de/ntielmann/cores)
+Repository: [https://github.com/sj-tech-sweden/cores](https://github.com/sj-tech-sweden/cores)
 
 **Complete Docker-based deployment for RentalCore and WarehouseCore**
 
@@ -35,7 +35,7 @@ Deploy both applications on any server with a single `docker compose up -d` comm
 - Device assignment and availability tracking
 - PDF processing with OCR and intelligent product mapping
 
-**Repository:** [git.server-nt.de/ntielmann/rentalcore](https://git.server-nt.de/ntielmann/rentalcore)
+**Repository:** [github.com/sj-tech-sweden/rentalcore](https://github.com/sj-tech-sweden/rentalcore)
 **Docker Image:** `nobentie/rentalcore:5.3.0` (`latest`)
 **Port:** 8081
 
@@ -46,12 +46,12 @@ Deploy both applications on any server with a single `docker compose up -d` comm
 - Real-time inventory status and barcode scanning
 - Case and cable management
 
-**Repository:** [git.server-nt.de/ntielmann/warehousecore](https://git.server-nt.de/ntielmann/warehousecore)
+**Repository:** [github.com/sj-tech-sweden/warehousecore](https://github.com/sj-tech-sweden/warehousecore)
 **Docker Image:** `nobentie/warehousecore:5.8.0` (`latest`)
 **Port:** 8082
 
 ### **Shared Components**
-- **PostgreSQL 16** - Shared database (auto-initialized)
+- **PostgreSQL** - Shared database (auto-initialized)
 - **Mosquitto MQTT** - LED control broker (included)
 - **Automatic Backups** - Daily database backups with retention
 
@@ -70,7 +70,7 @@ Deploy both applications on any server with a single `docker compose up -d` comm
 
 1. **Clone this repository:**
 ```bash
-git clone https://git.server-nt.de/ntielmann/cores.git
+git clone https://github.com/sj-tech-sweden/cores.git
 cd cores
 ```
 
@@ -390,9 +390,9 @@ docker compose pull
 
 ### Repositories
 
-- **This Deployment Repo**: [git.server-nt.de/ntielmann/cores](https://git.server-nt.de/ntielmann/cores)
-- **RentalCore**: [git.server-nt.de/ntielmann/rentalcore](https://git.server-nt.de/ntielmann/rentalcore)
-- **WarehouseCore**: [git.server-nt.de/ntielmann/warehousecore](https://git.server-nt.de/ntielmann/warehousecore)
+- **This Deployment Repo**: [github.com/sj-tech-sweden/cores](https://github.com/sj-tech-sweden/cores)
+- **RentalCore**: [github.com/sj-tech-sweden/rentalcore](https://github.com/sj-tech-sweden/rentalcore)
+- **WarehouseCore**: [github.com/sj-tech-sweden/warehousecore](https://github.com/sj-tech-sweden/warehousecore)
 
 ### Docker Images
 
