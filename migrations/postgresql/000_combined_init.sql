@@ -230,8 +230,9 @@ BEGIN
     SELECT format_type(a.atttypid, a.atttypmod)
       INTO coltype
     FROM pg_attribute a
-    JOIN pg_class c ON a.attrelid = c.oid
-    WHERE c.relname = 'app_settings' AND a.attname = 'v';
+    WHERE a.attrelid = 'app_settings'::regclass
+      AND a.attname = 'v'
+      AND NOT a.attisdropped;
 
     IF coltype = 'jsonb' THEN
         EXECUTE 'UPDATE app_settings SET v = value::jsonb WHERE v IS NULL';
@@ -754,7 +755,8 @@ CREATE INDEX IF NOT EXISTS idx_cables_connector2 ON cables(connector2);
 CREATE INDEX IF NOT EXISTS idx_cables_type ON cables(typ);
 
 -- Ensure connector uniqueness to make seeding idempotent across runs
-CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_cable_connectors ON cable_connectors(name, abbreviation, gender);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_cable_connectors
+    ON cable_connectors(name, abbreviation NULLS NOT DISTINCT, gender NULLS NOT DISTINCT);
 -- Ensure cable types are unique to avoid duplicate seeds
 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_cable_types ON cable_types(name);
 

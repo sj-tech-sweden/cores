@@ -927,7 +927,7 @@ INSERT INTO cable_connectors (cable_connectorsID, name, abbreviation, gender) VA
 (1026,'Kaltgerätestecker',NULL,'male'),
 (1028,'Kombi (XLR + PC)','Kombi','male'),
 (1029,'Kombi (XLR + PC)','Kombi','female')
-ON CONFLICT (name, abbreviation, gender) DO NOTHING;
+ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS "cable_types" (
   "cable_typesID" INTEGER NOT NULL,
   "name" TEXT NOT NULL,
@@ -945,7 +945,7 @@ INSERT INTO cable_types (cable_typesID, name) VALUES
 (1008,'HDMI'),
 (1009,'Displayport'),
 (1011,'Kombi (Strom+DMX)')
-ON CONFLICT (name) DO NOTHING;
+ON CONFLICT (cable_typesID) DO NOTHING;
 CREATE TABLE IF NOT EXISTS "status" (
   "statusID" INTEGER NOT NULL,
   "status" TEXT NOT NULL,

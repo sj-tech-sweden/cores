@@ -1,6 +1,6 @@
 # 🎯 Tsunami Events - Core Management Systems
 
-Forked from:[https://git.server-nt.de/ntielmann/cores](https://git.server-nt.de/ntielmann/cores)
+Forked from: [https://git.server-nt.de/ntielmann/cores](https://git.server-nt.de/ntielmann/cores)
 
 Repository: [https://github.com/sj-tech-sweden/cores](https://github.com/sj-tech-sweden/cores)
 
