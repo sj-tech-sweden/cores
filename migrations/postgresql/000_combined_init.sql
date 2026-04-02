@@ -221,7 +221,25 @@ CREATE TABLE IF NOT EXISTS app_settings (
 ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS k VARCHAR(100);
 ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS v TEXT;
 UPDATE app_settings SET k = key WHERE k IS NULL;
-UPDATE app_settings SET v = value WHERE v IS NULL;
+-- Ensure we update the compatibility column `v` in a way that handles
+-- existing deployments where `v` may already be JSONB.
+DO $$
+DECLARE
+    coltype TEXT;
+BEGIN
+    SELECT format_type(a.atttypid, a.atttypmod)
+      INTO coltype
+    FROM pg_attribute a
+    JOIN pg_class c ON a.attrelid = c.oid
+    WHERE c.relname = 'app_settings' AND a.attname = 'v';
+
+    IF coltype = 'jsonb' THEN
+        EXECUTE 'UPDATE app_settings SET v = value::jsonb WHERE v IS NULL';
+    ELSE
+        EXECUTE 'UPDATE app_settings SET v = value WHERE v IS NULL';
+    END IF;
+END;
+$$;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_app_settings_scope_k ON app_settings(scope, k);
 
 CREATE OR REPLACE FUNCTION sync_app_settings_compat()
