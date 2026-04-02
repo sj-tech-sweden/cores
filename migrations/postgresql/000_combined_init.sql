@@ -221,7 +221,26 @@ CREATE TABLE IF NOT EXISTS app_settings (
 ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS k VARCHAR(100);
 ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS v TEXT;
 UPDATE app_settings SET k = key WHERE k IS NULL;
-UPDATE app_settings SET v = value WHERE v IS NULL;
+-- Ensure we update the compatibility column `v` in a way that handles
+-- existing deployments where `v` may already be JSONB.
+DO $$
+DECLARE
+    coltype TEXT;
+BEGIN
+    SELECT format_type(a.atttypid, a.atttypmod)
+      INTO coltype
+    FROM pg_attribute a
+    WHERE a.attrelid = 'app_settings'::regclass
+      AND a.attname = 'v'
+      AND NOT a.attisdropped;
+
+    IF coltype = 'jsonb' THEN
+        EXECUTE 'UPDATE app_settings SET v = value::jsonb WHERE v IS NULL';
+    ELSE
+        EXECUTE 'UPDATE app_settings SET v = value WHERE v IS NULL';
+    END IF;
+END;
+$$;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_app_settings_scope_k ON app_settings(scope, k);
 
 CREATE OR REPLACE FUNCTION sync_app_settings_compat()
@@ -734,6 +753,12 @@ CREATE TABLE IF NOT EXISTS cables (
 CREATE INDEX IF NOT EXISTS idx_cables_connector1 ON cables(connector1);
 CREATE INDEX IF NOT EXISTS idx_cables_connector2 ON cables(connector2);
 CREATE INDEX IF NOT EXISTS idx_cables_type ON cables(typ);
+
+-- Ensure connector uniqueness to make seeding idempotent across runs
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_cable_connectors
+    ON cable_connectors(name, abbreviation, gender);
+-- Ensure cable types are unique to avoid duplicate seeds
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_cable_types ON cable_types(name);
 
 -- Company settings table
 CREATE TABLE IF NOT EXISTS "company_settings" (

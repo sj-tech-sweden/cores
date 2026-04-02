@@ -897,49 +897,55 @@ CREATE TABLE IF NOT EXISTS "cable_connectors" (
   "gender" TEXT DEFAULT NULL,
   PRIMARY KEY ("cable_connectorsID")
 );
-INSERT INTO cable_connectors VALUES(1001,'Schutzkontaktstecker','Schuko','male');
-INSERT INTO cable_connectors VALUES(1002,'XLR 3P',NULL,'male');
-INSERT INTO cable_connectors VALUES(1003,'XLR 3P',NULL,'female');
-INSERT INTO cable_connectors VALUES(1004,'PowerCon In','PC - In',NULL);
-INSERT INTO cable_connectors VALUES(1005,'Powercon Out','PC - Out',NULL);
-INSERT INTO cable_connectors VALUES(1006,'Schutzkontaktstecker','Schuko','female');
-INSERT INTO cable_connectors VALUES(1007,'HDMI',NULL,NULL);
-INSERT INTO cable_connectors VALUES(1008,'Displayport','DP',NULL);
-INSERT INTO cable_connectors VALUES(1009,'USB A',NULL,'female');
-INSERT INTO cable_connectors VALUES(1010,'USB B',NULL,'female');
-INSERT INTO cable_connectors VALUES(1011,'USB C',NULL,'female');
-INSERT INTO cable_connectors VALUES(1012,'Chinch',NULL,'female');
-INSERT INTO cable_connectors VALUES(1013,'Chinch',NULL,'male');
-INSERT INTO cable_connectors VALUES(1014,'Klinke 3,5mm',NULL,'female');
-INSERT INTO cable_connectors VALUES(1015,'Klinke 3,5mm',NULL,'male');
-INSERT INTO cable_connectors VALUES(1016,'Klinke 6,35mm',NULL,'female');
-INSERT INTO cable_connectors VALUES(1017,'Klinke 6,35mm',NULL,'male');
-INSERT INTO cable_connectors VALUES(1018,'Midi',NULL,NULL);
-INSERT INTO cable_connectors VALUES(1019,'XLR 5P',NULL,'male');
-INSERT INTO cable_connectors VALUES(1020,'XLR 5P',NULL,'female');
-INSERT INTO cable_connectors VALUES(1021,'USB A',NULL,'male');
-INSERT INTO cable_connectors VALUES(1022,'USB B',NULL,'male');
-INSERT INTO cable_connectors VALUES(1023,'USB C',NULL,'male');
-INSERT INTO cable_connectors VALUES(1024,'RJ45',NULL,NULL);
-INSERT INTO cable_connectors VALUES(1025,'Kaltgerätestecker',NULL,'female');
-INSERT INTO cable_connectors VALUES(1026,'Kaltgerätestecker',NULL,'male');
-INSERT INTO cable_connectors VALUES(1028,'Kombi (XLR + PC)','Kombi','male');
-INSERT INTO cable_connectors VALUES(1029,'Kombi (XLR + PC)','Kombi','female');
+-- Seed cable connectors idempotently
+INSERT INTO cable_connectors (cable_connectorsID, name, abbreviation, gender) VALUES
+(1001,'Schutzkontaktstecker','Schuko','male'),
+(1002,'XLR 3P',NULL,'male'),
+(1003,'XLR 3P',NULL,'female'),
+(1004,'PowerCon In','PC - In',NULL),
+(1005,'PowerCon Out','PC - Out',NULL),
+(1006,'Schutzkontaktstecker','Schuko','female'),
+(1007,'HDMI',NULL,NULL),
+(1008,'Displayport','DP',NULL),
+(1009,'USB A',NULL,'female'),
+(1010,'USB B',NULL,'female'),
+(1011,'USB C',NULL,'female'),
+(1012,'Chinch',NULL,'female'),
+(1013,'Chinch',NULL,'male'),
+(1014,'Klinke 3,5mm',NULL,'female'),
+(1015,'Klinke 3,5mm',NULL,'male'),
+(1016,'Klinke 6,35mm',NULL,'female'),
+(1017,'Klinke 6,35mm',NULL,'male'),
+(1018,'Midi',NULL,NULL),
+(1019,'XLR 5P',NULL,'male'),
+(1020,'XLR 5P',NULL,'female'),
+(1021,'USB A',NULL,'male'),
+(1022,'USB B',NULL,'male'),
+(1023,'USB C',NULL,'male'),
+(1024,'RJ45',NULL,NULL),
+(1025,'Kaltgerätestecker',NULL,'female'),
+(1026,'Kaltgerätestecker',NULL,'male'),
+(1028,'Kombi (XLR + PC)','Kombi','male'),
+(1029,'Kombi (XLR + PC)','Kombi','female')
+ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS "cable_types" (
   "cable_typesID" INTEGER NOT NULL,
   "name" TEXT NOT NULL,
   PRIMARY KEY ("cable_typesID")
 );
-INSERT INTO cable_types VALUES(1001,'Strom');
-INSERT INTO cable_types VALUES(1002,'Audio');
-INSERT INTO cable_types VALUES(1003,'DMX');
-INSERT INTO cable_types VALUES(1004,'CAT 6');
-INSERT INTO cable_types VALUES(1005,'CAT 6a');
-INSERT INTO cable_types VALUES(1006,'CAT 7');
-INSERT INTO cable_types VALUES(1007,'CAT 8');
-INSERT INTO cable_types VALUES(1008,'HDMI');
-INSERT INTO cable_types VALUES(1009,'Displayport');
-INSERT INTO cable_types VALUES(1011,'Kombi (Strom+DMX)');
+-- Seed cable types idempotently
+INSERT INTO cable_types (cable_typesID, name) VALUES
+(1001,'Strom'),
+(1002,'Audio'),
+(1003,'DMX'),
+(1004,'CAT 6'),
+(1005,'CAT 6a'),
+(1006,'CAT 7'),
+(1007,'CAT 8'),
+(1008,'HDMI'),
+(1009,'Displayport'),
+(1011,'Kombi (Strom+DMX)')
+ON CONFLICT (cable_typesID) DO NOTHING;
 CREATE TABLE IF NOT EXISTS "status" (
   "statusID" INTEGER NOT NULL,
   "status" TEXT NOT NULL,
