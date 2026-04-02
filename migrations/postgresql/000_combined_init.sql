@@ -753,6 +753,11 @@ CREATE INDEX IF NOT EXISTS idx_cables_connector1 ON cables(connector1);
 CREATE INDEX IF NOT EXISTS idx_cables_connector2 ON cables(connector2);
 CREATE INDEX IF NOT EXISTS idx_cables_type ON cables(typ);
 
+-- Ensure connector uniqueness to make seeding idempotent across runs
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_cable_connectors ON cable_connectors(name, abbreviation, gender);
+-- Ensure cable types are unique to avoid duplicate seeds
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_cable_types ON cable_types(name);
+
 -- Company settings table
 CREATE TABLE IF NOT EXISTS "company_settings" (
     "id" SERIAL PRIMARY KEY,
