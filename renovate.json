@@ -9,10 +9,6 @@
   "labels": [
     "dependencies"
   ],
-  "ignoreDeps": [
-    "rentalcore",
-    "warehousecore"
-  ],
   "docker-compose": {
     "enabled": true
   },
@@ -39,8 +35,8 @@
   "customManagers": [
     {
       "customType": "regex",
-      "managerFilePatterns": [
-        "/(^|/)README\\.md$/"
+      "fileMatch": [
+        "(^|/)README\\.md$"
       ],
       "matchStrings": [
         "\\*\\*Docker Image:\\*\\* `(?<depName>ghcr\\.io/sj-tech-sweden/rentalcore):(?<currentValue>[^`]+)`",

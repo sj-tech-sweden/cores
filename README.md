@@ -12,13 +12,13 @@ An integrated equipment rental and warehouse management solution for professiona
 
 - [Overview](#-overview)
 - [Quick Start](#-quick-start)
-- [System Architecture](#system-architecture)
-- [Configuration](#configuration)
+- [System Architecture](#-system-architecture)
+- [Configuration](#-configuration)
 - [Deployment Scenarios](#-deployment-scenarios)
 - [Default User & Roles](#-default-user--roles)
 - [Service Management](#-service-management)
 - [Updates & Maintenance](#-updates--maintenance)
-- [Troubleshooting](#troubleshooting)
+- [Troubleshooting](#-troubleshooting)
 - [Project Links](#-project-links)
 
 ---
@@ -37,7 +37,7 @@ Deploy both applications on any server with a single `docker compose up -d` comm
 - PDF processing with OCR and intelligent product mapping
 
 **Repository:** [github.com/sj-tech-sweden/rentalcore](https://github.com/sj-tech-sweden/rentalcore)
-**Docker Image:** `ghcr.io/sj-tech-sweden/rentalcore:0.0.5` (`latest`)
+**Docker Image:** `ghcr.io/sj-tech-sweden/rentalcore:0.0.5`
 **Port:** 8081
 
 ### WarehouseCore - Warehouse Management
@@ -49,7 +49,7 @@ Deploy both applications on any server with a single `docker compose up -d` comm
 - Case and cable management
 
 **Repository:** [github.com/sj-tech-sweden/warehousecore](https://github.com/sj-tech-sweden/warehousecore)
-**Docker Image:** `ghcr.io/sj-tech-sweden/warehousecore:0.1.0` (`latest`)
+**Docker Image:** `ghcr.io/sj-tech-sweden/warehousecore:0.1.0`
 **Port:** 8082
 
 ### Shared Components
@@ -104,7 +104,7 @@ docker compose up -d
 
 ---
 
-## 🏗️ System Architecture {#system-architecture}
+## 🏗️ System Architecture
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
@@ -147,7 +147,7 @@ docker compose up -d
 
 ---
 
-## ⚙️ Configuration {#configuration}
+## ⚙️ Configuration
 
 ### Environment Variables (`.env`)
 
@@ -213,6 +213,20 @@ COOKIE_DOMAIN=.example.com
 1. Use nginx reverse proxy (see `nginx-reverse-proxy.conf`)
 
 1. Add SSL with Let's Encrypt:
+
+   - Install Certbot and its nginx plugin (see your distro docs), for example on Debian/Ubuntu:
+     ```bash
+     sudo apt-get update
+     sudo apt-get install certbot python3-certbot-nginx
+     ```
+   - Obtain and install certificates for your subdomains:
+     ```bash
+     sudo certbot --nginx -d rent.example.com -d warehouse.example.com
+     ```
+   - Follow the prompts to configure HTTPS and automatic redirection. Certbot will also set up automatic renewal via `systemd`/cron; you can test it with:
+     ```bash
+     sudo certbot renew --dry-run
+     ```
 
 ---
 
@@ -352,7 +366,7 @@ Kubernetes example job:
 
 ---
 
-## 🛠️ Troubleshooting {#troubleshooting}
+## 🛠️ Troubleshooting
 
 ### First Start Issues
 
