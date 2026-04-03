@@ -2,8 +2,7 @@
 -- Description: Creates the product-level requirements table for jobs. This
 --              migration stores the required quantity of each product without
 --              pre-assigning specific devices; actual device assignment happens
---              later in WarehouseCore during scanning. The filename is legacy,
---              but the schema object created here is job_product_requirements.
+--              later in WarehouseCore during scanning.
 
 CREATE TABLE IF NOT EXISTS job_product_requirements (
     requirement_id SERIAL PRIMARY KEY,
