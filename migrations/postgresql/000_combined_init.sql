@@ -472,6 +472,45 @@ CREATE INDEX IF NOT EXISTS idx_job_devices_jobid ON job_devices(jobid);
 CREATE INDEX IF NOT EXISTS idx_job_devices_deviceid ON job_devices(deviceid);
 CREATE INDEX IF NOT EXISTS idx_job_devices_pack_status ON job_devices(pack_status);
 
+-- jobdevices: updatable view for WarehouseCore compatibility.
+-- WarehouseCore raw SQL uses the legacy name "jobdevices" (from SQLite).
+-- RentalCore's GORM model uses "job_devices". INSTEAD OF triggers keep both in sync.
+CREATE OR REPLACE VIEW jobdevices AS
+SELECT jobid, deviceid, custom_price, package_id, is_package_item, pack_status, pack_ts
+FROM job_devices;
+
+CREATE OR REPLACE FUNCTION jobdevices_instead_insert()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+    INSERT INTO job_devices (jobid, deviceid, custom_price, package_id, is_package_item, pack_status, pack_ts)
+    VALUES (NEW.jobid, NEW.deviceid, NEW.custom_price, NEW.package_id,
+            COALESCE(NEW.is_package_item, FALSE), COALESCE(NEW.pack_status, 'pending'), NEW.pack_ts)
+    ON CONFLICT (jobid, deviceid) DO UPDATE
+        SET pack_status = EXCLUDED.pack_status, pack_ts = EXCLUDED.pack_ts
+    RETURNING jobid, deviceid, custom_price, package_id, is_package_item, pack_status, pack_ts
+        INTO NEW.jobid, NEW.deviceid, NEW.custom_price, NEW.package_id,
+             NEW.is_package_item, NEW.pack_status, NEW.pack_ts;
+    RETURN NEW;
+END; $$;
+
+DROP TRIGGER IF EXISTS tr_jobdevices_insert ON jobdevices;
+CREATE TRIGGER tr_jobdevices_insert
+    INSTEAD OF INSERT ON jobdevices FOR EACH ROW EXECUTE FUNCTION jobdevices_instead_insert();
+
+CREATE OR REPLACE FUNCTION jobdevices_instead_update()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+    UPDATE job_devices
+    SET deviceid = NEW.deviceid, pack_status = NEW.pack_status, pack_ts = NEW.pack_ts,
+        custom_price = NEW.custom_price, package_id = NEW.package_id, is_package_item = NEW.is_package_item
+    WHERE jobid = OLD.jobid AND deviceid = OLD.deviceid;
+    RETURN NEW;
+END; $$;
+
+DROP TRIGGER IF EXISTS tr_jobdevices_update ON jobdevices;
+CREATE TRIGGER tr_jobdevices_update
+    INSTEAD OF UPDATE ON jobdevices FOR EACH ROW EXECUTE FUNCTION jobdevices_instead_update();
+
 -- Job history table (audit/history for job changes)
 CREATE TABLE IF NOT EXISTS job_history (
     history_id SERIAL PRIMARY KEY,
@@ -1744,6 +1783,11 @@ ON CONFLICT (scope, key) DO NOTHING;
 INSERT INTO app_settings (scope, key, value, description) VALUES
     ('warehousecore', 'api.device_limit', '50000', 'Maximum number of devices returned by the API'),
     ('warehousecore', 'api.case_limit',   '50000', 'Maximum number of cases returned by the API')
+ON CONFLICT (scope, key) DO NOTHING;
+
+-- Default currency symbol settings
+INSERT INTO app_settings (scope, key, value, description) VALUES
+    ('global', 'app.currency', '{"symbol": "€"}', 'Canonical shared currency symbol setting')
 ON CONFLICT (scope, key) DO NOTHING;
 
 -- Default LED job highlight settings
