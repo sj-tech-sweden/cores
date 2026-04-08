@@ -15,10 +15,9 @@
 
 - `make build`, `make run`, `make dev-setup` inside `rentalcore/` — compile, run, or bootstrap dependencies.
 - `make build`, `make test`, `go test ./...` inside `warehousecore/` — build and test.
-- Before releases, build and push each image with the next sequential version tag plus `latest` (e.g., `docker build -t nobentie/rentalcore:1.2.0 -t nobentie/rentalcore:latest . && docker push ...`).
 
 ## Operations & Access
-- Docker Hub username: `nobentie` (may reuse existing login); images live at `nobentie/rentalcore` and `nobentie/warehousecore`.
+- Docker images live at `nobentie/rentalcore` and `nobentie/warehousecore` on Docker Hub; they are built and pushed automatically via GitHub Actions — do not build or push manually.
 
 ## Coding Style & Naming Conventions
 - Run `gofmt` (or `go fmt ./...`) before review; apply `goimports` when imports change.
@@ -32,18 +31,21 @@
 - For database-impacting changes, refresh root migrations and validate with `docker compose up` against a clean volume.
 
 ## Deployment Discipline
-- For every change, always build and push the matching Docker image to Docker Hub after checking the latest published tag.
-- Mirror the build by pushing code to GitLab (per-service repo + cores if affected) so image and source stay in sync.
-- Before starting a build, check Docker Hub for the most recent `nobentie/rentalcore` or `nobentie/warehousecore` tag and bump to the next sequential version, then push both the new tag and `latest` alongside the corresponding GitLab commit.
-	- Always push work to GitLab and refresh all relevant README files when behavior, configuration, or deployment steps change.
-	- I am logged in; you can execute the needed commands.
+- Releases are triggered automatically by GitHub Actions when a PR is merged with a version label:
+  - `major` — breaking change, bumps the major version (e.g., 1.x.x → 2.0.0)
+  - `minor` — new feature, bumps the minor version (e.g., 1.2.x → 1.3.0)
+  - `patch` — bug fix or small change, bumps the patch version (e.g., 1.2.3 → 1.2.4)
+- Always apply exactly one of these labels to every PR before merging; GitHub Actions will build, tag, and push the Docker image to Docker Hub automatically.
+- After merging, update README files and relevant docs if behavior, configuration, or deployment steps changed.
+
 ## Commit & Pull Request Guidelines
 - Use imperative, present-tense commit subjects (e.g., `Ensure default admin seeding matches new RBAC`) capped at 72 characters.
 - Group related work per service; cross-cutting updates should call out both modules and referenced schema changes in the body.
 - PRs must describe the scenario, list test commands, link issues, and include UI screenshots when `web/` assets change.
+- Apply exactly one of the version labels (`major`, `minor`, `patch`) before merging so the CI release workflow fires correctly.
 - Highlight secrets or domain changes for release notes and request review from both service owners on shared infrastructure updates.
 
 ## Issues
 - When working on an issue, change the label to `in_progress`.
 - When the issue is resolved, change the label to `done` and close the issue if possible.
-- After resolving an issue, list remaining issues and ask which one to work on next; do this after redeploy, docker build & push, and GitLab push.
+- After resolving an issue, list remaining issues and ask which one to work on next; do this after the PR is merged and the automated release has completed.

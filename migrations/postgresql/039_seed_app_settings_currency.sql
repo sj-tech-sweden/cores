@@ -1,11 +1,9 @@
--- Migration: app_settings seed
--- Description: Shared key-value settings table used by both RentalCore and
---              WarehouseCore. Setting the same key (e.g. app.currency) in either
---              application will affect both, provided they share the same database.
---              The app_settings table already exists (created in 000_combined_init.sql)
---              with UNIQUE(scope, key); this migration only seeds the default values.
+-- Migration: app_settings currency seed
+-- Description: Seeds the default currency symbol for WarehouseCore.
+--              WarehouseCore queries scope='warehousecore', key='app.currency'
+--              and expects a JSON object with a "symbol" key.
+--              The app_settings table already exists (000_combined_init.sql).
 
--- Seed the default currency symbol so existing installations are consistent.
-INSERT INTO app_settings (scope, key, value)
-VALUES ('global', 'app.currency', '€')
+INSERT INTO app_settings (scope, key, value, description)
+VALUES ('warehousecore', 'app.currency', '{"symbol": "€"}', 'Currency symbol displayed in WarehouseCore UI')
 ON CONFLICT (scope, key) DO NOTHING;
