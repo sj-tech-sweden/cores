@@ -10,14 +10,15 @@
 -- compatibility columns so that later migrations referencing them still work.
 BEGIN;
 
--- Step 1: Ensure key exists and backfill it from legacy column k if present.
+-- Step 1: Ensure key exists (VARCHAR(100) to match canonical schema), backfill
+-- from legacy column k if present, then enforce NOT NULL.
 DO $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'app_settings' AND column_name = 'key'
     ) THEN
-        ALTER TABLE app_settings ADD COLUMN key TEXT;
+        ALTER TABLE app_settings ADD COLUMN key VARCHAR(100);
     END IF;
 
     IF EXISTS (
@@ -28,11 +29,17 @@ BEGIN
         SET key = k
         WHERE key IS NULL AND k IS NOT NULL;
     END IF;
+
+    -- Align with canonical NOT NULL constraint; safe after backfill above.
+    ALTER TABLE app_settings ALTER COLUMN key SET NOT NULL;
 END;
 $$;
 
 -- Step 2: Ensure value exists and backfill it from legacy column v if present.
+-- v may be TEXT or JSONB in existing deployments; cast to text when needed.
 DO $$
+DECLARE
+    coltype TEXT;
 BEGIN
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns
@@ -45,15 +52,28 @@ BEGIN
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'app_settings' AND column_name = 'v'
     ) THEN
-        UPDATE app_settings
-        SET value = v
-        WHERE value IS NULL AND v IS NOT NULL;
+        SELECT format_type(a.atttypid, a.atttypmod)
+          INTO coltype
+        FROM pg_attribute a
+        WHERE a.attrelid = 'public.app_settings'::regclass
+          AND a.attname = 'v'
+          AND NOT a.attisdropped;
+
+        IF coltype = 'jsonb' THEN
+            EXECUTE 'UPDATE app_settings SET value = v::text WHERE value IS NULL AND v IS NOT NULL';
+        ELSE
+            EXECUTE 'UPDATE app_settings SET value = v WHERE value IS NULL AND v IS NOT NULL';
+        END IF;
     END IF;
 END;
 $$;
 
--- Step 3: Drop legacy unique constraint (was on (scope, k); now obsolete).
+-- Step 3: Drop legacy unique constraint/index on (scope, k); now obsolete since
+-- the canonical uniqueness is on (scope, key). The bootstrap schema creates this
+-- as a unique index named idx_app_settings_scope_k; older schemas may have it as
+-- a named constraint. Drop both forms safely.
 ALTER TABLE app_settings DROP CONSTRAINT IF EXISTS unique_scope_key;
+DROP INDEX IF EXISTS idx_app_settings_scope_k;
 
 -- Step 4: Drop legacy single-column index on k (if present under old name).
 DROP INDEX IF EXISTS idx_setting_key;
