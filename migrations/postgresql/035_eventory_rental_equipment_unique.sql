@@ -34,7 +34,10 @@ WHERE equipment_id IN (
 -- Step 2: Add the unique index. Running without CONCURRENTLY allows the index
 -- creation to be wrapped in the same transaction as the duplicate-row removal,
 -- eliminating the race window that would otherwise exist between the two steps.
+-- Use NULLS NOT DISTINCT so rows with the same product_name and a NULL
+-- supplier_name are also treated as duplicates, which keeps ON CONFLICT
+-- (product_name, supplier_name) upserts stable when supplier_name is NULL.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_rental_equipment_name_supplier
-    ON rental_equipment (product_name, supplier_name);
+    ON rental_equipment (product_name, supplier_name) NULLS NOT DISTINCT;
 
 COMMIT;
