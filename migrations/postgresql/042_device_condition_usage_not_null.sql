@@ -40,7 +40,7 @@ BEGIN
         JOIN pg_class t ON t.oid = c.conrelid
         JOIN pg_namespace n ON n.oid = t.relnamespace
         WHERE c.conname = 'devices_condition_rating_not_null'
-          AND n.nspname = current_schema()
+          AND n.nspname = 'public'
           AND t.relname = 'devices'
     ) THEN
         ALTER TABLE devices
@@ -57,7 +57,7 @@ BEGIN
         JOIN pg_class t ON t.oid = c.conrelid
         JOIN pg_namespace n ON n.oid = t.relnamespace
         WHERE c.conname = 'devices_usage_hours_not_null'
-          AND n.nspname = current_schema()
+          AND n.nspname = 'public'
           AND t.relname = 'devices'
     ) THEN
         ALTER TABLE devices
@@ -92,7 +92,7 @@ BEGIN
         JOIN pg_class t ON t.oid = c.conrelid
         JOIN pg_namespace n ON n.oid = t.relnamespace
         WHERE c.conname = 'devices_condition_rating_not_null'
-          AND n.nspname = current_schema()
+          AND n.nspname = 'public'
           AND t.relname = 'devices'
           AND c.convalidated = false
     ) THEN
@@ -109,7 +109,7 @@ BEGIN
         JOIN pg_class t ON t.oid = c.conrelid
         JOIN pg_namespace n ON n.oid = t.relnamespace
         WHERE c.conname = 'devices_usage_hours_not_null'
-          AND n.nspname = current_schema()
+          AND n.nspname = 'public'
           AND t.relname = 'devices'
           AND c.convalidated = false
     ) THEN
@@ -129,7 +129,7 @@ BEGIN
     IF EXISTS (
         SELECT 1
         FROM information_schema.columns
-        WHERE table_schema = current_schema()
+        WHERE table_schema = 'public'
           AND table_name = 'devices'
           AND column_name = 'condition_rating'
           AND is_nullable = 'YES'
@@ -141,7 +141,7 @@ BEGIN
     IF EXISTS (
         SELECT 1
         FROM information_schema.columns
-        WHERE table_schema = current_schema()
+        WHERE table_schema = 'public'
           AND table_name = 'devices'
           AND column_name = 'usage_hours'
           AND is_nullable = 'YES'
