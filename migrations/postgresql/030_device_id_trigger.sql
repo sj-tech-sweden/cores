@@ -35,11 +35,10 @@ BEGIN
      WHERE p.productID = NEW.productID;
 
     -- 3) Calculate next counter (max of last 3 digits + 1)
-    -- PostgreSQL uses SUBSTRING instead of RIGHT
     SELECT COALESCE(MAX(
         CASE
-            WHEN SUBSTRING(d.deviceID FROM LENGTH(d.deviceID) - 2) ~ '^[0-9]+$'
-            THEN CAST(SUBSTRING(d.deviceID FROM LENGTH(d.deviceID) - 2) AS INTEGER)
+            WHEN RIGHT(d.deviceID, 3) ~ '^[0-9]+$'
+            THEN CAST(RIGHT(d.deviceID, 3) AS INTEGER)
             ELSE 0
         END
     ), 0) + 1
@@ -60,9 +59,6 @@ CREATE TRIGGER devices_before_insert
     FOR EACH ROW
     WHEN (NEW.deviceID IS NULL)
     EXECUTE FUNCTION generate_device_id();
-
--- Create an index to speed up device ID lookups
-CREATE INDEX IF NOT EXISTS idx_devices_deviceid_pattern ON devices(deviceID);
 
 -- Comment on the function
 COMMENT ON FUNCTION generate_device_id() IS 'Auto-generates device IDs in format: {abbreviation}{pos_in_category}{counter:003d}';

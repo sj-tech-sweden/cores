@@ -3,10 +3,12 @@
 
 Heuristics:
 - Skip exact-duplicates (identical normalized content).
-- If `000_combined_init.sql` already contains `CREATE TABLE` for a table referenced by the
-  warehouse migration, the migration is considered covered and skipped.
-- If combined init contains `INSERT INTO <table>` and the warehouse migration is a seed
-  (`INSERT INTO`) for the same table, skip to avoid duplicate seeding.
+- If `000_combined_init.sql` already contains `CREATE TABLE` for a table created by the
+  warehouse migration AND the migration is a *pure* CREATE TABLE (no other DDL/DML),
+  the migration is considered covered and skipped.  If extra statements are present,
+  a `needs_manual_review` reason is logged and the file is scheduled for copy.
+- If combined init contains `INSERT INTO <table>` and the warehouse migration is an
+  *insert-only* file for the same table, skip to avoid duplicate seeding.
 - If a cores migration has high textual similarity to the warehouse migration (default
   threshold 0.7), it's treated as duplicate and skipped.
 
@@ -48,7 +50,23 @@ def extract_tables(s: str):
     return tables
 
 
-def similar(a: str, b: str) -> float:
+def has_schema_changes(sql_norm: str) -> bool:
+    """Return True if the normalized SQL contains schema-changing DDL (CREATE, ALTER, DROP)."""
+    return bool(re.search(
+        r'\b(create|alter|drop)\b',
+        sql_norm, flags=re.I))
+
+
+def has_dml_or_extra_ddl(sql_norm: str) -> bool:
+    """Return True if the normalized SQL contains DML or DDL beyond pure CREATE TABLE."""
+    return bool(re.search(
+        r'\b(insert\s+into|update\s+\w|delete\s+from|alter\s+table|'
+        r'create\s+(?:unique\s+)?index|create\s+trigger|create\s+function|'
+        r'create\s+(?:or\s+replace\s+)?view|drop\s+\w)\b',
+        sql_norm, flags=re.I))
+
+
+
     return SequenceMatcher(None, a, b).ratio()
 
 
@@ -122,24 +140,37 @@ def main():
             skipped.append((wf.name, 'identical_exists'))
             continue
 
-        # 2) table already created in combined init AND this migration is a CREATE TABLE
-        #    -> skip (only skip if this migration is actually creating that same table)
+        # 2) table already created in combined init AND this migration creates that table.
+        #    Only skip when the migration is a *pure* CREATE TABLE (no other DDL/DML such
+        #    as INSERT, ALTER, CREATE INDEX/TRIGGER/FUNCTION/VIEW, etc.).  When extra
+        #    statements are present the migration may carry important non-table changes
+        #    that would be silently lost, so flag it for manual review instead.
         wtext_tables_created = set()
-        for p in [r'create table if not exists\s+[`"]?([a-z0-9_]+)[`"]?',
-                  r'create table\s+[`"]?([a-z0-9_]+)[`"]?']:
-            for m in re.finditer(p, wtext, flags=re.I):
+        for cp in [r'create table if not exists\s+[`"]?([a-z0-9_]+)[`"]?',
+                   r'create table\s+[`"]?([a-z0-9_]+)[`"]?']:
+            for m in re.finditer(cp, wtext, flags=re.I):
                 wtext_tables_created.add(m.group(1).lower())
+        has_extra_ddl = has_dml_or_extra_ddl(wnorm)
         covered = False
         for t in wtext_tables_created:
-            if re.search(r'create table(?:\s+if\s+not\s+exists)?\s+' + re.escape(t) + r'\b', combined_norm, flags=re.I):
-                covered = True
+            if re.search(r'create table(?:\s+if\s+not\s+exists)?\s+' + re.escape(t) + r'\b',
+                         combined_norm, flags=re.I):
+                if has_extra_ddl:
+                    skipped.append((wf.name,
+                                    f'needs_manual_review (table {t!r} in combined_init '
+                                    f'but migration has extra DDL/DML)'))
+                else:
+                    covered = True
                 break
         if covered:
             skipped.append((wf.name, 'covered_by_combined_init'))
             continue
 
-        # 3) seed duplication: if warehouse migration is INSERT INTO and combined has INSERT INTO same table
-        if re.search(r'insert into', wtext, flags=re.I):
+        # 3) seed duplication: only skip if the migration is *insert-only* (no CREATE,
+        #    ALTER, or DROP) AND combined_init already seeds the same table.  Migrations
+        #    that mix seeding with schema changes must be reviewed manually.
+        is_insert_only = not has_schema_changes(wnorm)
+        if is_insert_only and re.search(r'insert into', wtext, flags=re.I):
             seeded = False
             for t in wtables:
                 if re.search(r'insert into\s+\b' + re.escape(t) + r'\b', combined_norm):
