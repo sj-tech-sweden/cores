@@ -13,6 +13,8 @@ RETURNS TRIGGER AS $$
 DECLARE
     abkuerzung VARCHAR(50);
     pos_cat INT;
+    prefix    TEXT;
+    lock_key  BIGINT;
     next_counter INT;
 BEGIN
     -- 1) Get abbreviation from subcategory
@@ -34,7 +36,19 @@ BEGIN
       FROM products p
      WHERE p.productID = NEW.productID;
 
-    -- 3) Calculate next counter (max of last 3 digits + 1)
+    -- 3) Acquire a transaction-scoped advisory lock keyed on the device-ID
+    --    prefix so that concurrent inserts for the same prefix are serialised.
+    --    Two sessions that compute the same prefix will queue on this lock;
+    --    each reads the counter only after the previous transaction commits,
+    --    eliminating the MAX()+1 race condition.
+    prefix   := abkuerzung || pos_cat::TEXT;
+    -- Use a 64-bit hash derived from the MD5 of the prefix so that unrelated
+    -- prefixes are very unlikely to share an advisory lock key.
+    -- (hashtext() is only 32-bit; this gives us the full 64-bit lock space.)
+    lock_key := ('x' || left(md5(prefix), 16))::bit(64)::BIGINT;
+    PERFORM pg_advisory_xact_lock(lock_key);
+
+    -- 4) Calculate next counter (max of last 3 digits + 1)
     SELECT COALESCE(MAX(
         CASE
             WHEN RIGHT(d.deviceID, 3) ~ '^[0-9]+$'
@@ -44,10 +58,10 @@ BEGIN
     ), 0) + 1
       INTO next_counter
       FROM devices d
-     WHERE d.deviceID LIKE abkuerzung || pos_cat || '%';
+     WHERE d.deviceID LIKE prefix || '%';
 
-    -- 4) Build deviceID (without hyphen)
-    NEW.deviceID := abkuerzung || pos_cat || LPAD(next_counter::TEXT, 3, '0');
+    -- 5) Build deviceID (without hyphen)
+    NEW.deviceID := prefix || LPAD(next_counter::TEXT, 3, '0');
 
     RETURN NEW;
 END;
