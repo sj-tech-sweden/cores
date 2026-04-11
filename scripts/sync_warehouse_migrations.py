@@ -29,8 +29,8 @@ from difflib import SequenceMatcher
 def normalize_sql(s: str) -> str:
     # remove /* */ comments
     s = re.sub(r'/\*.*?\*/', ' ', s, flags=re.S)
-    # remove -- comments
-    s = re.sub(r'--.*?\n', ' ', s)
+    # remove -- comments (including a trailing comment at EOF with no final newline)
+    s = re.sub(r'--.*?(?:\n|\Z)', ' ', s)
     # collapse whitespace
     s = re.sub(r"\s+", ' ', s)
     return s.strip().lower()
@@ -118,6 +118,10 @@ def main():
     core_norm = {name: normalize_sql(c) for name, c in core_contents.items()}
     # Pre-build a set of normalized content values for O(1) exact-duplicate checks.
     core_norm_set = set(core_norm.values())
+    # Exclude 000_combined_init.sql from similarity comparisons — it's very large and
+    # is already handled explicitly by the covered_by_combined_init heuristic below.
+    SIMILARITY_EXCLUDE = {'000_combined_init.sql'}
+    core_norm_for_similarity = {k: v for k, v in core_norm.items() if k not in SIMILARITY_EXCLUDE}
     combined_text = ''
     if combined_init.exists():
         combined_text = combined_init.read_text(encoding='utf-8', errors='ignore')
@@ -186,7 +190,7 @@ def main():
 
         # 4) similarity to any existing core file
         similar_found = False
-        for name, cnorm in core_norm.items():
+        for name, cnorm in core_norm_for_similarity.items():
             if similar(wnorm, cnorm) >= args.threshold:
                 skipped.append((wf.name, f'similar_to_{name}'))
                 similar_found = True

@@ -8,28 +8,32 @@
 -- the conflict target, so a separate index/constraint on (deviceid, jobid) is needed
 -- for ON CONFLICT (deviceid, jobid) to work as expected.
 --
--- Implementation approach (minimises blocking during index creation):
---   Phase 1 – Remove duplicate rows inside a transaction with ACCESS EXCLUSIVE lock.
---             This blocks reads and writes on the table for the duration of the
---             cleanup (full-table window scan + delete), but prevents new duplicates
---             from racing in during that window.
---   Phase 2 – Build the unique index with CONCURRENTLY so the index build itself does
---             NOT hold an ACCESS EXCLUSIVE lock for its full duration. CONCURRENTLY
---             cannot run inside a transaction block, so it appears outside BEGIN/COMMIT.
---   Phase 3 – Promote the completed index to a named UNIQUE constraint. This takes
---             only a brief ACCESS EXCLUSIVE lock to update the catalog, not to scan
---             the table.
+-- Implementation approach:
+--   A single transaction acquires ACCESS EXCLUSIVE, removes duplicates, and builds
+--   the unique index (non-CONCURRENTLY) before releasing the lock.  Holding the lock
+--   throughout closes the window that CONCURRENTLY would leave open: between Phase 1
+--   COMMIT and the CONCURRENTLY build finishing, writers could re-introduce duplicates
+--   and cause the index build to fail.  For a table this small the extra lock duration
+--   is negligible.
 --
--- All three phases are idempotent: re-running this file after a partial failure is safe.
+--   Phase 1 (inside BEGIN/COMMIT):
+--     – LOCK IN ACCESS EXCLUSIVE MODE  (blocks readers/writers)
+--     – DELETE duplicate rows
+--     – CREATE UNIQUE INDEX (non-CONCURRENTLY; lock is already held)
+--   Phase 2 (DO $$, outside transaction):
+--     – Promote the index to a named UNIQUE constraint (brief catalog lock)
+--       Skip if any unique/pk constraint already covers (deviceid, jobid) in order.
+--
+-- All phases are idempotent: re-running this file after a partial failure is safe.
 
--- ─── Phase 1: Remove duplicate rows ────────────────────────────────────────────
+-- ─── Phase 1: Remove duplicates and build the unique index ───────────────────────
 BEGIN;
 
--- Take ACCESS EXCLUSIVE up-front so no concurrent writer can insert a new
--- duplicate row between the duplicate scan and the DELETE.
-LOCK TABLE job_devices IN ACCESS EXCLUSIVE MODE;
+-- Hold ACCESS EXCLUSIVE for the full duration of duplicate removal and index creation
+-- so no concurrent writer can re-introduce a duplicate before the index is in place.
+LOCK TABLE public.job_devices IN ACCESS EXCLUSIVE MODE;
 
-DELETE FROM job_devices
+DELETE FROM public.job_devices
 WHERE ctid IN (
   SELECT ctid
   FROM (
@@ -38,22 +42,21 @@ WHERE ctid IN (
              PARTITION BY deviceID, jobID
              ORDER BY (pack_ts IS NULL), pack_ts DESC, ctid DESC
            ) AS rn
-    FROM job_devices
+    FROM public.job_devices
   ) ranked
   WHERE rn > 1
 );
 
+-- Create the unique index inside the same transaction (non-CONCURRENTLY is fine;
+-- the lock is held so no writers are present and there is no race window).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_job_devices_deviceid_jobid
+    ON public.job_devices(deviceid, jobid);
+
 COMMIT;
 
--- ─── Phase 2: Build the unique index non-blocking ───────────────────────────────
--- CONCURRENTLY must run outside a transaction block (enforced by PostgreSQL).
--- IF NOT EXISTS makes this idempotent.
-CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx_job_devices_deviceid_jobid
-    ON job_devices(deviceid, jobid);
-
--- ─── Phase 3: Promote the index to a named UNIQUE constraint (idempotent) ───────
+-- ─── Phase 2: Promote the index to a named UNIQUE constraint (idempotent) ────────
 -- ADD CONSTRAINT USING INDEX takes only a brief catalog lock; the expensive
--- index build was already done non-blocking in Phase 2.
+-- index build was already done in Phase 1.
 -- Skip if any unique constraint or primary key already covers (deviceid, jobid)
 -- in that exact column order, OR if our named constraint already exists.
 DO $$
@@ -66,7 +69,7 @@ BEGIN
         SELECT 1
         FROM   pg_constraint c
         WHERE  c.contype  IN ('u', 'p')
-          AND  c.conrelid = 'job_devices'::regclass
+          AND  c.conrelid = 'public.job_devices'::regclass
           AND  (
               SELECT array_agg(a.attname::text ORDER BY ck.ord)
               FROM   unnest(c.conkey::smallint[]) WITH ORDINALITY AS ck(attnum, ord)
@@ -80,19 +83,19 @@ BEGIN
         RETURN;  -- Already covered; nothing to do
     END IF;
 
-    -- Check that the index from Phase 2 is present and valid
+    -- Check that the index from Phase 1 is present and valid
     SELECT EXISTS (
         SELECT 1
         FROM   pg_class ic
         JOIN   pg_index i ON i.indexrelid = ic.oid
         WHERE  ic.relname    = 'idx_job_devices_deviceid_jobid'
-          AND  i.indrelid    = 'job_devices'::regclass
+          AND  i.indrelid    = 'public.job_devices'::regclass
           AND  i.indisunique = true
           AND  i.indisvalid  = true
     ) INTO v_idx_ready;
 
     IF v_idx_ready THEN
-        ALTER TABLE job_devices
+        ALTER TABLE public.job_devices
             ADD CONSTRAINT uq_job_devices_deviceid_jobid
             UNIQUE USING INDEX idx_job_devices_deviceid_jobid;
     END IF;
