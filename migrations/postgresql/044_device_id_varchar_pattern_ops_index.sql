@@ -10,7 +10,13 @@
 --
 -- IMPORTANT: CREATE/DROP INDEX CONCURRENTLY cannot run inside a transaction
 -- block. Apply this file outside of BEGIN/COMMIT (e.g. psql -f 044_...sql).
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_devices_deviceid_pattern_ops
+
+-- Drop first so reruns recover cleanly if a previous concurrent build left an
+-- invalid index behind; CREATE INDEX CONCURRENTLY IF NOT EXISTS is not
+-- reliably idempotent in that case.
+DROP INDEX CONCURRENTLY IF EXISTS idx_devices_deviceid_pattern_ops;
+
+CREATE INDEX CONCURRENTLY idx_devices_deviceid_pattern_ops
     ON devices(deviceID varchar_pattern_ops);
 
 DROP INDEX CONCURRENTLY IF EXISTS idx_devices_deviceid_pattern;

@@ -169,7 +169,10 @@ def main():
             continue
         wtext = wf.read_text(encoding='utf-8', errors='ignore')
         wnorm = normalize_sql(wtext)
-        wtables = extract_tables(wtext)
+        # Run table extraction on the comment-stripped, normalized SQL so that
+        # commented-out statements (e.g. "-- CREATE TABLE foo …") do not falsely
+        # influence the seeding/coverage heuristics.
+        wtables = extract_tables(wnorm)
 
         # 1) exact duplicate
         if wnorm in core_norm_set:
