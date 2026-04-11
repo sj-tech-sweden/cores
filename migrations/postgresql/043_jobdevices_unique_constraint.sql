@@ -20,7 +20,7 @@
 --     – LOCK IN ACCESS EXCLUSIVE MODE  (blocks readers/writers)
 --     – DELETE duplicate rows
 --     – CREATE UNIQUE INDEX (non-CONCURRENTLY; lock is already held)
---   Phase 2 (DO $$, outside transaction):
+--   Phase 2 (DO $$, after Phase 1's explicit BEGIN/COMMIT block):
 --     – Promote the index to a named UNIQUE constraint (brief catalog lock)
 --       Skip if any unique/pk constraint already covers (deviceid, jobid) in order.
 --

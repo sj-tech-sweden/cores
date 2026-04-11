@@ -36,17 +36,27 @@ def normalize_sql(s: str) -> str:
     return s.strip().lower()
 
 
+def _normalize_table_name(identifier: str) -> str:
+    """Strip schema prefix and quotes; return the bare lower-case table name."""
+    parts = [part.strip('`"') for part in identifier.split('.')]
+    return parts[-1].lower()
+
+
 def extract_tables(s: str):
     tables = set()
+    # An identifier segment: plain name (optionally backtick-quoted) or double-quoted name.
+    _SEG = r'(?:`?[a-zA-Z0-9_]+`?|"[^"]+")'
+    # Full identifier: optional schema prefix followed by the table name.
+    _ident = rf'{_SEG}(?:\.{_SEG})?'
     # patterns for CREATE/ALTER/INSERT/UPDATE/INTO
-    patterns = [r'create table if not exists\s+`?"?([a-z0-9_]+)`?"?',
-                r'create table\s+`?"?([a-z0-9_]+)`?"?',
-                r'alter table\s+`?"?([a-z0-9_]+)`?"?',
-                r'insert into\s+`?"?([a-z0-9_]+)`?"?',
-                r'update\s+`?"?([a-z0-9_]+)`?"?']
+    patterns = [rf'create table if not exists\s+({_ident})',
+                rf'create table\s+({_ident})',
+                rf'alter table\s+({_ident})',
+                rf'insert into\s+({_ident})',
+                rf'update\s+({_ident})']
     for p in patterns:
         for m in re.finditer(p, s, flags=re.I):
-            tables.add(m.group(1).lower())
+            tables.add(_normalize_table_name(m.group(1)))
     return tables
 
 
@@ -152,7 +162,8 @@ def main():
         #    Only skip when the migration is a *pure* CREATE TABLE (no other DDL/DML such
         #    as INSERT, ALTER, CREATE INDEX/TRIGGER/FUNCTION/VIEW, etc.).  When extra
         #    statements are present the migration may carry important non-table changes
-        #    that would be silently lost, so flag it for manual review instead.
+        #    that would be silently lost, so flag it for manual review, add it to to_copy,
+        #    and continue immediately so it is never dropped by later heuristics.
         wtext_tables_created = set()
         for cp in [r'create table if not exists\s+[`"]?([a-z0-9_]+)[`"]?',
                    r'create table\s+[`"]?([a-z0-9_]+)[`"]?']:
@@ -160,6 +171,7 @@ def main():
                 wtext_tables_created.add(m.group(1).lower())
         has_extra_ddl = has_dml_or_extra_ddl(wnorm)
         covered = False
+        force_copy = False
         for t in wtext_tables_created:
             if re.search(r'create table(?:\s+if\s+not\s+exists)?\s+' + re.escape(t) + r'\b',
                          combined_norm, flags=re.I):
@@ -167,9 +179,13 @@ def main():
                     needs_review.append((wf.name,
                                         f'table {t!r} in combined_init '
                                         f'but migration has extra DDL/DML — review before applying'))
+                    force_copy = True
                 else:
                     covered = True
                 break
+        if force_copy:
+            to_copy.append(wf)
+            continue  # bypass all later heuristics; file is already queued for review
         if covered:
             skipped.append((wf.name, 'covered_by_combined_init'))
             continue
