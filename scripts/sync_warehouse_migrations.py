@@ -68,12 +68,30 @@ def has_schema_changes(sql_norm: str) -> bool:
 
 
 def has_dml_or_extra_ddl(sql_norm: str) -> bool:
-    """Return True if the normalized SQL contains DML or DDL beyond pure CREATE TABLE."""
-    return bool(re.search(
-        r'\b(insert\s+into|update\s+\w|delete\s+from|alter\s+table|'
-        r'create\s+(?:unique\s+)?index|create\s+trigger|create\s+function|'
-        r'create\s+(?:or\s+replace\s+)?view|drop\s+\w)\b',
-        sql_norm, flags=re.I))
+    """Return True unless the normalized SQL is made up only of plain CREATE TABLE statements.
+
+    DML (INSERT, UPDATE, DELETE, MERGE, TRUNCATE) is flagged directly.
+    For DDL, CREATE TABLE / CREATE TABLE IF NOT EXISTS statements are stripped first;
+    if any CREATE/ALTER/DROP keyword remains the migration contains non-table DDL
+    (e.g. CREATE SEQUENCE/TYPE/INDEX/EXTENSION, ALTER TYPE, DROP FUNCTION, etc.)
+    and must be copied/flagged for manual review.
+    """
+    # Fast path: flag any DML immediately.
+    if re.search(
+        r'\b(insert\s+into|update\s+\w|delete\s+from|merge\s+into|truncate\s+table)\b',
+        sql_norm, flags=re.I,
+    ):
+        return True
+
+    # Strip all bare CREATE TABLE statements (including IF NOT EXISTS variants),
+    # then check whether any schema-changing keyword survives.
+    sql_without_create_table = re.sub(
+        r'\bcreate\s+table(?:\s+if\s+not\s+exists)?\s+[^;]+(?:;|$)',
+        ' ',
+        sql_norm,
+        flags=re.I,
+    )
+    return bool(re.search(r'\b(create|alter|drop)\b', sql_without_create_table, flags=re.I))
 
 
 def similar(a: str, b: str) -> float:

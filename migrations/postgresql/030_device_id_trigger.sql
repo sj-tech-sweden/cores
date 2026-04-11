@@ -17,6 +17,13 @@ DECLARE
     lock_key  BIGINT;
     next_counter INT;
 BEGIN
+    -- If productID is NULL we cannot derive a device ID prefix — fail early with a
+    -- clear message rather than surfacing the confusing 'No abbreviation found for
+    -- productID NULL' error that the abbreviation lookup would produce.
+    IF NEW.productID IS NULL THEN
+        RAISE EXCEPTION 'Cannot auto-generate deviceID: productID must not be NULL';
+    END IF;
+
     -- 1) Get abbreviation from subcategory
     SELECT s.abbreviation
       INTO abkuerzung
