@@ -78,7 +78,7 @@ def has_dml_or_extra_ddl(sql_norm: str) -> bool:
     """
     # Fast path: flag any DML immediately.
     if re.search(
-        r'\b(insert\s+into|update\s+\w|delete\s+from|merge\s+into|truncate\s+table)\b',
+        r'\b(insert\s+into|update\s+|delete\s+from|merge\s+into|truncate\s+table)\b',
         sql_norm, flags=re.I,
     ):
         return True
@@ -224,7 +224,7 @@ def main():
         is_insert_only = (
             bool(re.search(r'\binsert\s+into\b', wnorm, flags=re.I))
             and not re.search(
-                r'\b(update\s+\w|delete\s+from|merge\s+into|truncate\s+table'
+                r'\b(update\s+|delete\s+from|merge\s+into|truncate\s+table'
                 r'|create|alter|drop)\b',
                 wnorm, flags=re.I,
             )
