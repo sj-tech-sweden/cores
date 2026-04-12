@@ -60,13 +60,6 @@ def extract_tables(s: str):
     return tables
 
 
-def has_schema_changes(sql_norm: str) -> bool:
-    """Return True if the normalized SQL contains schema-changing DDL (CREATE, ALTER, DROP)."""
-    return bool(re.search(
-        r'\b(create|alter|drop)\b',
-        sql_norm, flags=re.I))
-
-
 def has_dml_or_extra_ddl(sql_norm: str) -> bool:
     """Return True unless the normalized SQL is made up only of plain CREATE TABLE statements.
 
@@ -156,6 +149,9 @@ def main():
         combined_norm = normalize_sql(combined_text)
     else:
         combined_norm = ''
+    # Precompute the set of table names referenced in combined_init once (handles
+    # schema-qualified names like public.foo via extract_tables/_normalize_table_name).
+    combined_tables = extract_tables(combined_norm)
 
     to_copy = []
     skipped = []
@@ -185,22 +181,13 @@ def main():
         #    statements are present the migration may carry important non-table changes
         #    that would be silently lost, so flag it for manual review, add it to to_copy,
         #    and continue immediately so it is never dropped by later heuristics.
-        wtext_tables_created = set()
-        for cp in [r'create table if not exists\s+[`"]?([a-z0-9_]+)[`"]?',
-                   r'create table\s+[`"]?([a-z0-9_]+)[`"]?']:
-            for m in re.finditer(cp, wtext, flags=re.I):
-                wtext_tables_created.add(m.group(1).lower())
+        #    Reuse extract_tables (via wtables / combined_tables) so that schema-qualified
+        #    identifiers like public.foo are normalized to bare names on both sides.
         has_extra_ddl = has_dml_or_extra_ddl(wnorm)
         covered = False
         force_copy = False
-        if wtext_tables_created:
-            all_in_combined = all(
-                re.search(
-                    r'create table(?:\s+if\s+not\s+exists)?\s+' + re.escape(t) + r'\b',
-                    combined_norm, flags=re.I,
-                )
-                for t in wtext_tables_created
-            )
+        if wtables:
+            all_in_combined = wtables.issubset(combined_tables)
             if all_in_combined:
                 if has_extra_ddl:
                     needs_review.append((wf.name,
