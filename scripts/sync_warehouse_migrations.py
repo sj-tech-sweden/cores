@@ -193,17 +193,22 @@ def main():
         has_extra_ddl = has_dml_or_extra_ddl(wnorm)
         covered = False
         force_copy = False
-        for t in wtext_tables_created:
-            if re.search(r'create table(?:\s+if\s+not\s+exists)?\s+' + re.escape(t) + r'\b',
-                         combined_norm, flags=re.I):
+        if wtext_tables_created:
+            all_in_combined = all(
+                re.search(
+                    r'create table(?:\s+if\s+not\s+exists)?\s+' + re.escape(t) + r'\b',
+                    combined_norm, flags=re.I,
+                )
+                for t in wtext_tables_created
+            )
+            if all_in_combined:
                 if has_extra_ddl:
                     needs_review.append((wf.name,
-                                        f'table {t!r} in combined_init '
-                                        f'but migration has extra DDL/DML — review before applying'))
+                                        'all created tables present in combined_init '
+                                        'but migration has extra DDL/DML — review before applying'))
                     force_copy = True
                 else:
                     covered = True
-                break
         if force_copy:
             to_copy.append(wf)
             continue  # bypass all later heuristics; file is already queued for review
@@ -211,11 +216,20 @@ def main():
             skipped.append((wf.name, 'covered_by_combined_init'))
             continue
 
-        # 3) seed duplication: only skip if the migration is *insert-only* (no CREATE,
-        #    ALTER, or DROP) AND combined_init already seeds the same table.  Migrations
-        #    that mix seeding with schema changes must be reviewed manually.
-        is_insert_only = not has_schema_changes(wnorm)
-        if is_insert_only and re.search(r'insert into', wtext, flags=re.I):
+        # 3) seed duplication: only skip if the migration is *truly insert-only* — i.e.
+        #    it contains at least one INSERT INTO and no DDL (CREATE/ALTER/DROP) and no
+        #    other DML (UPDATE/DELETE/MERGE/TRUNCATE) — AND combined_init already seeds
+        #    the same table.  Migrations mixing seeding with any other statement type
+        #    are not skipped here.
+        is_insert_only = (
+            bool(re.search(r'\binsert\s+into\b', wnorm, flags=re.I))
+            and not re.search(
+                r'\b(update\s+\w|delete\s+from|merge\s+into|truncate\s+table'
+                r'|create|alter|drop)\b',
+                wnorm, flags=re.I,
+            )
+        )
+        if is_insert_only:
             seeded = False
             for t in wtables:
                 if re.search(r'insert into\s+\b' + re.escape(t) + r'\b', combined_norm):

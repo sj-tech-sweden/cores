@@ -11,7 +11,7 @@ DROP FUNCTION IF EXISTS generate_device_id();
 CREATE OR REPLACE FUNCTION generate_device_id()
 RETURNS TRIGGER AS $$
 DECLARE
-    abkuerzung VARCHAR(50);
+    abbreviation VARCHAR(50);
     pos_cat INT;
     prefix    TEXT;
     lock_key  BIGINT;
@@ -26,14 +26,14 @@ BEGIN
 
     -- 1) Get abbreviation from subcategory
     SELECT s.abbreviation
-      INTO abkuerzung
+      INTO abbreviation
       FROM subcategories s
       JOIN products p ON s.subcategoryID = p.subcategoryID
      WHERE p.productID = NEW.productID
      LIMIT 1;
 
     -- If no abbreviation found, raise error
-    IF abkuerzung IS NULL THEN
+    IF abbreviation IS NULL THEN
         RAISE EXCEPTION 'No abbreviation found for productID %', NEW.productID;
     END IF;
 
@@ -48,7 +48,7 @@ BEGIN
     --    Two sessions that compute the same prefix will queue on this lock;
     --    each reads the counter only after the previous transaction commits,
     --    eliminating the MAX()+1 race condition.
-    prefix   := abkuerzung || pos_cat::TEXT;
+    prefix   := abbreviation || pos_cat::TEXT;
     -- Use a 64-bit hash derived from the MD5 of the prefix so that unrelated
     -- prefixes are very unlikely to share an advisory lock key.
     -- (hashtext() is only 32-bit; this gives us the full 64-bit lock space.)
