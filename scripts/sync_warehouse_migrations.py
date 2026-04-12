@@ -60,6 +60,18 @@ def extract_tables(s: str):
     return tables
 
 
+def extract_created_tables(s: str) -> set:
+    """Return only tables defined by CREATE TABLE statements (not referenced by other statements)."""
+    tables = set()
+    _SEG = r'(?:`?[a-zA-Z0-9_]+`?|"[^"]+")'
+    _ident = rf'{_SEG}(?:\.{_SEG})?'
+    for p in [rf'create table if not exists\s+({_ident})',
+              rf'create table\s+({_ident})']:
+        for m in re.finditer(p, s, flags=re.I):
+            tables.add(_normalize_table_name(m.group(1)))
+    return tables
+
+
 def has_dml_or_extra_ddl(sql_norm: str) -> bool:
     """Return True unless the normalized SQL is made up only of plain CREATE TABLE statements.
 
@@ -152,9 +164,11 @@ def main():
         combined_norm = normalize_sql(combined_text)
     else:
         combined_norm = ''
-    # Precompute the set of table names referenced in combined_init once (handles
-    # schema-qualified names like public.foo via extract_tables/_normalize_table_name).
-    combined_tables = extract_tables(combined_norm)
+    # Precompute the set of tables *created* in combined_init once (CREATE TABLE only).
+    # Using extract_created_tables rather than extract_tables ensures that tables only
+    # referenced by INSERT/UPDATE/ALTER in 000_combined_init.sql cannot incorrectly
+    # cause a warehouse migration's CREATE TABLE to be treated as already covered.
+    combined_created_tables = extract_created_tables(combined_norm)
 
     to_copy = []
     skipped = []
@@ -184,17 +198,19 @@ def main():
         #    statements are present the migration may carry important non-table changes
         #    that would be silently lost, so flag it for manual review, add it to to_copy,
         #    and continue immediately so it is never dropped by later heuristics.
-        #    Reuse extract_tables (via wtables / combined_tables) so that schema-qualified
-        #    identifiers like public.foo are normalized to bare names on both sides.
+        #    Reuse extract_created_tables on both sides so that schema-qualified
+        #    identifiers like public.foo are normalized to bare names consistently.
         has_extra_ddl = has_dml_or_extra_ddl(wnorm)
         # Only trigger the covered_by_combined_init heuristic for migrations that
         # actually contain CREATE TABLE statements.  Insert-only (and other DML-only)
         # files must fall through to the seed-coverage heuristic (step 3) below.
-        has_create_table = bool(re.search(r'\bcreate\s+table\b', wnorm, flags=re.I))
+        # Use extract_created_tables on both sides so only actually-created tables
+        # are compared — tables merely referenced by INSERT/UPDATE/ALTER are excluded.
+        wtables_created = extract_created_tables(wnorm)
         covered = False
         force_copy = False
-        if has_create_table and wtables:
-            all_in_combined = wtables.issubset(combined_tables)
+        if wtables_created:
+            all_in_combined = wtables_created.issubset(combined_created_tables)
             if all_in_combined:
                 if has_extra_ddl:
                     needs_review.append((wf.name,

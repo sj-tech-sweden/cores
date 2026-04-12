@@ -12,11 +12,12 @@
 -- block. Apply this file outside of BEGIN/COMMIT (e.g. psql -f 044_...sql).
 
 -- Drop first so reruns recover cleanly if a previous concurrent build left an
--- invalid index behind; CREATE INDEX CONCURRENTLY IF NOT EXISTS is not
--- reliably idempotent in that case.
+-- invalid index behind (IF NOT EXISTS alone would silently skip the invalid index
+-- rather than rebuild it).  IF NOT EXISTS on the CREATE guards against two
+-- migration runners executing this file concurrently.
 DROP INDEX CONCURRENTLY IF EXISTS idx_devices_deviceid_pattern_ops;
 
-CREATE INDEX CONCURRENTLY idx_devices_deviceid_pattern_ops
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_devices_deviceid_pattern_ops
     ON devices(deviceID varchar_pattern_ops);
 
 DROP INDEX CONCURRENTLY IF EXISTS idx_devices_deviceid_pattern;
