@@ -446,7 +446,7 @@ def main():
             if args.dry_run:
                 if args.auto_create and endpoint.endswith('/admin/devices'):
                     # Show the product payload that would be created
-                    product_name = rec.get('TITLE') or rec.get('name') or rec.get('TITLE')
+                    product_name = rec.get('TITLE') or rec.get('name') or rec.get('title')
                     product_desc = rec.get('DESCRIPTION') or rec.get('MEMO') or None
                     price = rec.get('PRICE1') or rec.get('PRICE') or None
                     prod_payload = {'name': product_name}
@@ -535,13 +535,13 @@ def main():
             # Auto-create flow for admin/devices endpoint
             if args.auto_create and endpoint.endswith('/admin/devices'):
                 # Build product candidate
-                product_name = rec.get('TITLE') or rec.get('name') or rec.get('TITLE')
+                product_name = rec.get('TITLE') or rec.get('name') or rec.get('title')
                 product_desc = rec.get('DESCRIPTION') or rec.get('MEMO') or None
                 price = rec.get('PRICE1') or rec.get('PRICE') or None
 
                 # Validate product name early - can't create a product without one
                 if not product_name or not str(product_name).strip():
-                    failed.append({"index": record_index + 1, "error": "no-product-name: record has no usable product name (checked TITLE, name)", "record": rec})
+                    failed.append({"index": record_index + 1, "error": "no-product-name: record has no usable product name (checked TITLE, name, title)", "record": rec})
                     continue
 
                 matched_product = None
