@@ -21,10 +21,11 @@ $$;
 -- Create a non-unique index on api_key_hash if it doesn't exist
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
-    WHERE n.nspname = 'public' AND c.relkind = 'i' AND c.relname = 'idx_api_keys_api_key_hash'
-  ) THEN
+  IF to_regclass('public.api_keys') IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+       WHERE n.nspname = 'public' AND c.relkind = 'i' AND c.relname = 'idx_api_keys_api_key_hash'
+     ) THEN
     EXECUTE 'CREATE INDEX idx_api_keys_api_key_hash ON api_keys(api_key_hash)';
   END IF;
 END;

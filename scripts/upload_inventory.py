@@ -174,7 +174,9 @@ def load_hirehop_mapping(path: str):
                         continue
 
                 process_row(row)
-    except Exception as exc:
+    except FileNotFoundError:
+        pass
+    except (OSError, UnicodeDecodeError, csv.Error) as exc:
         print(f"Warning: failed to load HireHop mapping from {path}: {exc}", file=sys.stderr)
     return m
 
@@ -223,7 +225,7 @@ def match_category(value: str, canonical: List[str]) -> str:
     cable_keywords = (
         'cable', 'kabel', 'lead', 'xlr', 'hdmi', 'dvi',
         'power cable', 'power lead',
-        'ethernet', 'network', 'trss', 'rca'
+        'ethernet', 'ethernet cable', 'network cable', 'trss', 'rca'
     )
     for kw in cable_keywords:
         if kw in v:
@@ -288,9 +290,22 @@ def main():
     session.headers.update(headers)
 
     # Load cookies from Netscape 'cookies.txt' (curl -c) if provided
-    def load_cookies_netscape(path):
-        cookies = {}
+    def load_cookies_netscape(path, api_url):
+        from urllib.parse import urlparse
+
+        def cookie_matches_host(cookie_domain, include_subdomains, host):
+            if not cookie_domain or not host:
+                return False
+            normalized_domain = cookie_domain.lstrip('.').lower()
+            normalized_host = host.lower()
+            if include_subdomains:
+                return normalized_host == normalized_domain or normalized_host.endswith('.' + normalized_domain)
+            return normalized_host == normalized_domain
+
+        jar = requests.cookies.RequestsCookieJar()
         try:
+            parsed_api_url = urlparse(api_url)
+            api_host = parsed_api_url.hostname or 'localhost'
             with open(path, 'r', encoding='utf-8') as cf:
                 for line in cf:
                     line = line.rstrip('\n')
@@ -303,16 +318,21 @@ def main():
                         continue
                     parts = line.split('\t')
                     if len(parts) >= 7:
+                        domain = parts[0].strip()
+                        include_subdomains = parts[1].strip().upper() == 'TRUE'
+                        cookie_path = parts[2].strip() or '/'
                         name = parts[5]
                         value = parts[6]
-                        cookies[name] = value
+                        # Only load cookies whose domain matches the API host
+                        if cookie_matches_host(domain, include_subdomains, api_host):
+                            jar.set(name, value, domain=domain, path=cookie_path)
         except Exception:
-            return {}
-        return cookies
+            return requests.cookies.RequestsCookieJar()
+        return jar
 
     if args.cookies:
-        ck = load_cookies_netscape(args.cookies)
-        if ck:
+        ck = load_cookies_netscape(args.cookies, args.api_url)
+        if len(ck):
             session.cookies.update(ck)
             if not args.quiet:
                 print(f"Loaded {len(ck)} cookies from {args.cookies}")
@@ -518,6 +538,11 @@ def main():
                 product_name = rec.get('TITLE') or rec.get('name') or rec.get('TITLE')
                 product_desc = rec.get('DESCRIPTION') or rec.get('MEMO') or None
                 price = rec.get('PRICE1') or rec.get('PRICE') or None
+
+                # Validate product name early - can't create a product without one
+                if not product_name or not str(product_name).strip():
+                    failed.append({"index": record_index + 1, "error": "no-product-name: record has no usable product name (checked TITLE, name)", "record": rec})
+                    continue
 
                 matched_product = None
                 if product_name:
@@ -877,7 +902,10 @@ def main():
 
     print("---")
     if args.auto_create:
-        print(f"Input records: {total}, Records processed: {records_processed}, Devices created: {devices_created}, Failed: {len(failed)}")
+        if args.dry_run:
+            print(f"Input records: {total}, Records processed: {records_processed}, Devices planned: {devices_created}, Failed: {len(failed)}")
+        else:
+            print(f"Input records: {total}, Records processed: {records_processed}, Devices created: {devices_created}, Failed: {len(failed)}")
     else:
         print(f"Total: {total}, Successful: {success}, Failed: {len(failed)}")
     if failed:

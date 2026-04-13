@@ -28,15 +28,17 @@ $$ LANGUAGE plpgsql;
 -- Install trigger (idempotent)
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_trigger
-    WHERE tgname = 'trg_sync_api_key_hashes'
-      AND tgrelid = 'public.api_keys'::regclass
-  ) THEN
-    CREATE TRIGGER trg_sync_api_key_hashes
-    BEFORE INSERT OR UPDATE ON api_keys
-    FOR EACH ROW
-    EXECUTE FUNCTION sync_api_key_hashes();
+  IF to_regclass('public.api_keys') IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_trigger
+      WHERE tgname = 'trg_sync_api_key_hashes'
+        AND tgrelid = 'public.api_keys'::regclass
+    ) THEN
+      CREATE TRIGGER trg_sync_api_key_hashes
+      BEFORE INSERT OR UPDATE ON api_keys
+      FOR EACH ROW
+      EXECUTE FUNCTION sync_api_key_hashes();
+    END IF;
   END IF;
 END;
 $$;
