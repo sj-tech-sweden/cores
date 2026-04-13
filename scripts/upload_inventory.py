@@ -11,15 +11,25 @@ endpoint. The JSON file may be a top-level array or an object containing a
 single array (common keys: `items`, `devices`, `products`, `inventory`).
 
 Options:
-  --file FILE         JSON file to upload (required)
-  --api-url URL       Base API URL (default: http://localhost:8080)
-  --endpoint PATH     API path to POST each record to (default: /api/v1/admin/devices)
-  --token TOKEN       Bearer token for Authorization header (optional)
-  --batch-size N      Number of items per batch (default: 1)
-  --dry-run           Don't POST; just print what would be sent
-  --quiet             Minimal output
+  --file FILE            JSON file to upload (required)
+  --api-url URL          Base API URL (default: http://localhost:8080)
+  --endpoint PATH        API path to POST each record to (default: /api/v1/admin/devices)
+  --token TOKEN          Bearer token for Authorization header (optional)
+  --cookies COOKIES      Path to cookies.txt (Netscape/curl format) for session auth (optional)
+  --session-id ID        Raw session_id cookie value for the API host (optional)
+  --batch-size N         Number of items per batch (default: 1)
+  --map-categories       Normalize/map category names to known categories before upload
+  --auto-create          Create missing products and devices when supported by the API
+  --dry-run              Don't POST; just print what would be sent
+  --debug                Enable verbose debug logging/output
+  --quiet                Minimal output
 
-Note: Ensure the API endpoint and token are correct for your environment.
+Prerequisites:
+  pip install requests   (see scripts/requirements.txt)
+
+Note: Ensure the API endpoint and authentication/session options are correct
+for your environment, and review category mapping or auto-create behavior
+before running against a live system.
 """
 
 import argparse
@@ -47,6 +57,43 @@ def detect_array_root(data: Any) -> List[Any]:
             if isinstance(v, list):
                 return v
     raise ValueError("JSON file does not contain an array of records")
+
+
+def extract_qty(rec: dict) -> int:
+    """Extract quantity from a record, checking common key names."""
+    for k in ('QTY', 'qty', 'quantity', 'count'):
+        if k in rec and rec[k] is not None:
+            try:
+                return int(rec[k])
+            except Exception:
+                pass
+    return 0
+
+
+def extract_serials(rec: dict) -> List[dict]:
+    """Extract serial-number entries from a record, supporting multiple shapes."""
+    serials = []
+    if 'serialnumbers' in rec and isinstance(rec['serialnumbers'], list):
+        for s in rec['serialnumbers']:
+            serial = None
+            barcode = None
+            purchase_date = None
+            if isinstance(s, dict):
+                cell = s.get('cell') or s
+                if isinstance(cell, dict):
+                    serial = cell.get('SERIAL') or cell.get('serial') or cell.get('serial_number') or cell.get('id')
+                    barcode = cell.get('BARCODE') or cell.get('barcode')
+                    purchase_date = cell.get('PURCHASE_DATE') or cell.get('purchase_date')
+                else:
+                    serial = str(cell)
+            else:
+                serial = str(s)
+            serials.append({
+                'serial_number': str(serial) if serial is not None else None,
+                'barcode': barcode,
+                'purchase_date': purchase_date,
+            })
+    return serials
 
 
 def post_record(session: requests.Session, url: str, record: dict) -> Tuple[bool, str]:
@@ -459,43 +506,8 @@ def main():
                             prod_payload['price'] = price
 
                     # Build device payloads from serialnumbers and quantity (QTY)
-                    def _extract_qty(r):
-                        for k in ('QTY', 'qty', 'quantity', 'count'):
-                            if k in r and r[k] is not None:
-                                try:
-                                    return int(r[k])
-                                except Exception:
-                                    pass
-                        return None
-
-                    # Robustly extract serial entries supporting multiple shapes
-                    serials = []
-                    if 'serialnumbers' in rec and isinstance(rec['serialnumbers'], list):
-                        for s in rec['serialnumbers']:
-                            serial = None
-                            barcode = None
-                            purchase_date = None
-                            # entry may be a dict with 'cell' or direct keys, or a primitive
-                            if isinstance(s, dict):
-                                cell = s.get('cell') or s
-                                if isinstance(cell, dict):
-                                    serial = cell.get('SERIAL') or cell.get('serial') or cell.get('serial_number') or cell.get('id')
-                                    barcode = cell.get('BARCODE') or cell.get('barcode')
-                                    purchase_date = cell.get('PURCHASE_DATE') or cell.get('purchase_date')
-                                else:
-                                    # unexpected nested primitive
-                                    serial = str(cell)
-                            else:
-                                # primitive value
-                                serial = str(s)
-                            # normalize to string when present to satisfy API schema
-                            serials.append({
-                                'serial_number': str(serial) if serial is not None else None,
-                                'barcode': barcode,
-                                'purchase_date': purchase_date,
-                            })
-
-                    qty = _extract_qty(rec) or len(serials) or 1
+                    serials = extract_serials(rec)
+                    qty = extract_qty(rec) or len(serials) or 1
 
                     # Simulate a product_id for dry-run so payloads look realistic
                     sim_pid = f"<simulated_product_id:{(product_name or 'unknown').replace(' ', '_')}>"
@@ -823,40 +835,8 @@ def main():
                         continue
 
                 # create devices from serialnumbers and ensure QTY
-                # Robustly extract serial entries supporting multiple shapes
-                serials = []
-                if 'serialnumbers' in rec and isinstance(rec['serialnumbers'], list):
-                    for s in rec['serialnumbers']:
-                        serial = None
-                        barcode = None
-                        purchase_date = None
-                        if isinstance(s, dict):
-                            cell = s.get('cell') or s
-                            if isinstance(cell, dict):
-                                serial = cell.get('SERIAL') or cell.get('serial') or cell.get('serial_number') or cell.get('id')
-                                barcode = cell.get('BARCODE') or cell.get('barcode')
-                                purchase_date = cell.get('PURCHASE_DATE') or cell.get('purchase_date')
-                            else:
-                                serial = str(cell)
-                        else:
-                            serial = str(s)
-                        serials.append({
-                            'barcode': barcode,
-                            'serial_number': str(serial) if serial is not None else None,
-                            'purchase_date': purchase_date,
-                        })
-
-                # determine qty; fall back to number of serials or 1
-                qty = None
-                for k in ('QTY', 'qty', 'quantity', 'count'):
-                    if k in rec and rec[k] is not None:
-                        try:
-                            qty = int(rec[k])
-                        except Exception:
-                            pass
-                        break
-                if not qty:
-                    qty = len(serials) or 1
+                serials = extract_serials(rec)
+                qty = extract_qty(rec) or len(serials) or 1
 
                 pid = (matched_product.get('product_id') or matched_product.get('id')) if matched_product else None
                 if not pid:
