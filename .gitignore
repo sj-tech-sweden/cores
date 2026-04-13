@@ -44,3 +44,4 @@ AGENTS.md
 .claude/
 .gemini/
 *.md.bak
+__pycache__/

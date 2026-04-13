@@ -1,0 +1,13 @@
+-- Migration 008: No-op
+-- Removed automatic privileged role assignment from the shared migration.
+--
+-- The previous implementation granted `admin` and `warehouse_admin` based on
+-- a broad substring match across name/username/email, which is non-portable
+-- and can accidentally elevate the wrong account in non-development
+-- environments.
+--
+-- If a bootstrap admin is required, assign roles in an environment-specific
+-- seed step or manual script using an exact, explicitly identified account
+-- (for example, a known `userid` or exact `username`).
+--
+-- Intentionally left as a no-op to preserve migration ordering safely.
