@@ -13,7 +13,7 @@ RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.key_prefix IS NULL OR NEW.key_prefix = '' THEN
     NEW.key_prefix := 'kp_' || substr(
-      md5(coalesce(NEW.api_key_hash, '') || coalesce(NEW.key_hash, '') || coalesce(NEW.name, '') || coalesce(NEW.id::text, '')),
+      md5(coalesce(NEW.api_key_hash, '') || '|' || coalesce(NEW.key_hash, '') || '|' || coalesce(NEW.name, '') || '|' || coalesce(NEW.id::text, '')),
       1, 12
     );
   END IF;
