@@ -135,28 +135,45 @@ def load_hirehop_mapping(path: str):
     Handles simple two/three column formats gracefully.
     """
     m = {}
+    def process_row(row):
+        hire = row[0].strip()
+        if not hire:
+            return
+        wc_cat = None
+        wc_sub = None
+        if len(row) >= 3 and row[2].strip():
+            wc_cat = row[2].strip()
+        elif len(row) >= 2 and row[1].strip():
+            wc_cat = row[1].strip()
+        if len(row) >= 5 and row[4].strip():
+            wc_sub = row[4].strip()
+        elif len(row) >= 4 and row[3].strip():
+            wc_sub = row[3].strip()
+        m[hire.lower()] = {'category': wc_cat, 'subcategory': wc_sub}
+
     try:
         with open(path, newline='', encoding='utf-8') as cf:
             reader = csv.reader(cf)
+            first_data_row = True
             for row in reader:
                 if not row:
                     continue
                 if row[0].strip().lower().startswith('#'):
                     continue
-                hire = row[0].strip()
-                if not hire:
-                    continue
-                wc_cat = None
-                wc_sub = None
-                if len(row) >= 3 and row[2].strip():
-                    wc_cat = row[2].strip()
-                elif len(row) >= 2 and row[1].strip():
-                    wc_cat = row[1].strip()
-                if len(row) >= 5 and row[4].strip():
-                    wc_sub = row[4].strip()
-                elif len(row) >= 4 and row[3].strip():
-                    wc_sub = row[3].strip()
-                m[hire.lower()] = {'category': wc_cat, 'subcategory': wc_sub}
+
+                if first_data_row:
+                    first_data_row = False
+                    normalized = [col.strip().lower() for col in row]
+                    is_header = (
+                        len(normalized) >= 1 and normalized[0] == 'hirehop_category' and (
+                            (len(normalized) >= 3 and normalized[2] == 'warehousecore_category') or
+                            (len(normalized) >= 2 and normalized[1] == 'warehousecore_category')
+                        )
+                    )
+                    if is_header:
+                        continue
+
+                process_row(row)
     except Exception:
         pass
     return m
@@ -233,6 +250,7 @@ def main():
     p.add_argument("--map-categories", action="store_true", help="Enable fuzzy mapping of categories (cables detection)")
     p.add_argument("--auto-create", action="store_true", help="Automatically create products and devices when missing")
     p.add_argument("--quiet", action="store_true")
+    p.add_argument("--debug", action="store_true", help="Enable verbose debug output (may print request details)")
     args = p.parse_args()
 
     # Build target URL
@@ -315,12 +333,13 @@ def main():
     category_map = {}
     brand_map = {}
     manufacturer_map = {}
+    subcategory_map = {}
+    hirehop_map = {}
     if args.map_categories:
         category_map = fetch_category_map(session, args.api_url)
         brand_map = fetch_name_id_map(session, args.api_url, 'brands', id_key='brand_id')
         manufacturer_map = fetch_name_id_map(session, args.api_url, 'manufacturers', id_key='manufacturer_id')
         subcategory_map = fetch_name_id_map(session, args.api_url, 'subcategories', id_key='subcategory_id')
-        subbier_map = fetch_name_id_map(session, args.api_url, 'subbiercategories', id_key='subbiercategory_id')
         # load mapping CSV if present
         mapping_csv = os.path.join(os.path.dirname(__file__), 'hirehop_to_warehousecore_map.csv')
         hirehop_map = load_hirehop_mapping(mapping_csv)
@@ -357,12 +376,14 @@ def main():
 
     total = len(records)
     success = 0
+    records_processed = 0
+    devices_created = 0
     failed = []
 
     batch_size = max(1, args.batch_size)
-    for i in range(0, total, batch_size):
-        batch = records[i:i + batch_size]
-        for rec in batch:
+    for batch_start in range(0, total, batch_size):
+        batch = records[batch_start:batch_start + batch_size]
+        for record_index, rec in enumerate(batch, start=batch_start):
             # Normalize and map categories if requested
             if args.map_categories:
                 # prefer common keys
@@ -602,15 +623,22 @@ def main():
                         if bid:
                             payload['brand_id'] = bid
                     try:
-                        # Debug: show URL, payload, session headers and cookies
+                        # Debug: show URL, payload, and redacted session info
                         dbg_url = args.api_url.rstrip('/') + '/api/v1/admin/products'
-                        if not args.quiet:
+                        if args.debug:
                             try:
                                 ck = session.cookies.get_dict()
+                                ck = {k: '***' for k in ck}
                             except Exception:
                                 ck = {}
+                            redacted_headers = {}
+                            for hk, hv in session.headers.items():
+                                if hk.lower() in ('authorization', 'cookie'):
+                                    redacted_headers[hk] = '***'
+                                else:
+                                    redacted_headers[hk] = hv
                             print(f"[DEBUG] POST {dbg_url}", file=sys.stderr)
-                            print(f"[DEBUG] session.headers: {json.dumps(dict(session.headers))}", file=sys.stderr)
+                            print(f"[DEBUG] session.headers: {json.dumps(redacted_headers)}", file=sys.stderr)
                             print(f"[DEBUG] session.cookies: {json.dumps(ck)}", file=sys.stderr)
                             print(f"[DEBUG] payload: {json.dumps(payload, ensure_ascii=False)[:2000]}", file=sys.stderr)
                         r = session.post(dbg_url, json=payload, timeout=30)
@@ -618,7 +646,7 @@ def main():
                         ctype = (r.headers.get('Content-Type') or r.headers.get('content-type') or '').lower()
                         body_start = (r.text or '').lstrip()[:20].lower()
                         if 'html' in ctype or body_start.startswith('<!doctype') or body_start.startswith('<html'):
-                            failed.append({"index": i + 1, "error": f"product-create-no-json: HTML response (possible auth or wrong endpoint)", "record": rec})
+                            failed.append({"index": record_index + 1, "error": f"product-create-no-json: HTML response (possible auth or wrong endpoint)", "record": rec})
                             # also emit debug info to stderr
                             try:
                                 dbg_hdr = dict(r.headers)
@@ -739,10 +767,10 @@ def main():
                                 display = matched_product.get('product_id') or matched_product.get('id') or matched_product.get('name')
                                 print(f"Created product: {display}")
                         else:
-                            failed.append({"index": i + 1, "error": f"product-create {r.status_code}: {r.text}", "record": rec})
+                            failed.append({"index": record_index + 1, "error": f"product-create {r.status_code}: {r.text}", "record": rec})
                             continue
                     except Exception as e:
-                        failed.append({"index": i + 1, "error": f"product-create-exc: {e}", "record": rec})
+                        failed.append({"index": record_index + 1, "error": f"product-create-exc: {e}", "record": rec})
                         continue
 
                 # create devices from serialnumbers and ensure QTY
@@ -783,7 +811,7 @@ def main():
 
                 pid = matched_product.get('product_id') or matched_product.get('id') if matched_product else None
                 if not pid:
-                    failed.append({"index": i + 1, "error": "no-product-id", "record": rec})
+                    failed.append({"index": record_index + 1, "error": "no-product-id", "record": rec})
                     continue
 
                 # whitelist of device fields expected by WarehouseCore API
@@ -805,11 +833,12 @@ def main():
                     # Filter payload to allowed fields only
                     dev_payload = {k: v for k, v in dev_payload.items() if k in allowed_device_fields}
 
-                    ok, info = post_record(session, args.api_url.rstrip('/') + '/api/v1/admin/devices', dev_payload, args.quiet)
+                    ok, info = post_record(session, target, dev_payload, args.quiet)
                     if ok:
-                        success += 1
+                        devices_created += 1
                     else:
-                        failed.append({"index": i + 1, "error": info, "record": dev_payload})
+                        failed.append({"index": record_index + 1, "error": info, "record": dev_payload})
+                records_processed += 1
                 # small delay to avoid spamming the API
                 time.sleep(0.05)
                 continue
@@ -819,16 +848,19 @@ def main():
             if ok:
                 success += 1
                 if not args.quiet:
-                    print(f"[{i+1}/{total}] OK")
+                    print(f"[{record_index+1}/{total}] OK")
             else:
-                failed.append({"index": i + 1, "error": info, "record": rec})
-                print(f"[{i+1}/{total}] FAILED: {info}")
+                failed.append({"index": record_index + 1, "error": info, "record": rec})
+                print(f"[{record_index+1}/{total}] FAILED: {info}")
 
             # small delay to avoid spamming the API
             time.sleep(0.05)
 
     print("---")
-    print(f"Total: {total}, Successful: {success}, Failed: {len(failed)}")
+    if args.auto_create:
+        print(f"Input records: {total}, Records processed: {records_processed}, Devices created: {devices_created}, Failed: {len(failed)}")
+    else:
+        print(f"Total: {total}, Successful: {success}, Failed: {len(failed)}")
     if failed:
         print("Failed items (first 10):")
         for f in failed[:10]:

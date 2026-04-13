@@ -64,7 +64,7 @@
           "BARCODE": "1100521",
           "STATUS": 0,
           "SERIAL": "",
-          "DEPOT": "Tallvägen2",
+          "DEPOT": "ExampleDepot",
           "JOB": 0,
           "PURCHASE_DATE": "",
           "RETIRE_DATE": "",
@@ -105,7 +105,7 @@
             "TELEMATICS_URL": "",
             "CUSTOM_FIELDS": {
               "Plats": { "type": "string", "value": "" },
-              "Ägare": { "type": "select", "value": "Samuel" },
+              "Ägare": { "type": "select", "value": "Example User" },
               "ip_adress": { "type": "string", "value": "" },
               "dmx_adress": { "type": "string", "value": "" },
               "fixture_id": { "type": "string", "value": "" },
@@ -113,7 +113,7 @@
             }
           },
           "~Plats": "",
-          "~Ägare": "Samuel",
+          "~Ägare": "Example User",
           "~ViewWebsite": "0",
           "~dmx_adress": "",
           "~fixture_id": "",

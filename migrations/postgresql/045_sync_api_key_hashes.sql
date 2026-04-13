@@ -29,7 +29,9 @@ $$ LANGUAGE plpgsql;
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM pg_trigger WHERE tgname = 'trg_sync_api_key_hashes'
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'trg_sync_api_key_hashes'
+      AND tgrelid = 'public.api_keys'::regclass
   ) THEN
     CREATE TRIGGER trg_sync_api_key_hashes
     BEFORE INSERT OR UPDATE ON api_keys
