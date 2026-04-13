@@ -529,6 +529,8 @@ def main():
                 else:
                     if not args.quiet:
                         print(json.dumps(rec, ensure_ascii=False))
+                if args.auto_create:
+                    records_processed += 1
                 success += 1
                 continue
 
@@ -891,6 +893,9 @@ def main():
                 continue
 
             # Default behavior: post to target endpoint
+            if not isinstance(rec, dict):
+                failed.append({"index": record_index + 1, "error": f"invalid-record-type: expected dict, got {type(rec).__name__}", "record": rec})
+                continue
             ok, info = post_record(session, target, rec)
             if ok:
                 success += 1
@@ -898,7 +903,8 @@ def main():
                     print(f"[{record_index+1}/{total}] OK")
             else:
                 failed.append({"index": record_index + 1, "error": info, "record": rec})
-                print(f"[{record_index+1}/{total}] FAILED: {info}")
+                if not args.quiet:
+                    print(f"[{record_index+1}/{total}] FAILED: {info}")
 
             # small delay to avoid spamming the API
             time.sleep(0.05)
@@ -910,7 +916,10 @@ def main():
         else:
             print(f"Input records: {total}, Records processed: {records_processed}, Devices created: {devices_created}, Failed: {len(failed)}")
     else:
-        print(f"Total: {total}, Successful: {success}, Failed: {len(failed)}")
+        if args.dry_run:
+            print(f"Total: {total}, Validated: {success}, Failed: {len(failed)}")
+        else:
+            print(f"Total: {total}, Successful: {success}, Failed: {len(failed)}")
     if failed:
         print("Failed items (first 10):")
         for f in failed[:10]:

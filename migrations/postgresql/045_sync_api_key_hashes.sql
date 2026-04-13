@@ -11,13 +11,15 @@ ALTER TABLE IF EXISTS api_keys
 CREATE OR REPLACE FUNCTION sync_api_key_hashes()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- If key_hash is null but api_key_hash provided, copy it over
-  IF NEW.key_hash IS NULL AND NEW.api_key_hash IS NOT NULL THEN
+  -- If key_hash is missing but api_key_hash provided, copy it over
+  IF (NEW.key_hash IS NULL OR NEW.key_hash = '')
+     AND (NEW.api_key_hash IS NOT NULL AND NEW.api_key_hash <> '') THEN
     NEW.key_hash := NEW.api_key_hash;
   END IF;
 
-  -- If api_key_hash is null but key_hash provided, copy it over
-  IF NEW.api_key_hash IS NULL AND NEW.key_hash IS NOT NULL THEN
+  -- If api_key_hash is missing but key_hash provided, copy it over
+  IF (NEW.api_key_hash IS NULL OR NEW.api_key_hash = '')
+     AND (NEW.key_hash IS NOT NULL AND NEW.key_hash <> '') THEN
     NEW.api_key_hash := NEW.key_hash;
   END IF;
 
