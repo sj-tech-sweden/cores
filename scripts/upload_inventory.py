@@ -789,7 +789,7 @@ def main():
                                 matched_product['product_id'] = pid_val
                                 matched_product['id'] = pid_val
 
-                            # If we still don't have a pid, log details for debugging and include headers/body
+                            # If we still don't have a pid, log details for debugging and record as failed
                             if not (matched_product.get('product_id') or matched_product.get('id')):
                                 try:
                                     dbg_txt = r.text
@@ -803,6 +803,9 @@ def main():
                                 print(f"[DEBUG] product-create missing id for '{product_name}' - status={r.status_code}", file=sys.stderr)
                                 print(f"[DEBUG] response-headers: {json.dumps(dbg_hdr)}", file=sys.stderr)
                                 print(f"[DEBUG] response-body: {dbg_txt[:2000]}", file=sys.stderr)
+                                failed.append({"index": record_index + 1, "error": f"product-create-no-id: created product '{product_name}' but response did not contain a usable id", "record": rec})
+                                continue
+                            # Cache the successfully created product for future lookups
                             existing_products.append(matched_product)
                             pname = matched_product.get('name')
                             if pname:
