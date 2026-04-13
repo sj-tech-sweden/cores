@@ -217,8 +217,14 @@ def match_category(value: str, canonical: List[str]) -> str:
     if not value:
         return ''
     v = value.lower()
-    # Keyword heuristics for cables
-    cable_keywords = ('cable', 'kabel', 'lead', 'xlr', 'hdmi', 'dvi', 'power', 'ethernet', 'network', 'trss', 'rca')
+    # Keyword heuristics for cables. Keep generic cable-specific terms, but
+    # avoid overly broad matches such as standalone "power" which would
+    # incorrectly classify categories like "Power Distribution" as cables.
+    cable_keywords = (
+        'cable', 'kabel', 'lead', 'xlr', 'hdmi', 'dvi',
+        'power cable', 'power lead',
+        'ethernet', 'network', 'trss', 'rca'
+    )
     for kw in cable_keywords:
         if kw in v:
             return 'Cables'
