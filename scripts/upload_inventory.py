@@ -27,7 +27,7 @@ import json
 import os
 import sys
 import time
-from typing import Any, List
+from typing import Any, List, Tuple
 
 import requests
 import difflib
@@ -49,7 +49,7 @@ def detect_array_root(data: Any) -> List[Any]:
     raise ValueError("JSON file does not contain an array of records")
 
 
-def post_record(session: requests.Session, url: str, record: dict, quiet: bool) -> (bool, str):
+def post_record(session: requests.Session, url: str, record: dict) -> Tuple[bool, str]:
     try:
         r = session.post(url, json=record, timeout=30)
     except Exception as e:
@@ -174,8 +174,8 @@ def load_hirehop_mapping(path: str):
                         continue
 
                 process_row(row)
-    except Exception:
-        pass
+    except Exception as exc:
+        print(f"Warning: failed to load HireHop mapping from {path}: {exc}", file=sys.stderr)
     return m
 
 
@@ -262,6 +262,7 @@ def main():
     # Build target URL
     api_base = args.api_url.rstrip('/')
     endpoint = args.endpoint if args.endpoint.startswith('/') else '/' + args.endpoint
+    endpoint = endpoint.rstrip('/')
     target = api_base + endpoint
 
     if not args.quiet:
@@ -380,6 +381,15 @@ def main():
             if not args.quiet:
                 print(f"Warning: failed to fetch existing products: {e}")
 
+    # Build a lookup dict keyed by normalized product name for O(1) matching
+    existing_products_by_name = {}
+    for p in existing_products:
+        pname = p.get('name')
+        if pname:
+            normalized = str(pname).strip().lower()
+            if normalized not in existing_products_by_name:
+                existing_products_by_name[normalized] = p
+
     total = len(records)
     success = 0
     records_processed = 0
@@ -494,6 +504,8 @@ def main():
                             print(json.dumps(d, ensure_ascii=False, indent=2))
                         if len(devices_to_show) > 50:
                             print(f"... and {len(devices_to_show)-50} more devices")
+                    records_processed += 1
+                    devices_created += len(devices_to_show)
                 else:
                     if not args.quiet:
                         print(json.dumps(rec, ensure_ascii=False))
@@ -508,10 +520,8 @@ def main():
                 price = rec.get('PRICE1') or rec.get('PRICE') or None
 
                 matched_product = None
-                for p in existing_products:
-                    if p.get('name') and product_name and p.get('name').strip().lower() == product_name.strip().lower():
-                        matched_product = p
-                        break
+                if product_name:
+                    matched_product = existing_products_by_name.get(str(product_name).strip().lower())
 
                 if not matched_product:
                     # Dry-run handled above; here create product for real
@@ -769,6 +779,9 @@ def main():
                                 print(f"[DEBUG] response-headers: {json.dumps(dbg_hdr)}", file=sys.stderr)
                                 print(f"[DEBUG] response-body: {dbg_txt[:2000]}", file=sys.stderr)
                             existing_products.append(matched_product)
+                            pname = matched_product.get('name')
+                            if pname:
+                                existing_products_by_name[str(pname).strip().lower()] = matched_product
                             if not args.quiet:
                                 display = matched_product.get('product_id') or matched_product.get('id') or matched_product.get('name')
                                 print(f"Created product: {display}")
@@ -815,7 +828,7 @@ def main():
                 if not qty:
                     qty = len(serials) or 1
 
-                pid = matched_product.get('product_id') or matched_product.get('id') if matched_product else None
+                pid = (matched_product.get('product_id') or matched_product.get('id')) if matched_product else None
                 if not pid:
                     failed.append({"index": record_index + 1, "error": "no-product-id", "record": rec})
                     continue
@@ -839,7 +852,7 @@ def main():
                     # Filter payload to allowed fields only
                     dev_payload = {k: v for k, v in dev_payload.items() if k in allowed_device_fields}
 
-                    ok, info = post_record(session, target, dev_payload, args.quiet)
+                    ok, info = post_record(session, target, dev_payload)
                     if ok:
                         devices_created += 1
                     else:
@@ -850,7 +863,7 @@ def main():
                 continue
 
             # Default behavior: post to target endpoint
-            ok, info = post_record(session, target, rec, args.quiet)
+            ok, info = post_record(session, target, rec)
             if ok:
                 success += 1
                 if not args.quiet:
