@@ -1,5 +1,7 @@
 # Environment files with sensitive data
 .env
+login.json
+cookies.txt
 
 # Project-specific directories (these have their own repos)
 warehousecore/
@@ -9,6 +11,7 @@ warehousecore/
 *.log
 *.swp
 *~
+tmp_w_categories.json
 
 # OS files
 .DS_Store
