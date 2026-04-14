@@ -24,9 +24,12 @@ $$ LANGUAGE plpgsql;
 DO $$
 BEGIN
   IF to_regclass('public.api_keys') IS NOT NULL THEN
-    -- Backfill any NULL key_prefix values with a deterministic generated prefix
+    -- Backfill any NULL key_prefix values with the same deterministic generated prefix used by the trigger
     UPDATE api_keys
-    SET key_prefix = 'kp_' || substr(md5(coalesce(name,'') || coalesce(id::text,'')), 1, 12)
+    SET key_prefix = 'kp_' || substr(
+      md5(coalesce(key_hash, '') || '|' || coalesce(name, '') || '|' || coalesce(id::text, '')),
+      1, 12
+    )
     WHERE key_prefix IS NULL OR key_prefix = '';
 
     -- Install trigger to auto-generate key_prefix on insert/update when not provided

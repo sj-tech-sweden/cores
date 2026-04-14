@@ -39,7 +39,12 @@ import sys
 import time
 from typing import Any, List, Tuple
 
-import requests
+try:
+    import requests
+except ImportError:
+    print("Error: 'requests' package is required. Install it with:", file=sys.stderr)
+    print("  pip install -r scripts/requirements.txt", file=sys.stderr)
+    sys.exit(1)
 import difflib
 import csv
 
@@ -515,7 +520,7 @@ def main():
                     qty = extract_qty(rec) or len(serials) or 1
 
                     # Simulate a product_id for dry-run so payloads look realistic
-                    sim_pid = f"<simulated_product_id:{(product_name or 'unknown').replace(' ', '_')}>"
+                    sim_pid = f"<simulated_product_id:{str(product_name or 'unknown').replace(' ', '_')}>"
 
                     # Build final device payloads up to qty
                     devices_to_show = []
@@ -536,7 +541,7 @@ def main():
                     if not args.quiet:
                         print('--- DRY RUN: PRODUCT PAYLOAD ---')
                         print(json.dumps(prod_payload, ensure_ascii=False, indent=2))
-                        print('--- DRY RUN: DEVICE PAYLOADS (would be POSTed to /api/v1/admin/devices) ---')
+                        print(f'--- DRY RUN: DEVICE PAYLOADS (would be POSTed to {endpoint}) ---')
                         for d in devices_to_show[:50]:
                             print(json.dumps(d, ensure_ascii=False, indent=2))
                         if len(devices_to_show) > 50:
