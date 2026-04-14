@@ -488,9 +488,14 @@ def main():
                                 rec['product_category'] = mapped
                                 break
 
-            # Handle dry-run: show transformed payloads when auto-creating,
-            # otherwise show the original record.
+            # Handle dry-run: validate record, then show transformed payloads
+            # when auto-creating, otherwise show the original record.
             if args.dry_run:
+                # Perform the same basic validation as the real POST path
+                if not isinstance(rec, dict):
+                    failed.append({"index": record_index + 1, "error": f"invalid-record-type: expected dict, got {type(rec).__name__}", "record": rec})
+                    continue
+
                 if args.auto_create and endpoint.endswith('/admin/devices'):
                     # Show the product payload that would be created
                     product_name = rec.get('TITLE') or rec.get('name') or rec.get('title')
@@ -541,8 +546,8 @@ def main():
                 else:
                     if not args.quiet:
                         print(json.dumps(rec, ensure_ascii=False))
-                if args.auto_create:
-                    records_processed += 1
+                    if args.auto_create:
+                        records_processed += 1
                 success += 1
                 continue
 

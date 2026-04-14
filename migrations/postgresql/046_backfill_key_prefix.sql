@@ -7,13 +7,13 @@ BEGIN;
 ALTER TABLE IF EXISTS api_keys
   ADD COLUMN IF NOT EXISTS key_prefix VARCHAR(20);
 
--- Create or replace a function that derives key_prefix from the key hash columns
+-- Create or replace a function that derives key_prefix from columns guaranteed by this migration
 CREATE OR REPLACE FUNCTION generate_api_key_prefix()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.key_prefix IS NULL OR NEW.key_prefix = '' THEN
     NEW.key_prefix := 'kp_' || substr(
-      md5(coalesce(NEW.api_key_hash, '') || '|' || coalesce(NEW.key_hash, '') || '|' || coalesce(NEW.name, '') || '|' || coalesce(NEW.id::text, '')),
+      md5(coalesce(NEW.key_hash, '') || '|' || coalesce(NEW.name, '') || '|' || coalesce(NEW.id::text, '')),
       1, 12
     );
   END IF;
