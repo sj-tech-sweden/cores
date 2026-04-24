@@ -1,0 +1,108 @@
+openapi: 3.0.3
+info:
+  title: WarehouseCore Service API (decoupling contract)
+  version: 1.0.0
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    Cable:
+      type: object
+      properties:
+        cable_id:
+          type: integer
+        name:
+          type: string
+        connector1:
+          type: integer
+        connector2:
+          type: integer
+        typ:
+          type: integer
+        length:
+          type: number
+        mm2:
+          type: number
+    Device:
+      type: object
+      properties:
+        device_id:
+          type: string
+        name:
+          type: string
+        cable_id:
+          type: integer
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+paths:
+  /admin/cables/{id}:
+    get:
+      summary: Get cable metadata by ID
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: cable found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cable'
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /devices/{id}:
+    get:
+      summary: Get device by ID (includes cable_id if available)
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: device
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+  /admin/cables:
+    get:
+      summary: Search cables
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cable'
+security:
+  - ApiKeyAuth: []
