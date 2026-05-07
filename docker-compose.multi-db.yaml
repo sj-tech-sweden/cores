@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: postgres-multi
+    env_file: .env.multi
+    environment:
+      - POSTGRES_USER=${POSTGRES_ROOT_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_ROOT_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_ROOT_DB}
+    volumes:
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  rentalcore:
+    build:
+      context: ../rentalcore
+    container_name: rentalcore-app
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${RENTAL_DB_NAME}
+      - DB_USER=${RENTAL_DB_USER}
+      - DB_PASSWORD=${RENTAL_DB_PASSWORD}
+    depends_on:
+      - postgres
+
+  warehousecore:
+    build:
+      context: ../warehousecore
+    container_name: warehousecore-app
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${WAREHOUSE_DB_NAME}
+      - DB_USER=${WAREHOUSE_DB_USER}
+      - DB_PASSWORD=${WAREHOUSE_DB_PASSWORD}
+    depends_on:
+      - postgres
+
+volumes:
+  postgres-data:

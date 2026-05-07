@@ -42,6 +42,7 @@ services:
       WAREHOUSECORE_DOMAIN: "${WAREHOUSECORE_DOMAIN:-}"
       # Cookie domain for SSO (e.g., .example.com for subdomains, leave empty for localhost)
       COOKIE_DOMAIN: "${COOKIE_DOMAIN:-}"
+      SESSION_COOKIE_NAME: "${RENTALCORE_SESSION_COOKIE_NAME:-rentalcore_session_id}"
       # PostgreSQL Database Configuration
       DB_HOST: "postgres"
       DB_PORT: "5432"
@@ -89,6 +90,7 @@ services:
       WAREHOUSECORE_DOMAIN: "${WAREHOUSECORE_DOMAIN:-}"
       # Cookie domain for SSO (e.g., .example.com for subdomains, leave empty for localhost)
       COOKIE_DOMAIN: "${COOKIE_DOMAIN:-}"
+      SESSION_COOKIE_NAME: "${WAREHOUSECORE_SESSION_COOKIE_NAME:-warehousecore_session_id}"
       # PostgreSQL Database Configuration
       DB_HOST: "postgres"
       DB_PORT: "5432"

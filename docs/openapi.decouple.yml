@@ -106,3 +106,33 @@ paths:
                   $ref: '#/components/schemas/Cable'
 security:
   - ApiKeyAuth: []
+
+  /security/auth/users/{id}:
+    get:
+      summary: Get user information by ID (service-to-service)
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userID:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+        '401':
+          description: unauthorized
+        '404':
+          description: not found
