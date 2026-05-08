@@ -48,3 +48,4 @@ AGENTS.md
 .gemini/
 *.md.bak
 __pycache__/
+docker-compose.multi-db.dev.yml
