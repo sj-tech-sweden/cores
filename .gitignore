@@ -12,6 +12,7 @@ warehousecore/
 *.swp
 *~
 tmp_w_categories.json
+convert_report.txt
 
 # OS files
 .DS_Store

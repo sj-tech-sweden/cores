@@ -104,9 +104,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Cable'
-security:
-  - ApiKeyAuth: []
-
   /security/auth/users/{id}:
     get:
       summary: Get user information by ID (service-to-service)
@@ -136,3 +133,5 @@ security:
           description: unauthorized
         '404':
           description: not found
+security:
+  - ApiKeyAuth: []

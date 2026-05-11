@@ -1,19 +1,14 @@
--- Migration 053: Stage removal of cross-service foreign keys referencing TARGET_TABLE
--- Replace TARGET_TABLE with actual table name (e.g., cables) before applying.
+-- Migration 053: Remove cross-service FK constraints from job_cables to cables.
+-- cables is owned by WarehouseCore; job_cables is owned by RentalCore.
+-- These constraints must be dropped before the two services can use separate databases.
+-- This migration is idempotent (DROP CONSTRAINT IF EXISTS).
 
-DO $$
-DECLARE
-  r RECORD;
-  target_table TEXT := 'TARGET_TABLE'; -- replace with actual table name, e.g. 'cables'
-BEGIN
-  FOR r IN
-    SELECT conrelid::regclass::text AS table_name, conname
-    FROM pg_constraint c
-    JOIN pg_class t ON c.confrelid = t.oid
-    WHERE contype = 'f' AND t.relname = target_table
-  LOOP
-    EXECUTE format('ALTER TABLE %s DROP CONSTRAINT IF EXISTS %I', r.table_name, r.conname);
-  END LOOP;
-END$$;
+BEGIN;
 
--- NOTE: Keep a backup of constraint names before running. Use a maintenance window.
+-- Drop FK added by migration 050 (original column name before rename)
+ALTER TABLE job_cables DROP CONSTRAINT IF EXISTS job_cables_cableid_fkey;
+
+-- Drop FK in case the column was renamed to cableID by migration 051 before this runs
+ALTER TABLE job_cables DROP CONSTRAINT IF EXISTS "job_cables_cableID_fkey";
+
+COMMIT;

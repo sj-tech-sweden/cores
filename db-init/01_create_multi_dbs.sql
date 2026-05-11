@@ -4,13 +4,25 @@
 -- NOTE: Docker's init SQL runner does not substitute environment variables inside files.
 -- Replace placeholders below with concrete values, or generate this file from the .env.multi prior to first start.
 
--- Service users
-CREATE USER IF NOT EXISTS rental_user WITH PASSWORD 'change_me_rental';
-CREATE USER IF NOT EXISTS warehouse_user WITH PASSWORD 'change_me_warehouse';
+-- Service users (idempotent via DO block)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'rental_user') THEN
+        CREATE ROLE rental_user WITH LOGIN PASSWORD 'change_me_rental';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'warehouse_user') THEN
+        CREATE ROLE warehouse_user WITH LOGIN PASSWORD 'change_me_warehouse';
+    END IF;
+END $$;
 
--- Create databases owned by the respective users
-CREATE DATABASE IF NOT EXISTS rentalcore_db OWNER rental_user;
-CREATE DATABASE IF NOT EXISTS warehousecore_db OWNER warehouse_user;
+-- Create databases owned by the respective users (idempotent via \gexec)
+SELECT 'CREATE DATABASE rentalcore_db OWNER rental_user'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'rentalcore_db')
+\gexec
+
+SELECT 'CREATE DATABASE warehousecore_db OWNER warehouse_user'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'warehousecore_db')
+\gexec
 
 -- Grant privileges
 GRANT ALL PRIVILEGES ON DATABASE rentalcore_db TO rental_user;
