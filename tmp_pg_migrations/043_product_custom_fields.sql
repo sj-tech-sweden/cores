@@ -103,6 +103,9 @@ BEGIN
         v_fd_mm2            INTEGER;
         v_dual_count        INTEGER;
         v_has_cable_id      BOOLEAN;
+        v_has_connectors    BOOLEAN;
+        v_has_types         BOOLEAN;
+        v_cable_sql         TEXT;
     BEGIN
         SELECT categoryID INTO v_cable_category_id
         FROM categories WHERE LOWER(name) = 'cables' LIMIT 1;
@@ -121,15 +124,29 @@ BEGIN
               AND column_name  = 'cable_id'
         ) INTO v_has_cable_id;
 
-        FOR v_cable IN
-            SELECT c.*,
-                   cc1.name AS c1name,
-                   cc2.name AS c2name,
-                   ct.name  AS ctname
-            FROM cables c
-            LEFT JOIN cable_connectors cc1 ON c.connector1 = cc1.cable_connectorsID
-            LEFT JOIN cable_connectors cc2 ON c.connector2 = cc2.cable_connectorsID
-            LEFT JOIN cable_types      ct  ON c.typ        = ct.cable_typesID
+        -- Detect which lookup tables are still present (consistent with section 3b guards).
+        v_has_connectors := to_regclass('public.cable_connectors') IS NOT NULL;
+        v_has_types      := to_regclass('public.cable_types')      IS NOT NULL;
+
+        -- Build the cable query dynamically so it doesn't reference dropped lookup tables.
+        v_cable_sql :=
+            'SELECT c.*' ||
+            CASE WHEN v_has_connectors
+                 THEN ', cc1.name AS c1name, cc2.name AS c2name'
+                 ELSE ', NULL::text AS c1name, NULL::text AS c2name' END ||
+            CASE WHEN v_has_types
+                 THEN ', ct.name AS ctname'
+                 ELSE ', NULL::text AS ctname' END ||
+            ' FROM cables c' ||
+            CASE WHEN v_has_connectors
+                 THEN ' LEFT JOIN cable_connectors cc1 ON c.connector1 = cc1.cable_connectorsID'
+                   || ' LEFT JOIN cable_connectors cc2 ON c.connector2 = cc2.cable_connectorsID'
+                 ELSE '' END ||
+            CASE WHEN v_has_types
+                 THEN ' LEFT JOIN cable_types ct ON c.typ = ct.cable_typesID'
+                 ELSE '' END;
+
+        FOR v_cable IN EXECUTE v_cable_sql
         LOOP
             -- Create a product for this cable.
             INSERT INTO products (name, categoryID, description)
@@ -178,9 +195,12 @@ BEGIN
                 ON CONFLICT (product_id, field_definition_id) DO NOTHING;
             END IF;
 
-            INSERT INTO product_field_values (product_id, field_definition_id, value)
-            VALUES (v_product_id, v_fd_length, v_cable.length::text)
-            ON CONFLICT (product_id, field_definition_id) DO NOTHING;
+            -- Guard length insert: NULL length would violate value NOT NULL.
+            IF v_cable.length IS NOT NULL THEN
+                INSERT INTO product_field_values (product_id, field_definition_id, value)
+                VALUES (v_product_id, v_fd_length, v_cable.length::text)
+                ON CONFLICT (product_id, field_definition_id) DO NOTHING;
+            END IF;
 
             IF v_cable.mm2 IS NOT NULL THEN
                 INSERT INTO product_field_values (product_id, field_definition_id, value)
