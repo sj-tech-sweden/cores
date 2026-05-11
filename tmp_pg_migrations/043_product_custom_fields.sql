@@ -3,8 +3,21 @@
 --              existing cable data (cables, cable_connectors, cable_types) into the
 --              generic products + field-values model and clean up the cable-specific tables.
 -- Date: 2026-04-13
+-- NOTICE: This file is stored under tmp_pg_migrations and must not be picked up
+--         or executed as part of the normal migration flow from this location.
+--         Move it into the main migrations directory before adopting it as a
+--         standard migration, or explicitly opt in to a one-off/manual run by
+--         setting `app.allow_tmp_migration_043 = 'on'` for the current session.
 
 BEGIN;
+
+DO $$
+BEGIN
+    IF current_setting('app.allow_tmp_migration_043', true) IS DISTINCT FROM 'on' THEN
+        RAISE EXCEPTION
+            'Refusing to run tmp migration 043 from tmp_pg_migrations without explicit opt-in. Move this file into the main migrations directory, or set app.allow_tmp_migration_043=on for a deliberate one-off/manual execution.';
+    END IF;
+END $$;
 
 -- ---------------------------------------------------------------------------
 -- 1. product_field_definitions
