@@ -14,7 +14,7 @@ echo "Applying Postgres-compatible migrations from: $MIGRATIONS_DIR -> container
 shopt -s nullglob
 for f in "$MIGRATIONS_DIR"/*.sql; do
   echo "--- checking $f"
-  if grep -qiE "`|AUTO_INCREMENT|DELIMITER|UNSIGNED|INSERT IGNORE|ON DUPLICATE KEY|ENGINE=|FULLTEXT|MODIFY |`" "$f"; then
+  if grep -qiE '`|AUTO_INCREMENT|DELIMITER|UNSIGNED|INSERT IGNORE|ON DUPLICATE KEY|ENGINE=|FULLTEXT|MODIFY |`' "$f"; then
     echo "SKIP (contains MySQL-only syntax): $f"
     continue
   fi

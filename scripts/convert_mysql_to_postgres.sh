@@ -10,7 +10,7 @@ report_file="convert_report.txt"
 > "$report_file"
 
 shopt -s nullglob
-for f in $(find "$MIGRATIONS_DIR" -name '*.sql' | sort); do
+while IFS= read -r -d '' f; do
   echo "\nProcessing: $f"
   skip=0
   for p in "${SKIP_PATTERNS[@]}"; do
@@ -47,15 +47,12 @@ for f in $(find "$MIGRATIONS_DIR" -name '*.sql' | sort); do
   # 6) Remove ON UPDATE CURRENT_TIMESTAMP (Postgres handles differently)
   sed -E -e 's/ON UPDATE CURRENT_TIMESTAMP//Ig' "$f.tmp" > "$f.tmp2" && mv "$f.tmp2" "$f.tmp"
 
-  # 7) Replace INSERT IGNORE with INSERT (note: may need manual review)
-  sed -E -e 's/INSERT\\s+IGNORE\\s+INTO/INSERT INTO/Ig' "$f.tmp" > "$f.tmp2" && mv "$f.tmp2" "$f.tmp"
-
-  # 7b) For INSERT statements that previously used IGNORE, append ON CONFLICT DO NOTHING
-  # This is a safe no-op when a unique constraint exists; complex ON DUPLICATE KEY patterns are skipped earlier.
-  perl -0777 -pe 's/(INSERT\\s+INTO\\s+[^;]*?VALUES\\s*\\([^;]*?\\))\\s*;/\\1 ON CONFLICT DO NOTHING;/igs' "$f.tmp" > "$f.tmp2" && mv "$f.tmp2" "$f.tmp"
+  # 7) Replace INSERT IGNORE ... VALUES (...); directly with INSERT INTO ... ON CONFLICT DO NOTHING;
+  # Only INSERT IGNORE statements receive conflict handling; plain INSERT statements are left untouched.
+  perl -0777 -pe 's/INSERT\s+IGNORE\s+INTO(\s+[^;]*?VALUES\s*\([^;]*?\))\s*;/INSERT INTO$1 ON CONFLICT DO NOTHING;/igs' "$f.tmp" > "$f.tmp2" && mv "$f.tmp2" "$f.tmp"
 
   mv "$f.tmp" "$f"
   echo "  Converted (backup: $bak)" | tee -a "$report_file"
-done
+done < <(find "$MIGRATIONS_DIR" -name '*.sql' -print0 | sort -z)
 
 echo "\nConversion complete. See $report_file for skipped files and notes."
