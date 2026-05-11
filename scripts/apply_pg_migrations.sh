@@ -14,7 +14,8 @@ echo "Applying Postgres-compatible migrations from: $MIGRATIONS_DIR -> container
 shopt -s nullglob
 for f in "$MIGRATIONS_DIR"/*.sql; do
   echo "--- checking $f"
-  if grep -qiE '`|AUTO_INCREMENT|DELIMITER|UNSIGNED|INSERT IGNORE|ON DUPLICATE KEY|ENGINE=|FULLTEXT|MODIFY |`' "$f"; then
+  sql_without_comments="$(perl -0pe 's{/\*.*?\*/}{}gs; s{^[[:space:]]*--.*$}{}gm; s{^[[:space:]]*#.*$}{}gm' "$f")"
+  if printf '%s' "$sql_without_comments" | grep -qiE '`|AUTO_INCREMENT|(^|[[:space:]])DELIMITER([[:space:]]|$)|(^|[[:space:][:punct:]])UNSIGNED([[:space:][:punct:]]|$)|INSERT[[:space:]]+IGNORE|ON[[:space:]]+DUPLICATE[[:space:]]+KEY|ENGINE[[:space:]]*=|(^|[[:space:]])FULLTEXT([[:space:]]|$)|(^|[[:space:]])MODIFY([[:space:]]|$)'; then
     echo "SKIP (contains MySQL-only syntax): $f"
     continue
   fi
