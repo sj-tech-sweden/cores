@@ -19,6 +19,11 @@ applied.
      WarehouseCore API endpoint `GET /admin/cables/{id}` to retrieve the cable metadata.
    - Write the returned JSON into `jobs.cable_snapshot` and the cable's string identifier
      into `jobs.cable_id`.
+   - **Cardinality note:** `job_cables` is a many-to-one join table — a job may reference
+     more than one cable row. Because `jobs.cable_id` and `jobs.cable_snapshot` are singular
+     columns, the backfill should select **one representative cable per job** (e.g. the
+     lowest `cableid`, or the most recently added row). If a job genuinely requires multiple
+     cables, surface that as a separate data-modelling decision before running the backfill.
 
 3. **Verify** — spot-check a sample of rows to confirm the columns are populated correctly.
 
@@ -26,7 +31,7 @@ applied.
 
 ```go
 // Error handling omitted for brevity; production code should check all errors.
-rows, _ := db.Query(`SELECT j.jobid, jc."cableID" FROM jobs j JOIN job_cables jc ON j.jobid = jc.jobid WHERE j.cable_snapshot IS NULL`)
+rows, _ := db.Query(`SELECT DISTINCT ON (j.jobid) j.jobid, jc.cableid FROM jobs j JOIN job_cables jc ON j.jobid = jc.jobid WHERE j.cable_snapshot IS NULL ORDER BY j.jobid, jc.cableid`)
 for rows.Next() {
     var jobID, cableID int
     rows.Scan(&jobID, &cableID)
