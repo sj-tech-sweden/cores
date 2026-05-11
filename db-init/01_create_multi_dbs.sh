@@ -36,36 +36,36 @@ psql -v ON_ERROR_STOP=1 \
     -v "warehouse_db_password=$WAREHOUSE_DB_PASSWORD" \
     -v "warehouse_db_name=$WAREHOUSE_DB_NAME" \
     --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" << 'EOSQL'
-    -- Service roles (idempotent); format() safely quotes identifiers and string literals.
-    DO $$
-    BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'rental_db_user') THEN
-            EXECUTE format('CREATE ROLE %I WITH LOGIN PASSWORD %L',
-                           :'rental_db_user', :'rental_db_password');
-        END IF;
-        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'warehouse_db_user') THEN
-            EXECUTE format('CREATE ROLE %I WITH LOGIN PASSWORD %L',
-                           :'warehouse_db_user', :'warehouse_db_password');
-        END IF;
-    END $$;
+-- Service roles (idempotent); format() safely quotes identifiers and string literals.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'rental_db_user') THEN
+        EXECUTE format('CREATE ROLE %I WITH LOGIN PASSWORD %L',
+                       :'rental_db_user', :'rental_db_password');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'warehouse_db_user') THEN
+        EXECUTE format('CREATE ROLE %I WITH LOGIN PASSWORD %L',
+                       :'warehouse_db_user', :'warehouse_db_password');
+    END IF;
+END $$;
 
-    -- Create databases (idempotent via \gexec)
-    SELECT format('CREATE DATABASE %I OWNER %I', :'rental_db_name', :'rental_db_user')
-    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = :'rental_db_name')
-    \gexec
+-- Create databases (idempotent via \gexec)
+SELECT format('CREATE DATABASE %I OWNER %I', :'rental_db_name', :'rental_db_user')
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = :'rental_db_name')
+\gexec
 
-    SELECT format('CREATE DATABASE %I OWNER %I', :'warehouse_db_name', :'warehouse_db_user')
-    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = :'warehouse_db_name')
-    \gexec
+SELECT format('CREATE DATABASE %I OWNER %I', :'warehouse_db_name', :'warehouse_db_user')
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = :'warehouse_db_name')
+\gexec
 
-    -- Grant privileges
-    DO $$
-    BEGIN
-        EXECUTE format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I',
-                       :'rental_db_name', :'rental_db_user');
-        EXECUTE format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I',
-                       :'warehouse_db_name', :'warehouse_db_user');
-    END $$;
+-- Grant privileges
+DO $$
+BEGIN
+    EXECUTE format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I',
+                   :'rental_db_name', :'rental_db_user');
+    EXECUTE format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I',
+                   :'warehouse_db_name', :'warehouse_db_user');
+END $$;
 EOSQL
 
 # Install extensions inside each database (cannot run inside the heredoc above

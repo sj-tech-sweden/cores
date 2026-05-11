@@ -102,6 +102,7 @@ BEGIN
         v_fd_length         INTEGER;
         v_fd_mm2            INTEGER;
         v_dual_count        INTEGER;
+        v_has_cable_id      BOOLEAN;
     BEGIN
         SELECT categoryID INTO v_cable_category_id
         FROM categories WHERE LOWER(name) = 'cables' LIMIT 1;
@@ -111,6 +112,14 @@ BEGIN
         SELECT id INTO v_fd_type   FROM product_field_definitions WHERE name = 'cable_type';
         SELECT id INTO v_fd_length FROM product_field_definitions WHERE name = 'cable_length';
         SELECT id INTO v_fd_mm2    FROM product_field_definitions WHERE name = 'cable_mm2';
+
+        -- Check once whether the devices.cable_id column still exists in this environment.
+        SELECT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name   = 'devices'
+              AND column_name  = 'cable_id'
+        ) INTO v_has_cable_id;
 
         FOR v_cable IN
             SELECT c.*,
@@ -134,19 +143,21 @@ BEGIN
             -- Report and migrate ALL devices associated with this cable.
             -- Devices that already had a productID would silently lose their cable
             -- association when cable_id is dropped; warn before overwriting.
-            SELECT COUNT(*) INTO v_dual_count
-            FROM devices
-            WHERE cable_id = v_cable.cableID AND productID IS NOT NULL;
+            -- Use EXECUTE to avoid compile-time errors when cable_id no longer exists.
+            IF v_has_cable_id THEN
+                EXECUTE 'SELECT COUNT(*) FROM devices WHERE cable_id = $1 AND productID IS NOT NULL'
+                    INTO v_dual_count
+                    USING v_cable.cableID;
 
-            IF v_dual_count > 0 THEN
-                RAISE NOTICE 'Cable "%" (cableID=%): % device(s) had both productID and cable_id set. '
-                             'Their productID is being updated to the new cable-product (%).',
-                    v_cable.name, v_cable.cableID, v_dual_count, v_product_id;
+                IF v_dual_count > 0 THEN
+                    RAISE NOTICE 'Cable "%" (cableID=%): % device(s) had both productID and cable_id set. '
+                                 'Their productID is being updated to the new cable-product (%).',
+                        v_cable.name, v_cable.cableID, v_dual_count, v_product_id;
+                END IF;
+
+                EXECUTE 'UPDATE devices SET productID = $1 WHERE cable_id = $2'
+                    USING v_product_id, v_cable.cableID;
             END IF;
-
-            UPDATE devices
-            SET productID = v_product_id
-            WHERE cable_id = v_cable.cableID;
 
             -- Insert field values, skipping NULLs silently.
             IF v_cable.c1name IS NOT NULL THEN

@@ -7,9 +7,9 @@ BEGIN;
 
 -- Drop FK that may exist in legacy environments where migration 050 was applied
 -- before the cross-service FK was removed (original column name before rename)
-ALTER TABLE job_cables DROP CONSTRAINT IF EXISTS job_cables_cableid_fkey;
+ALTER TABLE IF EXISTS job_cables DROP CONSTRAINT IF EXISTS job_cables_cableid_fkey;
 
 -- Drop FK in case the column was renamed to cableID by migration 051 before this runs
-ALTER TABLE job_cables DROP CONSTRAINT IF EXISTS "job_cables_cableID_fkey";
+ALTER TABLE IF EXISTS job_cables DROP CONSTRAINT IF EXISTS "job_cables_cableID_fkey";
 
 COMMIT;

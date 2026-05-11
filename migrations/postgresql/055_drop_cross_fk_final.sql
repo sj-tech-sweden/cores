@@ -9,8 +9,8 @@
 
 BEGIN;
 
-ALTER TABLE job_cables DROP CONSTRAINT IF EXISTS job_cables_cableid_fkey;
-ALTER TABLE job_cables DROP CONSTRAINT IF EXISTS "job_cables_cableID_fkey";
+ALTER TABLE IF EXISTS job_cables DROP CONSTRAINT IF EXISTS job_cables_cableid_fkey;
+ALTER TABLE IF EXISTS job_cables DROP CONSTRAINT IF EXISTS "job_cables_cableID_fkey";
 
 COMMIT;
 

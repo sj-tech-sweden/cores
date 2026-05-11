@@ -32,8 +32,13 @@ while IFS= read -r f; do
   # 1) Replace backticks with double quotes
   perl -0777 -pe 's/`([^`]*)`/"$1"/g' "$bak" > "$f.tmp"
 
-  # 2) Remove ENGINE/CHARSET/COLLATE at line ends
-  sed -E -e 's/\) ENGINE=[^;]*;//g' -e 's/DEFAULT CHARSET=[^;]*;//g' -e 's/ COLLATE=[^;]*;//g' "$f.tmp" > "$f.tmp2" && mv "$f.tmp2" "$f.tmp"
+  # 2) Remove ENGINE/CHARSET/COLLATE at line ends, preserving the closing );
+  # ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=...;" → ");"
+  sed -E \
+    -e 's/\) ENGINE=[^;]*;/);/g' \
+    -e 's/ DEFAULT CHARSET=[^ ;)]*//g' \
+    -e 's/ COLLATE=[^ ;),]*//g' \
+    "$f.tmp" > "$f.tmp2" && mv "$f.tmp2" "$f.tmp"
 
   # 3) Convert AUTO_INCREMENT primary keys
   sed -E -e 's/"([^"]+)"\s+BIGINT\s+AUTO_INCREMENT\s+PRIMARY\s+KEY/"\1" BIGSERIAL PRIMARY KEY/Ig' -e 's/"([^"]+)"\s+INT\s+AUTO_INCREMENT\s+PRIMARY\s+KEY/"\1" SERIAL PRIMARY KEY/Ig' "$f.tmp" > "$f.tmp2" && mv "$f.tmp2" "$f.tmp"
