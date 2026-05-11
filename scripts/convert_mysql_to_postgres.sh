@@ -11,7 +11,7 @@ report_file="convert_report.txt"
 
 shopt -s nullglob
 while IFS= read -r -d '' f; do
-  echo "\nProcessing: $f"
+  printf "\nProcessing: %s\n" "$f"
   skip=0
   for p in "${SKIP_PATTERNS[@]}"; do
     if grep -q -i "$p" "$f"; then
@@ -55,4 +55,4 @@ while IFS= read -r -d '' f; do
   echo "  Converted (backup: $bak)" | tee -a "$report_file"
 done < <(find "$MIGRATIONS_DIR" -name '*.sql' -print0 | sort -z)
 
-echo "\nConversion complete. See $report_file for skipped files and notes."
+printf "\nConversion complete. See %s for skipped files and notes.\n" "$report_file"

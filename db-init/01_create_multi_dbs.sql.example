@@ -1,8 +1,11 @@
--- Run by postgres container on first init.
--- Create two databases and users for RentalCore and WarehouseCore.
-
--- NOTE: Docker's init SQL runner does not substitute environment variables inside files.
--- Replace placeholders below with concrete values, or generate this file from the .env.multi prior to first start.
+-- Reference SQL for the multi-database init — for documentation only.
+-- The active init script is 01_create_multi_dbs.sh, which substitutes
+-- credentials from environment variables (see .env.multi.example).
+-- Do NOT place this file in docker-entrypoint-initdb.d directly; use the .sh instead.
+--
+-- NOTE: Docker's init SQL runner does not substitute environment variables inside .sql files.
+-- Replace the placeholder names/passwords below with concrete values if you want to run
+-- this SQL directly (e.g., via psql for a manual setup).
 
 -- Service users (idempotent via DO block)
 DO $$
