@@ -72,18 +72,22 @@ BEGIN
         ('cable_mm2',   'Cross-section',  'number', NULL, 'mm²',  5)
     ON CONFLICT (name) DO NOTHING;
 
-    -- Populate select options from the lookup tables.
-    UPDATE product_field_definitions
-    SET options = (
-        SELECT COALESCE(json_agg(name ORDER BY name), '[]'::json)::text FROM cable_connectors
-    )
-    WHERE name IN ('connector_1', 'connector_2');
+    -- Populate select options from the lookup tables (only when they still exist).
+    IF to_regclass('public.cable_connectors') IS NOT NULL THEN
+        UPDATE product_field_definitions
+        SET options = (
+            SELECT COALESCE(json_agg(name ORDER BY name), '[]'::json)::text FROM cable_connectors
+        )
+        WHERE name IN ('connector_1', 'connector_2');
+    END IF;
 
-    UPDATE product_field_definitions
-    SET options = (
-        SELECT COALESCE(json_agg(name ORDER BY name), '[]'::json)::text FROM cable_types
-    )
-    WHERE name = 'cable_type';
+    IF to_regclass('public.cable_types') IS NOT NULL THEN
+        UPDATE product_field_definitions
+        SET options = (
+            SELECT COALESCE(json_agg(name ORDER BY name), '[]'::json)::text FROM cable_types
+        )
+        WHERE name = 'cable_type';
+    END IF;
 
     -- -----------------------------------------------------------------------
     -- 3c. For each cable, create a product and insert its field values.
