@@ -19,7 +19,7 @@ for f in "$MIGRATIONS_DIR"/*.sql; do
     continue
   fi
   echo "APPLY: $f"
-  cat "$f" | docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME"
+  docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 < "$f"
 done
 
 echo "Done. Review skipped files for manual conversion to Postgres if needed."
