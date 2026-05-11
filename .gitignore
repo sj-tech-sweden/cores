@@ -1,5 +1,6 @@
 # Environment files with sensitive data
 .env
+.env.multi
 login.json
 cookies.txt
 
@@ -12,6 +13,7 @@ warehousecore/
 *.swp
 *~
 tmp_w_categories.json
+convert_report.txt
 
 # OS files
 .DS_Store
@@ -48,3 +50,4 @@ AGENTS.md
 .gemini/
 *.md.bak
 __pycache__/
+docker-compose.multi-db.dev.yml

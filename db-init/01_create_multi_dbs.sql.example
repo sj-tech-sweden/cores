@@ -1,0 +1,44 @@
+-- Reference SQL for the multi-database init — for documentation only.
+-- The active init script is 01_create_multi_dbs.sh, which substitutes
+-- credentials from environment variables (see .env.multi.example).
+-- Do NOT place this file in docker-entrypoint-initdb.d directly; use the .sh instead.
+--
+-- NOTE: Docker's init SQL runner does not substitute environment variables inside .sql files.
+-- Replace the placeholder names/passwords below with concrete values if you want to run
+-- this SQL directly (e.g., via psql for a manual setup).
+
+-- Service users (idempotent via DO block)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'rental_user') THEN
+        CREATE ROLE rental_user WITH LOGIN PASSWORD 'change_me_rental';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'warehouse_user') THEN
+        CREATE ROLE warehouse_user WITH LOGIN PASSWORD 'change_me_warehouse';
+    END IF;
+END $$;
+
+-- Create databases owned by the respective users (idempotent via \gexec)
+SELECT 'CREATE DATABASE rentalcore_db OWNER rental_user'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'rentalcore_db')
+\gexec
+
+SELECT 'CREATE DATABASE warehousecore_db OWNER warehouse_user'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'warehousecore_db')
+\gexec
+
+-- Grant privileges
+GRANT ALL PRIVILEGES ON DATABASE rentalcore_db TO rental_user;
+GRANT ALL PRIVILEGES ON DATABASE warehousecore_db TO warehouse_user;
+
+-- Install useful extensions inside each DB
+\connect rentalcore_db
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+\connect warehousecore_db
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Return to default DB
+\connect postgres

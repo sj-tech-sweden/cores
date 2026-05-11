@@ -469,13 +469,15 @@
 +);
 +
 +-- Assign both admin and warehouse_admin roles if user exists
-+INSERT IGNORE INTO user_roles_wh (user_id, role_id)
-+SELECT @thielmann_user_id, @admin_role_id
-+WHERE @thielmann_user_id IS NOT NULL AND @admin_role_id IS NOT NULL;
+INSERT INTO user_roles_wh (user_id, role_id)
+SELECT @thielmann_user_id, @admin_role_id
+WHERE @thielmann_user_id IS NOT NULL AND @admin_role_id IS NOT NULL
+ON CONFLICT DO NOTHING;
 +
-+INSERT IGNORE INTO user_roles_wh (user_id, role_id)
-+SELECT @thielmann_user_id, @wh_admin_role_id
-+WHERE @thielmann_user_id IS NOT NULL AND @wh_admin_role_id IS NOT NULL;
+INSERT INTO user_roles_wh (user_id, role_id)
+SELECT @thielmann_user_id, @wh_admin_role_id
+WHERE @thielmann_user_id IS NOT NULL AND @wh_admin_role_id IS NOT NULL
+ON CONFLICT DO NOTHING;
 +
 +-- Log the result
 +SELECT

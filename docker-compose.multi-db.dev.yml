@@ -1,0 +1,98 @@
+
+services:
+  warehouse-db:
+    image: postgres:18-alpine
+    container_name: warehouse-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${WAREHOUSE_DB_USER:-warehouse}"
+      POSTGRES_PASSWORD: "${WAREHOUSE_DB_PASSWORD:-warehousepass}"
+      POSTGRES_DB: "${WAREHOUSE_DB_NAME:-warehousecore_dev}"
+    ports:
+      - "5433:5432"
+    volumes:
+      - warehouse_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${WAREHOUSE_DB_USER:-warehouse} -d ${WAREHOUSE_DB_NAME:-warehousecore_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rental-db:
+    image: postgres:18-alpine
+    container_name: rental-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${RENTAL_DB_USER:-rental}"
+      POSTGRES_PASSWORD: "${RENTAL_DB_PASSWORD:-rentalpass}"
+      POSTGRES_DB: "${RENTAL_DB_NAME:-rentalcore_dev}"
+    ports:
+      - "5434:5432"
+    volumes:
+      - rental_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${RENTAL_DB_USER:-rental} -d ${RENTAL_DB_NAME:-rentalcore_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+
+  warehousecore:
+    build:
+      context: ../warehousecore
+      dockerfile: Dockerfile
+    container_name: warehousecore
+    ports:
+      - "8081:8081"
+    environment:
+      DB_HOST: "${WAREHOUSE_DB_HOST:-warehouse-db}"
+      DB_PORT: "${WAREHOUSE_DB_PORT:-5432}"
+      DB_NAME: "${WAREHOUSE_DB_NAME:-warehousecore_dev}"
+      DB_USER: "${WAREHOUSE_DB_USER:-warehouse}"
+      DB_PASSWORD: "${WAREHOUSE_DB_PASSWORD:-warehousepass}"
+      MIGRATE_ON_STARTUP: "true"
+      MIGRATIONS_DIR: "migrations"
+      RENTALCORE_BASE_URL: "${RENTALCORE_BASE_URL:-http://rentalcore:8080}"
+      RENTALCORE_API_KEY: "${RENTALCORE_API_KEY:-local-dev-service-key}"
+      TWENTY_BASE_URL: "${TWENTY_BASE_URL:-http://localhost:2020}"
+      SERVICE_API_KEY: "${SERVICE_API_KEY:-local-dev-service-key}"
+      SESSION_COOKIE_NAME: "${WAREHOUSECORE_SESSION_COOKIE_NAME:-warehousecore_session_id}"
+    depends_on:
+      - warehouse-db
+
+  rentalcore:
+    build:
+      context: ../rentalcore
+      dockerfile: Dockerfile
+    container_name: rentalcore
+    ports:
+      - "8082:8080"
+    environment:
+      DB_HOST: "${RENTAL_DB_HOST:-rental-db}"
+      DB_PORT: "${RENTAL_DB_PORT:-5432}"
+      DB_NAME: "${RENTAL_DB_NAME:-rentalcore_dev}"
+      DB_USER: "${RENTAL_DB_USER:-rental}"
+      DB_PASSWORD: "${RENTAL_DB_PASSWORD:-rentalpass}"
+      WAREHOUSECORE_BASE_URL: "${WAREHOUSECORE_BASE_URL:-http://warehousecore:8081/api/v1}"
+      WAREHOUSECORE_API_KEY: "${WAREHOUSECORE_API_KEY:-local-dev-service-key}"
+      SERVICE_API_KEY: "${SERVICE_API_KEY:-local-dev-service-key}"
+      WAREHOUSE_PRODUCTS_ENABLED: "${WAREHOUSE_PRODUCTS_ENABLED:-true}"
+      RENTALCORE_API_KEY: "${RENTALCORE_API_KEY:-local-dev-service-key}"
+      SESSION_COOKIE_NAME: "${RENTALCORE_SESSION_COOKIE_NAME:-rentalcore_session_id}"
+    depends_on:
+      - rental-db
+
+
+volumes:
+  warehouse_db_data:
+  rental_db_data:
+
+# Usage:
+# docker compose -f docker-compose.multi-db.dev.yml up -d
+# Connect Adminer at http://localhost:8080 (server: host.docker.internal:5433 or container name)
