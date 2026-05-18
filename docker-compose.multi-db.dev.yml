@@ -58,9 +58,9 @@ services:
       DB_PASSWORD: "${WAREHOUSE_DB_PASSWORD:-warehousepass}"
       MIGRATE_ON_STARTUP: "true"
       MIGRATIONS_DIR: "migrations"
-      RENTALCORE_BASE_URL: "${RENTALCORE_BASE_URL:-http://rentalcore:8080}"
-      RENTALCORE_API_KEY: "${RENTALCORE_API_KEY:-local-dev-service-key}"
-      TWENTY_BASE_URL: "${TWENTY_BASE_URL:-http://localhost:2020}"
+      #RENTALCORE_BASE_URL: "${RENTALCORE_BASE_URL:-http://rentalcore:8080}"
+      #RENTALCORE_API_KEY: "${RENTALCORE_API_KEY:-local-dev-service-key}"
+      #TWENTY_BASE_URL: "${TWENTY_BASE_URL:-http://localhost:2020}"
       SERVICE_API_KEY: "${SERVICE_API_KEY:-local-dev-service-key}"
       SESSION_COOKIE_NAME: "${WAREHOUSECORE_SESSION_COOKIE_NAME:-warehousecore_session_id}"
     depends_on:
